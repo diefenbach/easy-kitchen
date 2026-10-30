@@ -5,6 +5,7 @@ from django.db.models import Prefetch
 from django.http import HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
@@ -125,3 +126,10 @@ class ItemReorderView(LoginRequiredMixin, View):
         except (ValueError, KeyError, TypeError, json.JSONDecodeError):
             return HttpResponseBadRequest("Ungültige Reihenfolge")
         return HttpResponseRedirect(reverse("shopping:detail", kwargs={"pk": list_pk}))
+
+
+class ItemsResetCheckedView(LoginRequiredMixin, View):
+    def post(self, request, list_pk):
+        shopping_list = get_object_or_404(ShoppingList, pk=list_pk, user=request.user)
+        shopping_list.items.filter(checked=True).update(checked=False, updated_at=timezone.now())
+        return redirect("shopping:detail", pk=shopping_list.pk)

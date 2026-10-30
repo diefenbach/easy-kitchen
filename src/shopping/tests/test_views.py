@@ -87,3 +87,18 @@ def test_edit_list_prefills_html_date_input(client, user, shopping_list):
     response = client.get(reverse("shopping:update", args=[shopping_list.pk]))
 
     assert '<input type="date" name="date" value="2026-10-30"' in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_reset_checked_items_marks_all_items_as_open(client, user, shopping_list):
+    completed = ShoppingItem.objects.create(shopping_list=shopping_list, name="Tofu", checked=True)
+    open_item = ShoppingItem.objects.create(shopping_list=shopping_list, name="Reis")
+    client.force_login(user)
+
+    response = client.post(reverse("shopping:items-reset-checked", args=[shopping_list.pk]))
+
+    assert response.status_code == 302
+    completed.refresh_from_db()
+    open_item.refresh_from_db()
+    assert completed.checked is False
+    assert open_item.checked is False

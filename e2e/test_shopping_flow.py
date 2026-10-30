@@ -32,3 +32,24 @@ def test_user_cannot_see_another_users_list(authenticated_page, other_user):
     ShoppingList.objects.create(user=other_user, title="Private Liste")
     page = authenticated_page
     expect(page.get_by_text("Private Liste")).to_have_count(0)
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
+def test_user_can_hide_and_reset_completed_items(authenticated_page, user):
+    from shopping.models import ShoppingItem, ShoppingList
+
+    shopping_list = ShoppingList.objects.create(user=user, title="Wocheneinkauf")
+    completed = ShoppingItem.objects.create(shopping_list=shopping_list, name="Tofu", checked=True)
+    ShoppingItem.objects.create(shopping_list=shopping_list, name="Reis")
+    page = authenticated_page
+    page.route("**/easylist.css", lambda route: route.abort())
+    page.goto(f"{page.url.rstrip('/')}/listen/{shopping_list.pk}/")
+
+    completed_item = page.locator(f'.shopping-item[data-item-id="{completed.pk}"]')
+    page.get_by_role("button", name="Erledigte ausblenden").click()
+    expect(completed_item).to_be_hidden()
+
+    page.get_by_role("button", name="Alle als nicht erledigt markieren").click()
+    expect(completed_item).to_be_visible()
+    expect(completed_item).not_to_have_class(re.compile(r".*\bchecked\b.*"))

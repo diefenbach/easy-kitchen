@@ -2,6 +2,7 @@
 .list-card:hover { transform: translateY(-2px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.12) !important; }
 .shopping-item.checked { opacity: .62; }
 .shopping-item.checked .item-name { text-decoration: line-through; }
+.hide-completed .shopping-item.checked { display: none; }
 .drag-handle { cursor: grab; font-size: 1.3rem; line-height: 1; }
 .checkmark { font-size: 1.3rem; }
 input, select { display: block; width: 100%; padding: .375rem .75rem; border: 1px solid #dee2e6; border-radius: .375rem; }
