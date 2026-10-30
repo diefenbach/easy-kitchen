@@ -80,7 +80,7 @@ def test_user_can_edit_a_list_from_its_detail_page(authenticated_page, user):
     page = authenticated_page
     page.goto(f"{page.url.rstrip('/')}/lists/{shopping_list.pk}/")
 
-    page.get_by_role("link", name="Edit").click()
+    page.get_by_role("link", name="Edit list").click()
     page.locator("input[name=title]").fill("Neuer Titel")
     page.get_by_role("button", name="Save").click()
 

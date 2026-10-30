@@ -2,17 +2,29 @@
 {% load i18n %}
 {% block title %}{{ object.title }} · EasyList{% endblock %}
 {% block content %}
-<div class="d-flex gap-2 align-items-start justify-content-between mb-4">
-  <div>
-    <a class="text-secondary small" href="{% url 'shopping:list' %}">← {% translate "All lists" %}</a>
-    <h1 class="h2 mb-0">{{ object.title }}</h1>
-    <p class="text-secondary mb-0">{{ object.date|date:"D, d. M Y" }}</p>
+<a class="btn btn-outline-secondary btn-sm list-back-button mb-3" href="{% url 'shopping:list' %}">
+  <i class="bi bi-arrow-left" aria-hidden="true"></i>
+  {% translate "All lists" %}
+</a>
+<header class="list-detail-header card border-0 mb-4">
+  <div class="card-body p-4 d-flex flex-column flex-sm-row gap-3 align-items-sm-start justify-content-between">
+    <div>
+      <h1 class="h2 mb-2">{{ object.title }}</h1>
+      <p class="list-detail-date mb-0">
+        <i class="bi bi-calendar3" aria-hidden="true"></i>
+        {{ object.date|date:"D, d. M Y" }}
+      </p>
+    </div>
+    <div class="btn-group" role="group" aria-label="{% translate 'List actions' %}">
+      <a href="{% url 'shopping:update' object.pk %}" class="btn btn-outline-secondary icon-action" aria-label="{% translate 'Edit list' %}">
+        <i class="bi bi-pencil" aria-hidden="true"></i>
+      </a>
+      <button type="button" class="btn btn-outline-danger icon-action" data-bs-toggle="modal" data-bs-target="#delete-list-modal" aria-label="{% translate 'Delete list' %}">
+        <i class="bi bi-trash" aria-hidden="true"></i>
+      </button>
+    </div>
   </div>
-  <div class="btn-group">
-    <a href="{% url 'shopping:update' object.pk %}" class="btn btn-outline-secondary btn-sm">{% translate "Edit" %}</a>
-    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#delete-list-modal">{% translate "Delete" %}</button>
-  </div>
-</div>
+</header>
 <section class="card shadow-sm mb-3">
   <div class="card-body" id="item-form">{% include "shopping/partials/item_form.html" %}</div>
 </section>

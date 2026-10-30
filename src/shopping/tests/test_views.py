@@ -75,7 +75,24 @@ def test_list_detail_uses_modal_delete_confirmations(client, user, shopping_list
     content = response.content.decode()
     assert 'data-bs-target="#delete-list-modal"' in content
     assert 'data-bs-target="#delete-item-modal-' in content
+    assert 'role="group" aria-label="Item actions"' in content
     assert "hx-confirm" not in content
+
+
+@pytest.mark.django_db
+def test_list_detail_uses_a_minimal_icon_header(client, user, shopping_list):
+    client.force_login(user)
+
+    response = client.get(reverse("shopping:detail", args=[shopping_list.pk]))
+
+    content = response.content.decode()
+    assert 'class="btn btn-outline-secondary btn-sm list-back-button mb-3"' in content
+    assert 'class="list-detail-header card border-0 mb-4"' in content
+    assert "bi-arrow-left" in content
+    assert "bi-calendar3" in content
+    assert "Shopping list" not in content
+    assert 'aria-label="Edit list"' in content
+    assert 'aria-label="Delete list"' in content
 
 
 @pytest.mark.django_db

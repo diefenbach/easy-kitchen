@@ -1,9 +1,14 @@
 .list-card { transition: transform .15s ease, box-shadow .15s ease; }
 .list-card:hover { transform: translateY(-2px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.12) !important; }
+.list-back-button { --bs-btn-padding-x: .625rem; }
+.list-detail-header { background-color: #fff; border-left: .25rem solid var(--bs-primary) !important; }
+.list-detail-date { color: var(--bs-secondary-color); font-size: .875rem; }
+.list-detail-date .bi { margin-right: .35rem; }
+.icon-action { align-items: center; display: inline-flex; justify-content: center; min-height: 2.75rem; min-width: 2.75rem; padding: .5rem; }
 .shopping-item.checked { opacity: .62; }
 .shopping-item.checked .item-name { text-decoration: line-through; }
 .hide-completed .shopping-item.checked { display: none; }
-.drag-handle { cursor: grab; font-size: 1.3rem; line-height: 1; }
+.drag-handle { cursor: grab; font-size: 1.1rem; line-height: 1; }
 .checkmark { font-size: 1.3rem; }
 input, select { display: block; width: 100%; padding: .375rem .75rem; border: 1px solid #dee2e6; border-radius: .375rem; }
 .errorlist { color: #b02a37; list-style: none; padding: 0; font-size: .875rem; }

@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: easylist\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-30 16:11+0100\n"
+"POT-Creation-Date: 2026-10-30 16:32+0100\n"
 "PO-Revision-Date: 2026-10-30 16:11+0100\n"
 "Last-Translator: EasyList\n"
 "Language-Team: German\n"
@@ -67,11 +67,7 @@ msgstr "Ungültige Elementreihenfolge."
 msgid "Sign in"
 msgstr "Anmelden"
 
-#: src/shopping/templates/shopping/base.html:22
-msgid "Language"
-msgstr "Sprache"
-
-#: src/shopping/templates/shopping/base.html:30
+#: src/shopping/templates/shopping/base.html:23
 msgid "Log out"
 msgstr "Abmelden"
 
@@ -79,64 +75,67 @@ msgstr "Abmelden"
 msgid "All lists"
 msgstr "Alle Listen"
 
-#: src/shopping/templates/shopping/detail.html:12
-#: src/shopping/templates/shopping/list.html:20
-#: src/shopping/templates/shopping/partials/item.html:12
-msgid "Edit"
-msgstr "Bearbeiten"
+#: src/shopping/templates/shopping/detail.html:18
+msgid "List actions"
+msgstr "Listenaktionen"
 
-#: src/shopping/templates/shopping/detail.html:13
+#: src/shopping/templates/shopping/detail.html:19
+#: src/shopping/templates/shopping/list_form.html:6
+msgid "Edit list"
+msgstr "Liste bearbeiten"
+
+#: src/shopping/templates/shopping/detail.html:22
 #: src/shopping/templates/shopping/list.html:21
-msgid "Delete"
-msgstr "Löschen"
+msgid "Delete list"
+msgstr "Liste löschen"
 
-#: src/shopping/templates/shopping/detail.html:20
+#: src/shopping/templates/shopping/detail.html:32
 msgid "Hide completed"
 msgstr "Erledigte ausblenden"
 
-#: src/shopping/templates/shopping/detail.html:20
+#: src/shopping/templates/shopping/detail.html:32
 msgid "Show completed"
 msgstr "Erledigte anzeigen"
 
-#: src/shopping/templates/shopping/detail.html:23
+#: src/shopping/templates/shopping/detail.html:35
 msgid "Mark all as not completed"
 msgstr "Alle als nicht erledigt markieren"
 
-#: src/shopping/templates/shopping/detail.html:30
+#: src/shopping/templates/shopping/detail.html:42
 msgid "No items yet."
 msgstr "Noch keine Artikel."
 
-#: src/shopping/templates/shopping/detail.html:37
+#: src/shopping/templates/shopping/detail.html:49
 #: src/shopping/templates/shopping/list.html:29
 #: src/shopping/templates/shopping/list_confirm_delete.html:8
 msgid "Delete list?"
 msgstr "Liste löschen?"
 
-#: src/shopping/templates/shopping/detail.html:38
+#: src/shopping/templates/shopping/detail.html:50
 #: src/shopping/templates/shopping/list.html:30
-#: src/shopping/templates/shopping/partials/item.html:21
+#: src/shopping/templates/shopping/partials/item.html:29
 msgid "Close"
 msgstr "Schließen"
 
-#: src/shopping/templates/shopping/detail.html:40
+#: src/shopping/templates/shopping/detail.html:52
 #: src/shopping/templates/shopping/list.html:32
 #: src/shopping/templates/shopping/list_confirm_delete.html:9
 #, python-format
 msgid "\"%(title)s\" and all items will be permanently deleted."
 msgstr "„%(title)s“ und alle Artikel werden dauerhaft gelöscht."
 
-#: src/shopping/templates/shopping/detail.html:42
+#: src/shopping/templates/shopping/detail.html:54
 #: src/shopping/templates/shopping/list.html:34
 #: src/shopping/templates/shopping/list_confirm_delete.html:13
 #: src/shopping/templates/shopping/list_form.html:20
-#: src/shopping/templates/shopping/partials/item.html:25
+#: src/shopping/templates/shopping/partials/item.html:33
 msgid "Cancel"
 msgstr "Abbrechen"
 
-#: src/shopping/templates/shopping/detail.html:45
+#: src/shopping/templates/shopping/detail.html:57
 #: src/shopping/templates/shopping/list.html:37
 #: src/shopping/templates/shopping/list_confirm_delete.html:12
-#: src/shopping/templates/shopping/partials/item.html:28
+#: src/shopping/templates/shopping/partials/item.html:36
 msgid "Delete permanently"
 msgstr "Endgültig löschen"
 
@@ -157,9 +156,13 @@ msgid_plural "%(counter)s items"
 msgstr[0] "%(counter)s Artikel"
 msgstr[1] "%(counter)s Artikel"
 
+#: src/shopping/templates/shopping/list.html:20
+msgid "Edit"
+msgstr "Bearbeiten"
+
 #: src/shopping/templates/shopping/list.html:21
-msgid "Delete list"
-msgstr "Liste löschen"
+msgid "Delete"
+msgstr "Löschen"
 
 #: src/shopping/templates/shopping/list.html:47
 msgid "No shopping list yet"
@@ -173,10 +176,6 @@ msgstr "Erstelle deine erste Liste."
 msgid "Create list"
 msgstr "Liste erstellen"
 
-#: src/shopping/templates/shopping/list_form.html:6
-msgid "Edit list"
-msgstr "Liste bearbeiten"
-
 #: src/shopping/templates/shopping/list_form.html:19
 #: src/shopping/templates/shopping/partials/item_edit_form.html:7
 msgid "Save"
@@ -186,19 +185,27 @@ msgstr "Speichern"
 msgid "Move"
 msgstr "Verschieben"
 
-#: src/shopping/templates/shopping/partials/item.html:5
+#: src/shopping/templates/shopping/partials/item.html:7
 msgid "Toggle completed"
 msgstr "Erledigt umschalten"
 
-#: src/shopping/templates/shopping/partials/item.html:13
+#: src/shopping/templates/shopping/partials/item.html:14
+msgid "Item actions"
+msgstr "Artikelaktionen"
+
+#: src/shopping/templates/shopping/partials/item.html:15
+msgid "Edit item"
+msgstr "Artikel bearbeiten"
+
+#: src/shopping/templates/shopping/partials/item.html:18
 msgid "Delete item"
 msgstr "Artikel löschen"
 
-#: src/shopping/templates/shopping/partials/item.html:20
+#: src/shopping/templates/shopping/partials/item.html:28
 msgid "Delete item?"
 msgstr "Artikel löschen?"
 
-#: src/shopping/templates/shopping/partials/item.html:23
+#: src/shopping/templates/shopping/partials/item.html:31
 #, python-format
 msgid "\"%(name)s\" will be permanently deleted."
 msgstr "„%(name)s“ wird dauerhaft gelöscht."
@@ -206,3 +213,9 @@ msgstr "„%(name)s“ wird dauerhaft gelöscht."
 #: src/shopping/templates/shopping/partials/item_form.html:13
 msgid "Add"
 msgstr "Hinzufügen"
+
+#~ msgid "Shopping list"
+#~ msgstr "Einkaufsliste"
+
+#~ msgid "Language"
+#~ msgstr "Sprache"
