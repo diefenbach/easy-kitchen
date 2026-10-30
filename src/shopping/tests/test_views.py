@@ -1,6 +1,7 @@
 import pytest
 from django.test import Client
 from django.urls import reverse
+from datetime import date
 from shopping.models import ShoppingItem, ShoppingList
 
 
@@ -75,3 +76,14 @@ def test_list_detail_uses_modal_delete_confirmations(client, user, shopping_list
     assert 'data-bs-target="#delete-list-modal"' in content
     assert 'data-bs-target="#delete-item-modal-' in content
     assert "hx-confirm" not in content
+
+
+@pytest.mark.django_db
+def test_edit_list_prefills_html_date_input(client, user, shopping_list):
+    shopping_list.date = date(2026, 10, 30)
+    shopping_list.save()
+    client.force_login(user)
+
+    response = client.get(reverse("shopping:update", args=[shopping_list.pk]))
+
+    assert '<input type="date" name="date" value="2026-10-30"' in response.content.decode()

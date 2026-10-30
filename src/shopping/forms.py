@@ -6,7 +6,8 @@ class ShoppingListForm(forms.ModelForm):
     class Meta:
         model = ShoppingList
         fields = ("title", "date")
-        widgets = {"date": forms.DateInput(attrs={"type": "date"})}
+        widgets = {"date": forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"})}
+        input_formats = {"date": ["%Y-%m-%d"]}
 
 
 class ShoppingItemForm(forms.ModelForm):
