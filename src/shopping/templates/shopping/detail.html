@@ -1,0 +1,9 @@
+{% extends "shopping/base.html" %}
+{% block title %}{{ object.title }} · EasyList{% endblock %}
+{% block content %}<div class="d-flex gap-2 align-items-start justify-content-between mb-4"><div><a class="text-secondary small" href="{% url 'shopping:list' %}">← Alle Listen</a><h1 class="h2 mb-0">{{ object.title }}</h1><p class="text-secondary mb-0">{{ object.date|date:"D, d. M Y" }}</p></div><div class="btn-group"><a href="{% url 'shopping:update' object.pk %}" class="btn btn-outline-secondary btn-sm">Bearbeiten</a><a href="{% url 'shopping:delete' object.pk %}" class="btn btn-outline-danger btn-sm">Löschen</a></div></div>
+<section class="card shadow-sm mb-3"><div class="card-body" id="item-form">{% include "shopping/partials/item_form.html" %}</div></section>
+<div id="items" data-reorder-url="{% url 'shopping:item-reorder' object.pk %}">{% for item in object.items.all %}{% include "shopping/partials/item.html" %}{% empty %}<p id="empty-message" class="text-center text-secondary py-4 mb-0">Noch keine Artikel.</p>{% endfor %}</div>{% endblock %}
+{% block scripts %}<script>
+const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+new Sortable(document.getElementById('items'), {animation: 150, handle: '.drag-handle', draggable: '.shopping-item', onEnd() { const items = [...document.querySelectorAll('.shopping-item')].map(el => Number(el.dataset.itemId)); fetch(document.getElementById('items').dataset.reorderUrl, {method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrf}, body: JSON.stringify({item_ids: items})}); }});
+</script>{% endblock %}

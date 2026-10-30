@@ -1,0 +1,2 @@
+{% extends "shopping/base.html" %}
+{% block content %}<div class="row justify-content-center"><div class="col-md-6"><div class="card shadow-sm"><div class="card-body"><h1 class="h3">Liste löschen?</h1><p>„{{ object.title }}“ und alle Artikel werden dauerhaft gelöscht.</p><form method="post">{% csrf_token %}<button class="btn btn-danger">Endgültig löschen</button> <a class="btn btn-outline-secondary" href="{% url 'shopping:detail' object.pk %}">Abbrechen</a></form></div></div></div></div>{% endblock %}

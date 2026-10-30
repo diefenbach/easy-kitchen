@@ -1,0 +1,31 @@
+[project]
+name = "easylist"
+version = "0.1.0"
+description = "A simple, private shopping list application."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "Django>=5.2,<5.3",
+  "djangorestframework>=3.15,<3.17",
+  "gunicorn>=23,<24",
+  "psycopg[binary]>=3.2,<4",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3,<9",
+  "pytest-django>=4.9,<5",
+  "pytest-playwright>=0.7,<1",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "project.settings.test"
+pythonpath = ["src"]
+python_files = ["test_*.py", "*_tests.py"]
+testpaths = ["src", "e2e"]
+markers = [
+  "e2e: browser-based end-to-end tests",
+]
+
+[tool.ruff]
+line-length = 100

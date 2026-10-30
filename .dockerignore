@@ -1,0 +1,8 @@
+.git
+.env
+.venv
+__pycache__
+.pytest_cache
+htmlcov
+staticfiles
+db.sqlite3
