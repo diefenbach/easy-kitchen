@@ -20,6 +20,7 @@ class ShoppingListViewSet(viewsets.ModelViewSet):
             reorder_items(shopping_list, [int(value) for value in request.data["item_ids"]])
         except (ValueError, KeyError, TypeError):
             return Response({"detail": "Ungültige Reihenfolge."}, status=status.HTTP_400_BAD_REQUEST)
+        shopping_list.refresh_from_db()
         return Response(self.get_serializer(shopping_list).data)
 
     @action(detail=False, methods=["post"])

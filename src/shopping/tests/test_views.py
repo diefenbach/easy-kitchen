@@ -111,6 +111,8 @@ def test_list_overview_offers_edit_and_modal_delete_actions(client, user, shoppi
     response = client.get(reverse("shopping:list"))
 
     content = response.content.decode()
+    assert 'class="card-body position-relative"' in content
+    assert 'stretched-link text-decoration-none link-dark' in content
     assert f'{reverse("shopping:update", args=[shopping_list.pk])}?return_to=overview' in content
     assert f'data-bs-target="#delete-list-modal-{shopping_list.pk}"' in content
 
@@ -137,3 +139,21 @@ def test_edit_from_detail_returns_to_list_detail(client, user, shopping_list):
     )
 
     assert response.url == reverse("shopping:detail", args=[shopping_list.pk])
+
+
+@pytest.mark.django_db
+def test_edit_from_overview_cancels_to_list_overview(client, user, shopping_list):
+    client.force_login(user)
+
+    response = client.get(f'{reverse("shopping:update", args=[shopping_list.pk])}?return_to=overview')
+
+    assert f'<a class="btn btn-outline-secondary" href="{reverse("shopping:list")}">Abbrechen</a>' in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_edit_from_detail_cancels_to_list_detail(client, user, shopping_list):
+    client.force_login(user)
+
+    response = client.get(reverse("shopping:update", args=[shopping_list.pk]))
+
+    assert f'<a class="btn btn-outline-secondary" href="{reverse("shopping:detail", args=[shopping_list.pk])}">Abbrechen</a>' in response.content.decode()

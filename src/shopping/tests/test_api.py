@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from django.urls import reverse
 from rest_framework.authtoken.models import Token
@@ -22,3 +24,43 @@ def test_api_import_creates_list_and_items(client, user):
     result = response.json()[0]
     assert result["title"] == "Pasta"
     assert result["items"][0]["name"] == "Nudeln"
+
+
+@pytest.mark.django_db
+def test_api_can_create_update_reorder_and_delete_a_list(client, user):
+    token = Token.objects.create(user=user)
+    headers = {"HTTP_AUTHORIZATION": f"Token {token.key}"}
+    create_response = client.post(
+        reverse("shopping-list-list"),
+        json.dumps({
+            "title": "Wocheneinkauf",
+            "date": "2026-10-30",
+            "items": [{"name": "Tofu"}, {"name": "Reis"}],
+        }),
+        content_type="application/json",
+        **headers,
+    )
+    assert create_response.status_code == 201
+    shopping_list = create_response.json()
+
+    update_response = client.patch(
+        reverse("shopping-list-detail", args=[shopping_list["id"]]),
+        json.dumps({"title": "Wochenendeinkauf"}),
+        content_type="application/json",
+        **headers,
+    )
+    assert update_response.status_code == 200
+    assert update_response.json()["title"] == "Wochenendeinkauf"
+
+    reversed_ids = [item["id"] for item in reversed(shopping_list["items"])]
+    reorder_response = client.post(
+        reverse("shopping-list-reorder", args=[shopping_list["id"]]),
+        json.dumps({"item_ids": reversed_ids}),
+        content_type="application/json",
+        **headers,
+    )
+    assert reorder_response.status_code == 200
+    assert [item["id"] for item in reorder_response.json()["items"]] == reversed_ids
+
+    delete_response = client.delete(reverse("shopping-list-detail", args=[shopping_list["id"]]), **headers)
+    assert delete_response.status_code == 204

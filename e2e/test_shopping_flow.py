@@ -69,3 +69,57 @@ def test_user_can_edit_a_list_from_the_overview(authenticated_page, user):
     page.locator("input[name=title]").fill("Neuer Titel")
     page.get_by_role("button", name="Speichern").click()
     expect(page.get_by_role("heading", name="Meine Listen")).to_be_visible()
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
+def test_user_can_edit_a_list_from_its_detail_page(authenticated_page, user):
+    from shopping.models import ShoppingList
+
+    shopping_list = ShoppingList.objects.create(user=user, title="Alter Titel")
+    page = authenticated_page
+    page.goto(f"{page.url.rstrip('/')}/listen/{shopping_list.pk}/")
+
+    page.get_by_role("link", name="Bearbeiten").click()
+    page.locator("input[name=title]").fill("Neuer Titel")
+    page.get_by_role("button", name="Speichern").click()
+
+    expect(page.get_by_role("heading", name="Neuer Titel")).to_be_visible()
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
+def test_user_can_delete_a_list_from_the_overview_modal(authenticated_page, user):
+    from shopping.models import ShoppingList
+
+    ShoppingList.objects.create(user=user, title="Zu löschen")
+    page = authenticated_page
+    page.reload()
+
+    card = page.locator(".list-card", has_text="Zu löschen")
+    card.get_by_role("button", name="Liste löschen").click()
+    dialog = page.get_by_role("dialog")
+    expect(dialog).to_be_visible()
+    dialog.get_by_role("button", name="Endgültig löschen").click()
+    expect(page.get_by_text("Zu löschen")).to_have_count(0)
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
+def test_user_can_reorder_items_with_drag_and_drop(authenticated_page, user):
+    from shopping.models import ShoppingItem, ShoppingList
+
+    shopping_list = ShoppingList.objects.create(user=user, title="Wocheneinkauf")
+    tofu = ShoppingItem.objects.create(shopping_list=shopping_list, name="Tofu", position=1)
+    rice = ShoppingItem.objects.create(shopping_list=shopping_list, name="Reis", position=2)
+    page = authenticated_page
+    page.goto(f"{page.url.rstrip('/')}/listen/{shopping_list.pk}/")
+
+    tofu_handle = page.locator(f'.shopping-item[data-item-id="{tofu.pk}"]').get_by_role("button", name="Verschieben")
+    rice_handle = page.locator(f'.shopping-item[data-item-id="{rice.pk}"]').get_by_role("button", name="Verschieben")
+    with page.expect_response(lambda response: "/reihenfolge/" in response.url and response.request.method == "POST"):
+        tofu_handle.drag_to(rice_handle)
+    page.reload()
+
+    item_names = page.locator(".shopping-item .item-name").all_text_contents()
+    assert item_names == ["Reis", "Tofu"]

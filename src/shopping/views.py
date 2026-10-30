@@ -51,6 +51,11 @@ class ShoppingListCreateView(LoginRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse("shopping:detail", kwargs={"pk": self.object.pk})
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["cancel_url"] = reverse("shopping:list")
+        return context
+
 
 class ShoppingListUpdateView(UserListMixin, UpdateView):
     model = ShoppingList
@@ -61,6 +66,11 @@ class ShoppingListUpdateView(UserListMixin, UpdateView):
         if self.request.GET.get("return_to") == "overview":
             return reverse("shopping:list")
         return reverse("shopping:detail", kwargs={"pk": self.object.pk})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["cancel_url"] = self.get_success_url()
+        return context
 
 
 class ShoppingListDeleteView(UserListMixin, DeleteView):
