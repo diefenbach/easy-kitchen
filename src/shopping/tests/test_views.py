@@ -62,3 +62,16 @@ def test_login_displays_invalid_credentials_error(client):
     response = client.post(reverse("login"), {"username": "unknown", "password": "wrong"})
     assert response.status_code == 200
     assert "alert-danger" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_list_detail_uses_modal_delete_confirmations(client, user, shopping_list):
+    ShoppingItem.objects.create(shopping_list=shopping_list, name="Tofu")
+    client.force_login(user)
+
+    response = client.get(reverse("shopping:detail", args=[shopping_list.pk]))
+
+    content = response.content.decode()
+    assert 'data-bs-target="#delete-list-modal"' in content
+    assert 'data-bs-target="#delete-item-modal-' in content
+    assert "hx-confirm" not in content
