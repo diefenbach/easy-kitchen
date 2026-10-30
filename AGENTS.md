@@ -1,6 +1,7 @@
 # EasyList development conventions
 
 - Keep the application Django-first. Use Django forms, templates, and class-based views where practical.
+- The application is English-first. Write user-facing strings in English and mark them for translation. Add the German translation in `src/locale/de/LC_MESSAGES/django.po`.
 - Keep browser JavaScript small. HTMX is preferred for partial page updates; SortableJS is reserved for item ordering.
 - All data is scoped to `request.user`; never trust an object ID without filtering through the current user.
 - Use Django's `BigAutoField` primary keys. Foreign keys must use `settings.AUTH_USER_MODEL`.

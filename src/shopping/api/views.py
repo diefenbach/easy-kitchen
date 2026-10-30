@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.utils.translation import gettext as _
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -19,7 +20,7 @@ class ShoppingListViewSet(viewsets.ModelViewSet):
         try:
             reorder_items(shopping_list, [int(value) for value in request.data["item_ids"]])
         except (ValueError, KeyError, TypeError):
-            return Response({"detail": "Ungültige Reihenfolge."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": _("Invalid order.")}, status=status.HTTP_400_BAD_REQUEST)
         shopping_list.refresh_from_db()
         return Response(self.get_serializer(shopping_list).data)
 
@@ -28,7 +29,10 @@ class ShoppingListViewSet(viewsets.ModelViewSet):
         payload = request.data
         records = payload.get("lists", payload if isinstance(payload, list) else None)
         if not isinstance(records, list):
-            return Response({"detail": "Erwartet wird eine Liste oder {'lists': [...]}."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": _("Expected a list or {'lists': [...]}.")},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         serializer = self.get_serializer(data=records, many=True)
         serializer.is_valid(raise_exception=True)
         with transaction.atomic():

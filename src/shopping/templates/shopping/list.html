@@ -1,4 +1,52 @@
 {% extends "shopping/base.html" %}
-{% block title %}Meine Listen · EasyList{% endblock %}
-{% block content %}<div class="d-flex justify-content-between align-items-center mb-4"><h1 class="h2 mb-0">Meine Listen</h1><a href="{% url 'shopping:create' %}" class="btn btn-primary">Neue Liste</a></div>
-{% if shopping_lists %}<div class="row g-3">{% for list in shopping_lists %}<div class="col-12 col-md-6 col-lg-4"><article class="card h-100 shadow-sm list-card"><div class="card-body position-relative"><h2 class="h5"><a class="stretched-link text-decoration-none link-dark" href="{% url 'shopping:detail' list.pk %}">{{ list.title }}</a></h2><p class="text-secondary mb-2">{{ list.date|date:"D, d. M Y" }}</p><span class="badge text-bg-light">{{ list.items.count }} Artikel</span></div><div class="card-footer bg-white d-flex justify-content-end gap-2"><a href="{% url 'shopping:update' list.pk %}?return_to=overview" class="btn btn-sm btn-outline-secondary">Bearbeiten</a><button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#delete-list-modal-{{ list.pk }}" aria-label="Liste löschen">Löschen</button></div></article></div><div class="modal fade" id="delete-list-modal-{{ list.pk }}" tabindex="-1" aria-labelledby="delete-list-title-{{ list.pk }}" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h2 class="modal-title fs-5" id="delete-list-title-{{ list.pk }}">Liste löschen?</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button></div><div class="modal-body">„{{ list.title }}“ und alle Artikel werden dauerhaft gelöscht.</div><div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Abbrechen</button><form method="post" action="{% url 'shopping:delete' list.pk %}">{% csrf_token %}<button class="btn btn-danger">Endgültig löschen</button></form></div></div></div></div>{% endfor %}</div>{% else %}<div class="text-center py-5 bg-white rounded shadow-sm"><h2 class="h4">Noch keine Einkaufsliste</h2><p class="text-secondary">Erstelle deine erste Liste.</p><a href="{% url 'shopping:create' %}" class="btn btn-primary">Liste erstellen</a></div>{% endif %}{% endblock %}
+{% load i18n %}
+{% block title %}{% translate "My lists" %} · EasyList{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h2 mb-0">{% translate "My lists" %}</h1>
+  <a href="{% url 'shopping:create' %}" class="btn btn-primary">{% translate "New list" %}</a>
+</div>
+{% if shopping_lists %}
+  <div class="row g-3">
+    {% for list in shopping_lists %}
+      <div class="col-12 col-md-6 col-lg-4">
+        <article class="card h-100 shadow-sm list-card">
+          <div class="card-body position-relative">
+            <h2 class="h5"><a class="stretched-link text-decoration-none link-dark" href="{% url 'shopping:detail' list.pk %}">{{ list.title }}</a></h2>
+            <p class="text-secondary mb-2">{{ list.date|date:"D, d. M Y" }}</p>
+            <span class="badge text-bg-light">{% blocktranslate count counter=list.items.count %}{{ counter }} item{% plural %}{{ counter }} items{% endblocktranslate %}</span>
+          </div>
+          <div class="card-footer bg-white d-flex justify-content-end gap-2">
+            <a href="{% url 'shopping:update' list.pk %}?return_to=overview" class="btn btn-sm btn-outline-secondary">{% translate "Edit" %}</a>
+            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#delete-list-modal-{{ list.pk }}" aria-label="{% translate 'Delete list' %}">{% translate "Delete" %}</button>
+          </div>
+        </article>
+      </div>
+      <div class="modal fade" id="delete-list-modal-{{ list.pk }}" tabindex="-1" aria-labelledby="delete-list-title-{{ list.pk }}" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2 class="modal-title fs-5" id="delete-list-title-{{ list.pk }}">{% translate "Delete list?" %}</h2>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate 'Close' %}"></button>
+            </div>
+            <div class="modal-body">{% blocktranslate with title=list.title %}"{{ title }}" and all items will be permanently deleted.{% endblocktranslate %}</div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Cancel" %}</button>
+              <form method="post" action="{% url 'shopping:delete' list.pk %}">
+                {% csrf_token %}
+                <button class="btn btn-danger">{% translate "Delete permanently" %}</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="text-center py-5 bg-white rounded shadow-sm">
+    <h2 class="h4">{% translate "No shopping list yet" %}</h2>
+    <p class="text-secondary">{% translate "Create your first list." %}</p>
+    <a href="{% url 'shopping:create' %}" class="btn btn-primary">{% translate "Create list" %}</a>
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,101 +1,102 @@
 # EasyList
 
-Eine private, responsive Einkaufslisten-App auf Django 5.2 LTS. Sie verwendet serverseitige Django-Templates, HTMX für kleine Teilaktualisierungen, Bootstrap 5.3 und SortableJS ausschließlich für die Reihenfolge der Artikel.
+A private, responsive shopping list application built with Django 5.2 LTS. It uses server-rendered Django templates, HTMX for small partial updates, Bootstrap 5.3, and SortableJS exclusively for item ordering.
 
-## Enthalten
+## Features
 
-- Mehrere Listen je Benutzer: Titel, Datum, Artikel, Menge, Checkbox und Drag-and-drop-Reihenfolge
-- Django-Standardauthentifizierung und Django-Admin
-- REST-API unter `/api/v1/` mit TokenAuthentication und streng nutzerbezogenen Abfragen
-- JSON-Import: `POST /api/v1/shopping-lists/import_json/`
-- Gunicorn-Container für einen vorgeschalteten Nginx; PostgreSQL über `POSTGRES_*`-Variablen
-- pytest-Tests für Modelle, Weboberfläche, API und Berechtigungen
+- Multiple lists per user: title, date, items, quantity, completion state, and drag-and-drop ordering
+- English-first interface with German available through the language switcher
+- Built-in Django authentication and Django admin
+- REST API at `/api/v1/` using token authentication and strictly user-scoped queries
+- JSON import: `POST /api/v1/shopping-lists/import_json/`
+- Gunicorn container for a reverse-proxying Nginx; PostgreSQL configured through `POSTGRES_*` variables
+- pytest coverage for models, web UI, API, and permissions
 
-## Lokale Entwicklung
+## Local development
 
-Für den lokalen PostgreSQL-Dienst:
+Start the local PostgreSQL service:
 
 ```sh
 cp .env.example .env
-# POSTGRES_PASSWORD und DJANGO_SECRET_KEY in .env setzen
+# Set POSTGRES_PASSWORD and DJANGO_SECRET_KEY in .env.
 docker compose up -d
 ```
 
-Der Dienst ist ausschließlich auf `localhost:5432` erreichbar und speichert seine Daten im Docker-Volume `easylist_postgres`. Den Status prüfst du mit:
+The service is available only at `localhost:5432` and stores its data in the `easylist_postgres` Docker volume. Check its status with:
 
 ```sh
 docker compose ps
 ```
 
-Anschließend EasyList lokal starten:
+Then start EasyList locally:
 
 ```sh
 cp .env.example .env
-# DJANGO_SECRET_KEY in .env setzen
+# Set DJANGO_SECRET_KEY in .env.
 uv sync --all-groups
 uv run --env-file .env python src/manage.py migrate
 uv run --env-file .env python src/manage.py createsuperuser
 uv run --env-file .env python src/manage.py runserver
 ```
 
-`uv` lädt die lokale `.env`; Django benötigt dafür keine dotenv-Bibliothek. Die Anwendung ist danach unter `http://localhost:8000` verfügbar. Die Entwicklungs-Settings aktivieren bewusst `DEBUG`, damit Django die Quell-Staticfiles aus `src/shopping/static/` direkt ausliefert.
+`uv` loads the local `.env`; Django does not require a dotenv library. The application is then available at `http://localhost:8000`. The development settings deliberately enable `DEBUG` so Django serves source static files directly from `src/shopping/static/`.
 
-Ein Datenbank-Backup lässt sich in den laufenden lokalen PostgreSQL-Container importieren. Danach führt `migrate` fehlende Migrationen aus.
+A database backup can be imported into the running local PostgreSQL container. Run `migrate` afterwards to apply any missing migrations.
 
-## Produktion: bestehender iqpp-Compose-Verbund
+## Production: existing iqpp Compose stack
 
-Das Image wird als `registry.iqpp.de/iqpp/easylist:latest` gebaut und lauscht intern auf Port `8000`. Es wird in den bestehenden `iqpp_prod`-Compose-Verbund aufgenommen. Compose lädt dort `./easylist/.env` mittels `env_file`; Django liest ausschließlich normale Umgebungsvariablen.
+The image is built as `registry.iqpp.de/iqpp/easylist:latest` and listens internally on port `8000`. It is added to the existing `iqpp_prod` Compose stack. Compose loads `./easylist/.env` through `env_file`; Django reads only standard environment variables.
 
-Die Produktionsdatei benötigt mindestens:
+The production environment file requires at least:
 
 ```dotenv
-DJANGO_SECRET_KEY=<langer-zufälliger-wert>
+DJANGO_SECRET_KEY=<long-random-value>
 DJANGO_ALLOWED_HOSTS=easylist.iqpp.de
 DJANGO_CSRF_TRUSTED_ORIGINS=https://easylist.iqpp.de
 POSTGRES_DB=easylist
-POSTGRES_USER=<benutzer>
-POSTGRES_PASSWORD=<passwort>
+POSTGRES_USER=<user>
+POSTGRES_PASSWORD=<password>
 POSTGRES_HOST=postgres
 POSTGRES_PORT=5432
 ```
 
-Der Container führt beim Start Migrationen und `collectstatic` aus. Das Ergebnis gehört in ein gemeinsames `easylist_static`-Volume, das Nginx unter `/static/` ausliefert. Das generierte Zielverzeichnis `src/staticfiles/` gehört nicht ins Repository. Für spätere Uploads kann unabhängig davon ein Media-Volume ergänzt werden.
+The container runs migrations and `collectstatic` when it starts. The output is placed in a shared `easylist_static` volume that Nginx serves at `/static/`. Do not commit the generated `src/staticfiles/` directory. A separate media volume can be added later for uploads.
 
 ## API
 
-Token erzeugen, etwa über den Django-Admin oder die Shell:
+Create a token, for example through Django admin or the shell:
 
 ```sh
 uv run --env-file .env python src/manage.py drf_create_token <username>
 ```
 
-Beispiel:
+Example:
 
 ```sh
 curl -H "Authorization: Token <token>" http://localhost:8000/api/v1/shopping-lists/
 curl -X POST -H "Authorization: Token <token>" -H "Content-Type: application/json" \
-  -d '{"lists":[{"title":"Pasta","date":"2026-10-30","items":[{"name":"Nudeln","quantity":"500 g"}]}]}' \
+  -d '{"lists":[{"title":"Pasta","date":"2026-10-30","items":[{"name":"Pasta","quantity":"500 g"}]}]}' \
   http://localhost:8000/api/v1/shopping-lists/import_json/
 ```
 
-Die API akzeptiert und liefert Listen mit eingebetteten Artikeln. Jeder Endpunkt ist auf den angemeldeten Benutzer begrenzt.
+The API accepts and returns lists with nested items. Every endpoint is restricted to the authenticated user.
 
-## Qualität
+## Quality
 
 ```sh
 uv run pytest
 ```
 
-Die Browser-Tests liegen getrennt in `e2e/` und werden automatisch von pytest ausgeführt. Einmalig Chromium installieren:
+Browser tests are located in `e2e/` and run automatically with pytest. Install Chromium once:
 
 ```sh
 uv run playwright install chromium
 ```
 
-Nur die Browser-Tests ausführen:
+To run browser tests only:
 
 ```sh
 uv run pytest e2e
 ```
 
-Die Datenstruktur ist bewusst klein gehalten: Eine spätere Rezeptfunktion kann als separates Modell mit einer Relation zu `ShoppingList` ergänzt werden.
+The data model is intentionally small. A future recipe feature can be added as a separate model related to `ShoppingList`.

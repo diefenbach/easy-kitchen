@@ -147,7 +147,7 @@ def test_edit_from_overview_cancels_to_list_overview(client, user, shopping_list
 
     response = client.get(f'{reverse("shopping:update", args=[shopping_list.pk])}?return_to=overview')
 
-    assert f'<a class="btn btn-outline-secondary" href="{reverse("shopping:list")}">Abbrechen</a>' in response.content.decode()
+    assert f'<a class="btn btn-outline-secondary" href="{reverse("shopping:list")}">Cancel</a>' in response.content.decode()
 
 
 @pytest.mark.django_db
@@ -156,4 +156,4 @@ def test_edit_from_detail_cancels_to_list_detail(client, user, shopping_list):
 
     response = client.get(reverse("shopping:update", args=[shopping_list.pk]))
 
-    assert f'<a class="btn btn-outline-secondary" href="{reverse("shopping:detail", args=[shopping_list.pk])}">Abbrechen</a>' in response.content.decode()
+    assert f'<a class="btn btn-outline-secondary" href="{reverse("shopping:detail", args=[shopping_list.pk])}">Cancel</a>' in response.content.decode()

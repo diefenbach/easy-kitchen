@@ -1,2 +1,33 @@
-<div class="shopping-item card mb-2 {% if item.checked %}checked{% endif %}" data-item-id="{{ item.id }}"><div class="card-body py-2 px-3 d-flex align-items-center gap-2"><button class="drag-handle btn btn-sm text-secondary" type="button" aria-label="Verschieben">⠿</button><button class="btn btn-sm p-0 border-0 bg-transparent" hx-post="{% url 'shopping:item-toggle' shopping_list.pk item.pk %}" hx-target="closest .shopping-item" hx-swap="outerHTML" aria-label="Erledigt umschalten"><span class="checkmark">{% if item.checked %}☑{% else %}☐{% endif %}</span></button><div class="flex-grow-1"><span class="item-name">{{ item.name }}</span>{% if item.quantity %}<small class="text-secondary ms-2">{{ item.quantity }}</small>{% endif %}</div><button class="btn btn-sm btn-outline-secondary" hx-get="{% url 'shopping:item-update' shopping_list.pk item.pk %}" hx-target="closest .shopping-item" hx-swap="outerHTML">Bearbeiten</button><button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#delete-item-modal-{{ item.id }}" aria-label="Artikel löschen">×</button></div></div>
-<div class="modal fade" id="delete-item-modal-{{ item.id }}" tabindex="-1" aria-labelledby="delete-item-title-{{ item.id }}" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h2 class="modal-title fs-5" id="delete-item-title-{{ item.id }}">Artikel löschen?</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Schließen"></button></div><div class="modal-body">„{{ item.name }}“ wird dauerhaft gelöscht.</div><div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Abbrechen</button><form method="post" action="{% url 'shopping:item-delete' shopping_list.pk item.pk %}">{% csrf_token %}<button class="btn btn-danger">Endgültig löschen</button></form></div></div></div></div>
+{% load i18n %}
+<div class="shopping-item card mb-2 {% if item.checked %}checked{% endif %}" data-item-id="{{ item.id }}">
+  <div class="card-body py-2 px-3 d-flex align-items-center gap-2">
+    <button class="drag-handle btn btn-sm text-secondary" type="button" aria-label="{% translate 'Move' %}">⠿</button>
+    <button class="btn btn-sm p-0 border-0 bg-transparent" hx-post="{% url 'shopping:item-toggle' shopping_list.pk item.pk %}" hx-target="closest .shopping-item" hx-swap="outerHTML" aria-label="{% translate 'Toggle completed' %}">
+      <span class="checkmark">{% if item.checked %}☑{% else %}☐{% endif %}</span>
+    </button>
+    <div class="flex-grow-1">
+      <span class="item-name">{{ item.name }}</span>
+      {% if item.quantity %}<small class="text-secondary ms-2">{{ item.quantity }}</small>{% endif %}
+    </div>
+    <button class="btn btn-sm btn-outline-secondary" hx-get="{% url 'shopping:item-update' shopping_list.pk item.pk %}" hx-target="closest .shopping-item" hx-swap="outerHTML">{% translate "Edit" %}</button>
+    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#delete-item-modal-{{ item.id }}" aria-label="{% translate 'Delete item' %}">×</button>
+  </div>
+</div>
+<div class="modal fade" id="delete-item-modal-{{ item.id }}" tabindex="-1" aria-labelledby="delete-item-title-{{ item.id }}" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title fs-5" id="delete-item-title-{{ item.id }}">{% translate "Delete item?" %}</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate 'Close' %}"></button>
+      </div>
+      <div class="modal-body">{% blocktranslate with name=item.name %}"{{ name }}" will be permanently deleted.{% endblocktranslate %}</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Cancel" %}</button>
+        <form method="post" action="{% url 'shopping:item-delete' shopping_list.pk item.pk %}">
+          {% csrf_token %}
+          <button class="btn btn-danger">{% translate "Delete permanently" %}</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,5 +1,7 @@
 from django.db import transaction
 from django.db.models import Max
+from django.utils.translation import gettext as _
+
 from .models import ShoppingItem
 
 
@@ -13,6 +15,6 @@ def create_item(shopping_list, *, name, quantity="", checked=False, position=Non
 def reorder_items(shopping_list, item_ids):
     existing = set(shopping_list.items.filter(id__in=item_ids).values_list("id", flat=True))
     if existing != set(item_ids) or len(item_ids) != len(existing):
-        raise ValueError("Ungültige Elementreihenfolge.")
+        raise ValueError(_("Invalid item order."))
     for position, item_id in enumerate(item_ids, start=1):
         ShoppingItem.objects.filter(pk=item_id, shopping_list=shopping_list).update(position=position)

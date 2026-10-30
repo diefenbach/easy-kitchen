@@ -21,8 +21,8 @@ def other_user(db):
 @pytest.fixture
 def authenticated_page(page, live_server, user):
     page.goto(f"{live_server.url}/accounts/login/")
-    page.get_by_label("Benutzername").fill(user.username)
-    page.get_by_label("Passwort").fill("test-password")
-    page.get_by_role("button", name="Anmelden").click()
-    page.get_by_role("heading", name="Meine Listen").wait_for()
+    page.get_by_label("Username").fill(user.username)
+    page.get_by_label("Password").fill("test-password")
+    page.get_by_role("button", name="Sign in").click()
+    page.get_by_role("heading", name="My lists").wait_for()
     return page
