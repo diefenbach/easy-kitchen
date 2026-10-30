@@ -5,7 +5,7 @@ A private, responsive shopping list application built with Django 5.2 LTS. It us
 ## Features
 
 - Multiple lists per user: title, date, items, quantity, completion state, and drag-and-drop ordering
-- English-first interface with German available through the language switcher
+- English-first source strings with German as the default interface language
 - Built-in Django authentication and Django admin
 - REST API at `/api/v1/` using token authentication and strictly user-scoped queries
 - JSON import: `POST /api/v1/shopping-lists/import_json/`

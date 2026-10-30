@@ -1,6 +1,7 @@
 {% load i18n %}
+{% get_current_language as LANGUAGE_CODE %}
 <!doctype html>
-<html lang="{{ request.LANGUAGE_CODE }}">
+<html lang="{{ LANGUAGE_CODE }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -15,22 +16,12 @@
   <nav class="navbar navbar-expand bg-white border-bottom mb-4">
     <div class="container">
       <a class="navbar-brand fw-bold" href="{% url 'shopping:list' %}">EasyList</a>
-      <div class="d-flex align-items-center gap-2 ms-auto">
-        <form method="post" action="{% url 'set_language' %}">
+      {% if user.is_authenticated %}
+        <form method="post" action="{% url 'logout' %}" class="ms-auto">
           {% csrf_token %}
-          <input type="hidden" name="next" value="{{ request.get_full_path }}">
-          <div class="btn-group btn-group-sm" role="group" aria-label="{% translate 'Language' %}">
-            <button type="submit" name="language" value="en" class="btn btn-sm {% if request.LANGUAGE_CODE == 'en' %}btn-secondary{% else %}btn-outline-secondary{% endif %}" aria-pressed="{% if request.LANGUAGE_CODE == 'en' %}true{% else %}false{% endif %}">English</button>
-            <button type="submit" name="language" value="de" class="btn btn-sm {% if request.LANGUAGE_CODE == 'de' %}btn-secondary{% else %}btn-outline-secondary{% endif %}" aria-pressed="{% if request.LANGUAGE_CODE == 'de' %}true{% else %}false{% endif %}">Deutsch</button>
-          </div>
+          <button class="btn btn-sm btn-outline-secondary">{% translate "Log out" %}</button>
         </form>
-        {% if user.is_authenticated %}
-          <form method="post" action="{% url 'logout' %}">
-            {% csrf_token %}
-            <button class="btn btn-sm btn-outline-secondary">{% translate "Log out" %}</button>
-          </form>
-        {% endif %}
-      </div>
+      {% endif %}
     </div>
   </nav>
   <main class="container pb-5">{% block content %}{% endblock %}</main>

@@ -127,10 +127,8 @@ def test_user_can_reorder_items_with_drag_and_drop(authenticated_page, user):
 
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
-def test_user_can_switch_the_interface_to_german(authenticated_page):
+def test_interface_uses_the_test_settings_language(authenticated_page):
     page = authenticated_page
-    page.get_by_role("button", name="Deutsch").click()
-    expect(page.get_by_role("heading", name="Meine Listen")).to_be_visible()
-    expect(page.get_by_role("link", name="Neue Liste")).to_be_visible()
-    page.get_by_role("button", name="English").click()
+    page.set_extra_http_headers({"Accept-Language": "de"})
+    page.reload()
     expect(page.get_by_role("heading", name="My lists")).to_be_visible()
