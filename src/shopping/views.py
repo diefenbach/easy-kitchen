@@ -58,6 +58,8 @@ class ShoppingListUpdateView(UserListMixin, UpdateView):
     template_name = "shopping/list_form.html"
 
     def get_success_url(self):
+        if self.request.GET.get("return_to") == "overview":
+            return reverse("shopping:list")
         return reverse("shopping:detail", kwargs={"pk": self.object.pk})
 
 

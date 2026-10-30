@@ -102,3 +102,38 @@ def test_reset_checked_items_marks_all_items_as_open(client, user, shopping_list
     open_item.refresh_from_db()
     assert completed.checked is False
     assert open_item.checked is False
+
+
+@pytest.mark.django_db
+def test_list_overview_offers_edit_and_modal_delete_actions(client, user, shopping_list):
+    client.force_login(user)
+
+    response = client.get(reverse("shopping:list"))
+
+    content = response.content.decode()
+    assert f'{reverse("shopping:update", args=[shopping_list.pk])}?return_to=overview' in content
+    assert f'data-bs-target="#delete-list-modal-{shopping_list.pk}"' in content
+
+
+@pytest.mark.django_db
+def test_edit_from_overview_returns_to_list_overview(client, user, shopping_list):
+    client.force_login(user)
+
+    response = client.post(
+        f'{reverse("shopping:update", args=[shopping_list.pk])}?return_to=overview',
+        {"title": "Umbenannte Liste", "date": "2026-10-30"},
+    )
+
+    assert response.url == reverse("shopping:list")
+
+
+@pytest.mark.django_db
+def test_edit_from_detail_returns_to_list_detail(client, user, shopping_list):
+    client.force_login(user)
+
+    response = client.post(
+        reverse("shopping:update", args=[shopping_list.pk]),
+        {"title": "Umbenannte Liste", "date": "2026-10-30"},
+    )
+
+    assert response.url == reverse("shopping:detail", args=[shopping_list.pk])

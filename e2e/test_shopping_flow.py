@@ -53,3 +53,19 @@ def test_user_can_hide_and_reset_completed_items(authenticated_page, user):
     page.get_by_role("button", name="Alle als nicht erledigt markieren").click()
     expect(completed_item).to_be_visible()
     expect(completed_item).not_to_have_class(re.compile(r".*\bchecked\b.*"))
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
+def test_user_can_edit_a_list_from_the_overview(authenticated_page, user):
+    from shopping.models import ShoppingList
+
+    shopping_list = ShoppingList.objects.create(user=user, title="Alter Titel")
+    page = authenticated_page
+    page.reload()
+    card = page.locator(".list-card", has_text="Alter Titel")
+
+    card.get_by_role("link", name="Bearbeiten").click()
+    page.locator("input[name=title]").fill("Neuer Titel")
+    page.get_by_role("button", name="Speichern").click()
+    expect(page.get_by_role("heading", name="Meine Listen")).to_be_visible()
