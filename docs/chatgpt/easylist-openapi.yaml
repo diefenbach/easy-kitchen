@@ -1,0 +1,156 @@
+openapi: 3.1.0
+info:
+  title: EasyList API
+  version: 1.0.0
+  description: |
+    Private shopping lists for the authenticated EasyList user. Use this API to
+    read lists and create a new list with its items. Never expose the API token
+    in responses.
+servers:
+  - url: https://easylist.iqpp.de/api/v1
+    description: Production
+security:
+  - EasyListToken: []
+paths:
+  /shopping-lists/:
+    get:
+      operationId: listShoppingLists
+      summary: List the authenticated user's shopping lists
+      responses:
+        '200':
+          description: Shopping lists in descending creation order.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ShoppingList'
+    post:
+      operationId: createShoppingList
+      summary: Create a shopping list for the authenticated user
+      description: Create a list and, optionally, its initial items.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShoppingListInput'
+      responses:
+        '201':
+          description: Shopping list created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingList'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+  /shopping-lists/{id}/:
+    get:
+      operationId: getShoppingList
+      summary: Get one shopping list
+      parameters:
+        - $ref: '#/components/parameters/ShoppingListId'
+      responses:
+        '200':
+          description: Shopping list details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShoppingList'
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  securitySchemes:
+    EasyListToken:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Configure the Action with the exact header value `Token <DRF token>`.
+  parameters:
+    ShoppingListId:
+      name: id
+      in: path
+      required: true
+      description: Numeric ID of a shopping list belonging to the authenticated user.
+      schema:
+        type: integer
+        minimum: 1
+  schemas:
+    ShoppingItemInput:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: Item name.
+        quantity:
+          type: string
+          default: ''
+          description: Optional amount, for example `400 g` or `2 packs`.
+        checked:
+          type: boolean
+          default: false
+          description: Whether the item has already been bought.
+        position:
+          type: integer
+          minimum: 1
+          description: Optional display position. Omit to use the supplied item order.
+    ShoppingItem:
+      allOf:
+        - $ref: '#/components/schemas/ShoppingItemInput'
+        - type: object
+          required: [id, position]
+          properties:
+            id:
+              type: integer
+              readOnly: true
+    ShoppingListInput:
+      type: object
+      additionalProperties: false
+      required: [title, date]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          description: Title of the shopping list.
+        date:
+          type: string
+          format: date
+          description: List date in ISO 8601 format, for example `2026-10-30`.
+        items:
+          type: array
+          description: Initial items, in their desired order.
+          items:
+            $ref: '#/components/schemas/ShoppingItemInput'
+    ShoppingList:
+      allOf:
+        - $ref: '#/components/schemas/ShoppingListInput'
+        - type: object
+          required: [id, created_at, updated_at]
+          properties:
+            id:
+              type: integer
+              readOnly: true
+            created_at:
+              type: string
+              format: date-time
+              readOnly: true
+            updated_at:
+              type: string
+              format: date-time
+              readOnly: true
+  responses:
+    ValidationError:
+      description: The submitted data is invalid.
+      content:
+        application/json:
+          schema:
+            type: object
+    NotFound:
+      description: The list does not exist or does not belong to the authenticated user.
+      content:
+        application/json:
+          schema:
+            type: object
