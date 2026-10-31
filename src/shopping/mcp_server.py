@@ -20,7 +20,7 @@ from shopping.services import create_shopping_list as save_shopping_list
 
 mcp = MCPServer(
     "EasyList",
-    version="0.3.0",
+    version="0.4.0",
     instructions=(
         "Create a shopping list for the user authenticated by the request token. "
         "Do not invent a user id. Confirm the title, ISO date, and items before creating the list."
