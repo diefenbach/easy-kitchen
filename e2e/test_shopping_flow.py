@@ -152,3 +152,39 @@ def test_user_can_import_a_json_shopping_list(authenticated_page):
     page.get_by_role("button", name="Import").click()
 
     expect(page.get_by_role("link", name="Tofu pan")).to_be_visible()
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
+def test_logged_in_user_sees_swagger_ui(page, live_server, user):
+    from django.contrib.staticfiles.views import serve
+    from django.urls import clear_url_caches, re_path
+    from project import urls
+
+    def serve_static(request, path):
+        return serve(request, path, insecure=True)
+
+    static_pattern = re_path(r"^static/(?P<path>.*)$", serve_static)
+    urls.urlpatterns.append(static_pattern)
+    clear_url_caches()
+    try:
+        page.goto(f"{live_server.url}/accounts/login/")
+        page.get_by_label("Username").fill(user.username)
+        page.get_by_label("Password").fill("test-password")
+        page.get_by_role("button", name="Sign in").click()
+        page.get_by_role("heading", name="My lists").wait_for()
+
+        page.goto(f"{live_server.url}/api/v1/")
+
+        swagger = page.locator("#swagger-ui")
+        expect(swagger.get_by_text("EasyList API")).to_be_visible()
+        for path in (
+            "/api/v1/shopping-lists/",
+            "/api/v1/shopping-lists/{id}/",
+            "/api/v1/shopping-lists/{id}/reorder/",
+            "/api/v1/shopping-lists/import_json/",
+        ):
+            expect(swagger.get_by_text(path, exact=True).first).to_be_visible()
+    finally:
+        urls.urlpatterns.remove(static_pattern)
+        clear_url_caches()

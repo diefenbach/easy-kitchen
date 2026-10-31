@@ -3,6 +3,10 @@ from shopping.models import ShoppingItem, ShoppingList
 from shopping.services import create_shopping_list
 
 
+class ReorderItemsSerializer(serializers.Serializer):
+    item_ids = serializers.ListField(child=serializers.IntegerField())
+
+
 class ShoppingItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = ShoppingItem

@@ -1,10 +1,11 @@
 from django.utils.translation import gettext as _
+from drf_spectacular.utils import extend_schema
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from shopping.models import ShoppingList
 from shopping.services import import_shopping_lists, reorder_items
-from .serializers import ShoppingItemSerializer, ShoppingListSerializer
+from .serializers import ReorderItemsSerializer, ShoppingListSerializer
 
 
 class ShoppingListViewSet(viewsets.ModelViewSet):
@@ -13,6 +14,7 @@ class ShoppingListViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return ShoppingList.objects.filter(user=self.request.user).prefetch_related("items")
 
+    @extend_schema(request=ReorderItemsSerializer, responses={200: ShoppingListSerializer})
     @action(detail=True, methods=["post"])
     def reorder(self, request, pk=None):
         shopping_list = self.get_object()
@@ -23,6 +25,26 @@ class ShoppingListViewSet(viewsets.ModelViewSet):
         shopping_list.refresh_from_db()
         return Response(self.get_serializer(shopping_list).data)
 
+    @extend_schema(
+        request={
+            "application/json": {
+                "oneOf": [
+                    {"type": "array", "items": {"$ref": "#/components/schemas/ShoppingList"}},
+                    {
+                        "type": "object",
+                        "required": ["lists"],
+                        "properties": {
+                            "lists": {
+                                "type": "array",
+                                "items": {"$ref": "#/components/schemas/ShoppingList"},
+                            }
+                        },
+                    },
+                ]
+            }
+        },
+        responses={201: ShoppingListSerializer(many=True)},
+    )
     @action(detail=False, methods=["post"])
     def import_json(self, request):
         payload = request.data

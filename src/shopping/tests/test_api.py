@@ -64,3 +64,37 @@ def test_api_can_create_update_reorder_and_delete_a_list(client, user):
 
     delete_response = client.delete(reverse("shopping-list-detail", args=[shopping_list["id"]]), **headers)
     assert delete_response.status_code == 204
+
+
+@pytest.mark.django_db
+def test_browser_shows_swagger_ui(client, user):
+    client.force_login(user)
+
+    response = client.get(reverse("swagger-ui"))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert 'id="swagger-ui"' in content
+    assert reverse("api-schema") in content
+
+
+@pytest.mark.django_db
+def test_openapi_schema_lists_every_operation(client, user):
+    client.force_login(user)
+
+    response = client.get(reverse("api-schema"), HTTP_ACCEPT="application/json")
+
+    assert response.status_code == 200
+    schema = response.json()
+    paths = schema["paths"]
+    assert set(paths["/api/v1/shopping-lists/"]) >= {"get", "post"}
+    assert set(paths["/api/v1/shopping-lists/{id}/"]) >= {"get", "put", "patch", "delete"}
+    assert "item_ids" in schema["components"]["schemas"]["ReorderItems"]["properties"]
+    import_body = paths["/api/v1/shopping-lists/import_json/"]["post"]["requestBody"]
+    assert "lists" in str(import_body)
+
+
+@pytest.mark.django_db
+def test_api_schema_requires_authentication(client):
+    assert client.get(reverse("swagger-ui")).status_code == 401
+    assert client.get(reverse("api-schema")).status_code == 401
