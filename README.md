@@ -97,7 +97,7 @@ curl -X POST -H "Authorization: Token <token>" -H "Content-Type: application/jso
   http://localhost:8000/api/v1/shopping-lists/import_json/
 ```
 
-The API accepts and returns lists with nested items. Every endpoint is restricted to the authenticated user. While logged in, open `http://localhost:8000/api/v1/` in a browser for Swagger UI. The OpenAPI document is at `http://localhost:8000/api/v1/schema/`.
+The API accepts and returns lists with nested items. Shopping-list endpoints are restricted to the authenticated user. Open `http://localhost:8000/api/v1/` in a browser for Swagger UI. The OpenAPI document is at `http://localhost:8000/api/v1/schema/`.
 
 Run the MCP server locally with the development settings:
 

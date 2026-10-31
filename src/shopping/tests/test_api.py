@@ -95,9 +95,7 @@ def test_api_put_replaces_list_items(client, user):
 
 
 @pytest.mark.django_db
-def test_browser_shows_swagger_ui(client, user):
-    client.force_login(user)
-
+def test_browser_shows_swagger_ui(client):
     response = client.get(reverse("swagger-ui"))
 
     assert response.status_code == 200
@@ -123,6 +121,10 @@ def test_openapi_schema_lists_every_operation(client, user):
 
 
 @pytest.mark.django_db
-def test_api_schema_requires_authentication(client):
-    assert client.get(reverse("swagger-ui")).status_code == 401
-    assert client.get(reverse("api-schema")).status_code == 401
+def test_openapi_schema_and_swagger_ui_are_public(client):
+    assert client.get(reverse("swagger-ui")).status_code == 200
+
+    response = client.get(reverse("api-schema"), HTTP_ACCEPT="application/json")
+
+    assert response.status_code == 200
+    assert "/api/v1/shopping-lists/" in response.json()["paths"]
