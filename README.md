@@ -62,6 +62,24 @@ POSTGRES_PORT=5432
 
 The container runs migrations and `collectstatic` when it starts. The output is placed in a shared `easylist_static` volume that Nginx serves at `/static/`. Do not commit the generated `src/staticfiles/` directory. A separate media volume can be added later for uploads.
 
+The MCP server is a second process from the same image. It listens on port `8001` at `/mcp` and creates lists for whichever user owns the DRF token on that request. Publish it only through Nginx, on the internal Docker network:
+
+```yaml
+command: ["python", "-m", "shopping.mcp_server"]
+```
+
+```nginx
+location /mcp {
+    proxy_pass http://easylist-mcp:8001;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header Authorization $http_authorization;
+    proxy_buffering off;
+}
+```
+
+Clients call `https://easylist.iqpp.de/mcp` with `Authorization: Token <token>`. There is no user argument. `DJANGO_ALLOWED_HOSTS` is accepted as the MCP host allowlist. Override it with `MCP_ALLOWED_HOSTS` when the proxy host differs.
+
 ## API
 
 Create a token, for example through Django admin or the shell:
@@ -80,6 +98,15 @@ curl -X POST -H "Authorization: Token <token>" -H "Content-Type: application/jso
 ```
 
 The API accepts and returns lists with nested items. Every endpoint is restricted to the authenticated user. While logged in, open `http://localhost:8000/api/v1/` in a browser for Swagger UI. The OpenAPI document is at `http://localhost:8000/api/v1/schema/`.
+
+Run the MCP server locally with the development settings:
+
+```sh
+DJANGO_SETTINGS_MODULE=project.settings.development PYTHONPATH=src \
+  uv run --env-file .env python -m shopping.mcp_server
+```
+
+It listens on `http://127.0.0.1:8001/mcp`. Create a token with `drf_create_token` and send it as `Authorization: Token <token>`.
 
 ## Quality
 

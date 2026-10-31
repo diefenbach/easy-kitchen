@@ -23,6 +23,6 @@ COPY src /app/src
 COPY docker-entrypoint.sh /app/
 RUN chmod +x /app/docker-entrypoint.sh && chown -R app:app /app
 USER app
-EXPOSE 8000
+EXPOSE 8000 8001
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["gunicorn", "project.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--access-logfile", "-", "--error-logfile", "-"]
