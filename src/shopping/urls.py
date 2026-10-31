@@ -5,6 +5,7 @@ app_name = "shopping"
 urlpatterns = [
     path("", views.ShoppingListListView.as_view(), name="list"),
     path("lists/new/", views.ShoppingListCreateView.as_view(), name="create"),
+    path("lists/import/", views.ShoppingListImportView.as_view(), name="import-json"),
     path("lists/<int:pk>/", views.ShoppingListDetailView.as_view(), name="detail"),
     path("lists/<int:pk>/edit/", views.ShoppingListUpdateView.as_view(), name="update"),
     path("lists/<int:pk>/delete/", views.ShoppingListDeleteView.as_view(), name="delete"),

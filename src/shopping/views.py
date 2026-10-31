@@ -1,18 +1,19 @@
 import json
 
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Prefetch
 from django.http import HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext as _, ngettext
 from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
-from .forms import ShoppingItemForm, ShoppingListForm
+from .forms import ShoppingItemForm, ShoppingListForm, ShoppingListImportForm
 from .models import ShoppingItem, ShoppingList
-from .services import create_item, reorder_items
+from .services import create_item, import_shopping_lists, reorder_items
 
 
 class UserListMixin(LoginRequiredMixin):
@@ -56,6 +57,29 @@ class ShoppingListCreateView(LoginRequiredMixin, CreateView):
         context = super().get_context_data(**kwargs)
         context["cancel_url"] = reverse("shopping:list")
         return context
+
+
+class ShoppingListImportView(LoginRequiredMixin, View):
+    template_name = "shopping/import.html"
+
+    def get(self, request):
+        return render(request, self.template_name, {"form": ShoppingListImportForm()})
+
+    def post(self, request):
+        form = ShoppingListImportForm(request.POST)
+        if not form.is_valid():
+            return render(request, self.template_name, {"form": form})
+
+        imported_lists = import_shopping_lists(request.user, form.cleaned_data["json_data"])
+        messages.success(
+            request,
+            ngettext(
+                "Imported %(count)d shopping list.",
+                "Imported %(count)d shopping lists.",
+                len(imported_lists),
+            ) % {"count": len(imported_lists)},
+        )
+        return redirect("shopping:list")
 
 
 class ShoppingListUpdateView(UserListMixin, UpdateView):

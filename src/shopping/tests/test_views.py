@@ -174,3 +174,37 @@ def test_edit_from_detail_cancels_to_list_detail(client, user, shopping_list):
     response = client.get(reverse("shopping:update", args=[shopping_list.pk]))
 
     assert f'<a class="btn btn-outline-secondary" href="{reverse("shopping:detail", args=[shopping_list.pk])}">Cancel</a>' in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_json_import_creates_lists_and_items_for_current_user(client, user):
+    client.force_login(user)
+
+    response = client.post(
+        reverse("shopping:import-json"),
+        {
+            "json_data": """{
+                \"lists\": [{
+                    \"title\": \"Tofu pan\",
+                    \"date\": \"2026-10-31\",
+                    \"items\": [{\"name\": \"Tofu\", \"quantity\": \"400 g\"}]
+                }]
+            }"""
+        },
+    )
+
+    assert response.status_code == 302
+    imported_list = ShoppingList.objects.get(user=user, title="Tofu pan")
+    assert imported_list.date == date(2026, 10, 31)
+    assert list(imported_list.items.values_list("name", "quantity")) == [("Tofu", "400 g")]
+
+
+@pytest.mark.django_db
+def test_json_import_rejects_invalid_json_without_creating_a_list(client, user):
+    client.force_login(user)
+
+    response = client.post(reverse("shopping:import-json"), {"json_data": "not json"})
+
+    assert response.status_code == 200
+    assert ShoppingList.objects.filter(user=user).count() == 0
+    assert "invalid-feedback" in response.content.decode()

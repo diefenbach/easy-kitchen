@@ -11,6 +11,19 @@ def create_item(shopping_list, *, name, quantity="", checked=False, position=Non
     return ShoppingItem.objects.create(shopping_list=shopping_list, name=name, quantity=quantity, checked=checked, position=position)
 
 
+def create_shopping_list(user, *, title, date, items=None):
+    shopping_list = user.shopping_lists.create(title=title, date=date)
+    for position, item_data in enumerate(items or [], start=1):
+        item_data = dict(item_data)
+        create_item(shopping_list, position=item_data.pop("position", position), **item_data)
+    return shopping_list
+
+
+@transaction.atomic
+def import_shopping_lists(user, lists_data):
+    return [create_shopping_list(user, **list_data) for list_data in lists_data]
+
+
 @transaction.atomic
 def reorder_items(shopping_list, item_ids):
     existing = set(shopping_list.items.filter(id__in=item_ids).values_list("id", flat=True))

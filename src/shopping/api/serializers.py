@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from shopping.models import ShoppingItem, ShoppingList
-from shopping.services import create_item
+from shopping.services import create_shopping_list
 
 
 class ShoppingItemSerializer(serializers.ModelSerializer):
@@ -19,11 +19,7 @@ class ShoppingListSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "created_at", "updated_at")
 
     def create(self, validated_data):
-        items = validated_data.pop("items", [])
-        shopping_list = ShoppingList.objects.create(user=self.context["request"].user, **validated_data)
-        for position, item in enumerate(items, start=1):
-            create_item(shopping_list, position=item.pop("position", position), **item)
-        return shopping_list
+        return create_shopping_list(self.context["request"].user, **validated_data)
 
     def update(self, instance, validated_data):
         items = validated_data.pop("items", None)

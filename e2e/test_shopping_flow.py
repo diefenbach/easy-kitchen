@@ -132,3 +132,23 @@ def test_interface_uses_the_test_settings_language(authenticated_page):
     page.set_extra_http_headers({"Accept-Language": "de"})
     page.reload()
     expect(page.get_by_role("heading", name="My lists")).to_be_visible()
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
+def test_user_can_import_a_json_shopping_list(authenticated_page):
+    page = authenticated_page
+
+    page.get_by_role("link", name="Import JSON").click()
+    page.get_by_label("Shopping-list JSON").fill(
+        '''{
+          "lists": [{
+            "title": "Tofu pan",
+            "date": "2026-10-31",
+            "items": [{"name": "Tofu", "quantity": "400 g"}]
+          }]
+        }'''
+    )
+    page.get_by_role("button", name="Import").click()
+
+    expect(page.get_by_role("link", name="Tofu pan")).to_be_visible()

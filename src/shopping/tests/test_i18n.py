@@ -62,6 +62,20 @@ def test_login_page_uses_the_active_language(client):
 
 
 @pytest.mark.django_db
+def test_import_page_uses_the_active_language(client, user):
+    client.force_login(user)
+
+    english = client.get(reverse("shopping:import-json")).content.decode()
+    assert "Import shopping lists" in english
+    assert "Shopping-list JSON" in english
+
+    with translation.override("de"):
+        german = client.get(reverse("shopping:import-json")).content.decode()
+    assert "Einkaufslisten importieren" in german
+    assert "Einkaufslisten-JSON" in german
+
+
+@pytest.mark.django_db
 def test_api_errors_are_english_and_can_be_german(client, user):
     token = Token.objects.create(user=user)
     shopping_list = ShoppingList.objects.create(user=user, title="Week")
