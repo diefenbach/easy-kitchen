@@ -72,7 +72,7 @@ REST_FRAMEWORK = {
 SPECTACULAR_SETTINGS = {
     "TITLE": "EasyList API",
     "DESCRIPTION": "Private shopping lists for the authenticated user.",
-    "VERSION": "0.1.0",
+    "VERSION": "0.3.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAuthenticated"],
     "SERVE_AUTHENTICATION": [
