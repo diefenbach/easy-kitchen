@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from shopping.models import ShoppingItem, ShoppingList
-from shopping.services import create_shopping_list
+from shopping.services import create_item, create_shopping_list
 
 
 class ReorderItemsSerializer(serializers.Serializer):

@@ -67,6 +67,34 @@ def test_api_can_create_update_reorder_and_delete_a_list(client, user):
 
 
 @pytest.mark.django_db
+def test_api_put_replaces_list_items(client, user):
+    token = Token.objects.create(user=user)
+    headers = {"HTTP_AUTHORIZATION": f"Token {token.key}"}
+    created = client.post(
+        reverse("shopping-list-list"),
+        json.dumps({"title": "Wocheneinkauf", "date": "2026-10-30", "items": [{"name": "Tofu"}]}),
+        content_type="application/json",
+        **headers,
+    )
+    assert created.status_code == 201
+    shopping_list = created.json()
+
+    response = client.put(
+        reverse("shopping-list-detail", args=[shopping_list["id"]]),
+        json.dumps({
+            "title": "Wocheneinkauf",
+            "date": "2026-10-30",
+            "items": [{"name": "Reis", "quantity": "1 kg"}],
+        }),
+        content_type="application/json",
+        **headers,
+    )
+
+    assert response.status_code == 200
+    assert [(item["name"], item["quantity"]) for item in response.json()["items"]] == [("Reis", "1 kg")]
+
+
+@pytest.mark.django_db
 def test_browser_shows_swagger_ui(client, user):
     client.force_login(user)
 
