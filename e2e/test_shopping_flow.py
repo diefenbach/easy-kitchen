@@ -37,6 +37,24 @@ def test_saved_articles_are_suggested_and_can_be_renamed(authenticated_page):
 
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
+def test_articles_return_to_the_page_they_were_opened_from(authenticated_page):
+    page = authenticated_page
+    page.get_by_role("link", name="New list").click()
+    page.locator("input[name=title]").fill("Vorrat")
+    page.locator("input[name=date]").fill("2026-11-01")
+    page.get_by_role("button", name="Save").click()
+    page.get_by_role("link", name="Articles").click()
+    page.get_by_role("link", name="Vorrat").click()
+    expect(page.get_by_role("heading", name="Vorrat")).to_be_visible()
+
+    page.get_by_role("link", name="EasyList").click()
+    page.get_by_role("link", name="Articles").click()
+    page.get_by_role("link", name="My lists").click()
+    expect(page.get_by_role("heading", name="My lists")).to_be_visible()
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
 def test_article_actions_stay_beside_the_name_on_a_phone(authenticated_page):
     page = authenticated_page
     page.set_viewport_size({"width": 390, "height": 844})

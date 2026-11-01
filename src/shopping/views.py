@@ -187,6 +187,21 @@ class ItemReorderView(LoginRequiredMixin, View):
         return HttpResponseRedirect(reverse("shopping:detail", kwargs={"pk": list_pk}))
 
 
+def return_list_for(request):
+    raw = request.POST.get("return_list") or request.GET.get("list")
+    if not str(raw).isdigit():
+        return None
+    return ShoppingList.objects.filter(pk=int(raw), user=request.user).first()
+
+
+def redirect_to_articles(request):
+    shopping_list = return_list_for(request)
+    url = reverse("shopping:articles")
+    if shopping_list is None:
+        return redirect(url)
+    return redirect(f"{url}?list={shopping_list.pk}")
+
+
 class ArticleListView(LoginRequiredMixin, View):
     template_name = "shopping/articles.html"
 
@@ -197,13 +212,15 @@ class ArticleListView(LoginRequiredMixin, View):
         form = ArticleForm(request.POST, user=request.user)
         if form.is_valid():
             form.save()
-            return redirect("shopping:articles")
+            return redirect_to_articles(request)
         return render(request, self.template_name, self._context(request, form=form), status=422)
 
-    def _context(self, request, form=None):
+    def _context(self, request, form=None, edit_form=None):
         return {
             "articles": request.user.articles.all(),
             "form": form or ArticleForm(user=request.user),
+            "edit_form": edit_form,
+            "return_list": return_list_for(request),
         }
 
 
@@ -213,20 +230,15 @@ class ArticleUpdateView(LoginRequiredMixin, View):
         form = ArticleForm(request.POST, user=request.user, instance=article)
         if form.is_valid():
             form.save()
-            return redirect("shopping:articles")
-        return render(
-            request,
-            "shopping/articles.html",
-            {"articles": request.user.articles.all(), "form": ArticleForm(user=request.user), "edit_form": form},
-            status=422,
-        )
+            return redirect_to_articles(request)
+        return render(request, "shopping/articles.html", ArticleListView()._context(request, edit_form=form), status=422)
 
 
 class ArticleDeleteView(LoginRequiredMixin, View):
     def post(self, request, pk):
         article = get_object_or_404(Article, pk=pk, user=request.user)
         article.delete()
-        return redirect("shopping:articles")
+        return redirect_to_articles(request)
 
 
 class ItemsResetCheckedView(LoginRequiredMixin, View):

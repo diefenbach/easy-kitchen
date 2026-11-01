@@ -95,6 +95,35 @@ def test_articles_can_be_managed_without_changing_list_items(client, user, other
 
 
 @pytest.mark.django_db
+def test_articles_return_to_the_page_they_were_opened_from(client, user, other_user, shopping_list):
+    client.force_login(user)
+    detail_url = reverse("shopping:detail", args=[shopping_list.pk])
+    articles_url = reverse("shopping:articles")
+
+    overview = client.get(reverse("shopping:list")).content.decode()
+    assert f'href="{articles_url}"' in overview
+    assert f"{articles_url}?list=" not in overview
+    opened_from_overview = client.get(articles_url).content.decode()
+    assert f'href="{reverse("shopping:list")}"' in opened_from_overview
+    assert "My lists" in opened_from_overview
+
+    detail = client.get(detail_url).content.decode()
+    assert f'href="{articles_url}?list={shopping_list.pk}"' in detail
+    opened_from_list = client.get(f"{articles_url}?list={shopping_list.pk}").content.decode()
+    assert f'href="{detail_url}"' in opened_from_list
+    assert shopping_list.title in opened_from_list
+
+    other_list = ShoppingList.objects.create(user=other_user, title="Privat")
+    foreign = client.get(f"{articles_url}?list={other_list.pk}").content.decode()
+    assert reverse("shopping:detail", args=[other_list.pk]) not in foreign
+    assert "Privat" not in foreign
+
+    created = client.post(articles_url, {"name": "Reis", "return_list": shopping_list.pk})
+    assert created.status_code == 302
+    assert created["Location"] == f"{articles_url}?list={shopping_list.pk}"
+
+
+@pytest.mark.django_db
 def test_only_identical_counts_are_added_when_the_same_item_is_posted(client, user, shopping_list):
     client.force_login(user)
     url = reverse("shopping:item-create", args=[shopping_list.pk])
