@@ -39,7 +39,7 @@ wait_for() {
 
 kitchen_ready() {
   docker compose exec -T kitchen python -c \
-    "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/', timeout=2)" \
+    "import socket; socket.create_connection(('127.0.0.1', 8000), 2).close()" \
     >/dev/null 2>&1
 }
 
