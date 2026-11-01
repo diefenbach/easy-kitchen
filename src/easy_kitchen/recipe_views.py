@@ -23,17 +23,23 @@ from .services import (
 
 
 class UserRecipeMixin(LoginRequiredMixin):
+    """Limit recipe querysets to the signed-in user."""
+
     def get_queryset(self):
         return Recipe.objects.filter(user=self.request.user)
 
 
 class RecipeListView(LoginRequiredMixin, View):
+    """Show every recipe of the signed-in user."""
+
     def get(self, request):
         recipes = Recipe.objects.filter(user=request.user).prefetch_related("ingredients")
         return render(request, "easy_kitchen/recipes/overview.html", {"recipes": recipes})
 
 
 class RecipeReorderView(LoginRequiredMixin, View):
+    """Save a new order for the signed-in user's recipes."""
+
     def post(self, request):
         try:
             payload = json.loads(request.body)
@@ -44,6 +50,8 @@ class RecipeReorderView(LoginRequiredMixin, View):
 
 
 class RecipeCreateView(LoginRequiredMixin, CreateView):
+    """Create a recipe owned by the signed-in user."""
+
     model = Recipe
     form_class = RecipeForm
     template_name = "easy_kitchen/recipes/form.html"
@@ -62,6 +70,8 @@ class RecipeCreateView(LoginRequiredMixin, CreateView):
 
 
 class RecipeUpdateView(UserRecipeMixin, UpdateView):
+    """Edit a recipe and return to the overview or the recipe that opened the form."""
+
     model = Recipe
     form_class = RecipeForm
     template_name = "easy_kitchen/recipes/form.html"
@@ -78,6 +88,8 @@ class RecipeUpdateView(UserRecipeMixin, UpdateView):
 
 
 class RecipeDeleteView(UserRecipeMixin, DeleteView):
+    """Delete one recipe belonging to the signed-in user."""
+
     model = Recipe
     template_name = "easy_kitchen/recipes/confirm_delete.html"
 
@@ -86,8 +98,12 @@ class RecipeDeleteView(UserRecipeMixin, DeleteView):
 
 
 class RecipeDetailView(UserRecipeMixin, View):
+    """Show one recipe and the form that copies its ingredients to a list."""
+
     def get(self, request, pk):
-        recipe = get_object_or_404(self.get_queryset().prefetch_related("ingredients", "steps"), pk=pk)
+        recipe = get_object_or_404(
+            self.get_queryset().prefetch_related("ingredients", "steps"), pk=pk
+        )
         return render(request, "easy_kitchen/recipes/detail.html", self._context(request, recipe))
 
     def _context(self, request, recipe, add_to_list_form=None):
@@ -100,6 +116,8 @@ class RecipeDetailView(UserRecipeMixin, View):
 
 
 class RecipeLineView(LoginRequiredMixin, View):
+    """Shared access to one ingredient or step of the signed-in user's recipe."""
+
     kind = "ingredient"
     update_name = "easy_kitchen:recipe-ingredient-update"
     delete_name = "easy_kitchen:recipe-ingredient-delete"
@@ -123,7 +141,9 @@ class RecipeLineView(LoginRequiredMixin, View):
             "line": line,
             "kind": self.kind,
             "form": form
-            or RecipeLineForm(kind=self.kind, auto_id=f"edit_{line.pk}_%s", initial=self.line_initial(line)),
+            or RecipeLineForm(
+                kind=self.kind, auto_id=f"edit_{line.pk}_%s", initial=self.line_initial(line)
+            ),
             "update_url": reverse(self.update_name, args=[recipe.pk, line.pk]),
             "delete_url": reverse(self.delete_name, args=[recipe.pk, line.pk]),
             "include_modal": include_modal,
@@ -131,6 +151,8 @@ class RecipeLineView(LoginRequiredMixin, View):
 
 
 class RecipeLineCreateView(RecipeLineView):
+    """Append an ingredient or step and return the new line for HTMX."""
+
     def post(self, request, recipe_pk):
         recipe = self.recipe(request, recipe_pk)
         form = RecipeLineForm(request.POST, kind=self.kind, auto_id=f"{self.kind}_%s")
@@ -168,9 +190,13 @@ class RecipeLineCreateView(RecipeLineView):
 
 
 class RecipeLineUpdateView(RecipeLineView):
+    """Edit one ingredient or step of a recipe."""
+
     def get(self, request, recipe_pk, pk):
         line, recipe = self.line(request, recipe_pk, pk)
-        form = RecipeLineForm(kind=self.kind, auto_id=f"edit_{line.pk}_%s", initial=self.line_initial(line))
+        form = RecipeLineForm(
+            kind=self.kind, auto_id=f"edit_{line.pk}_%s", initial=self.line_initial(line)
+        )
         return render(
             request,
             "easy_kitchen/recipes/partials/line_edit_form.html",
@@ -202,6 +228,8 @@ class RecipeLineUpdateView(RecipeLineView):
 
 
 class RecipeLineDeleteView(RecipeLineView):
+    """Delete one ingredient or step of a recipe."""
+
     def post(self, request, recipe_pk, pk):
         line, recipe = self.line(request, recipe_pk, pk)
         line.delete()
@@ -211,6 +239,8 @@ class RecipeLineDeleteView(RecipeLineView):
 
 
 class RecipeLineReorderView(LoginRequiredMixin, View):
+    """Save a new order for the ingredients or steps of one recipe."""
+
     kind = "ingredient"
 
     def post(self, request, recipe_pk):
@@ -224,44 +254,62 @@ class RecipeLineReorderView(LoginRequiredMixin, View):
 
 
 class IngredientCreateView(RecipeLineCreateView):
+    """Add an ingredient to a recipe."""
+
     kind = "ingredient"
 
 
 class IngredientUpdateView(RecipeLineUpdateView):
+    """Edit one ingredient of a recipe."""
+
     kind = "ingredient"
 
 
 class IngredientDeleteView(RecipeLineDeleteView):
+    """Delete one ingredient of a recipe."""
+
     kind = "ingredient"
 
 
 class IngredientReorderView(RecipeLineReorderView):
+    """Save a new order for a recipe's ingredients."""
+
     kind = "ingredient"
 
 
 class StepCreateView(RecipeLineCreateView):
+    """Add a preparation step to a recipe."""
+
     kind = "step"
     update_name = "easy_kitchen:recipe-step-update"
     delete_name = "easy_kitchen:recipe-step-delete"
 
 
 class StepUpdateView(RecipeLineUpdateView):
+    """Edit one preparation step of a recipe."""
+
     kind = "step"
     update_name = "easy_kitchen:recipe-step-update"
     delete_name = "easy_kitchen:recipe-step-delete"
 
 
 class StepDeleteView(RecipeLineDeleteView):
+    """Delete one preparation step of a recipe."""
+
     kind = "step"
     update_name = "easy_kitchen:recipe-step-update"
     delete_name = "easy_kitchen:recipe-step-delete"
 
 
 class StepReorderView(RecipeLineReorderView):
+    """Save a new order for a recipe's preparation steps."""
+
     kind = "step"
 
 
 class RecipeAddToListView(LoginRequiredMixin, View):
+    """Copy a recipe's ingredients onto an existing list or a new one."""
+
     def post(self, request, pk):
         recipe = get_object_or_404(
             Recipe.objects.filter(user=request.user).prefetch_related("ingredients"),
@@ -279,7 +327,9 @@ class RecipeAddToListView(LoginRequiredMixin, View):
             )
         title = form.cleaned_data["title"]
         if title:
-            shopping_list = create_shopping_list(request.user, title=title, date=timezone.localdate())
+            shopping_list = create_shopping_list(
+                request.user, title=title, date=timezone.localdate()
+            )
         else:
             shopping_list = form.cleaned_data["shopping_list"]
         add_recipe_ingredients_to_list(recipe, shopping_list)

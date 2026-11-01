@@ -20,14 +20,17 @@ _TRAILING_INGREDIENT = re.compile(
 
 
 def _normalized_name(name):
+    """Collapse whitespace so names compare and store consistently."""
     return " ".join(name.split())
 
 
 def _quantity_parts(quantity):
+    """Split a stored quantity on ', ' into the pieces that can be merged."""
     return [part.strip() for part in (quantity or "").split(", ") if part.strip()]
 
 
 def _format_amount(number, separator):
+    """Render a summed amount, keeping a comma when the input used one."""
     if number == number.to_integral_value():
         return str(number.to_integral_value())
     text = format(number, "f").rstrip("0").rstrip(".")
@@ -37,6 +40,7 @@ def _format_amount(number, separator):
 
 
 def _merge_quantities(quantity_entries):
+    """Add amounts that share a unit and keep other text in its original order."""
     entries = []
     amounts = {}
     seen_text = set()
@@ -78,6 +82,7 @@ def _merge_quantities(quantity_entries):
 
 
 def remember_article(user, name):
+    """Store the item name for later suggestions, reusing a case-insensitive match."""
     name = _normalized_name(name)
     if not name:
         return None
@@ -88,6 +93,7 @@ def remember_article(user, name):
 
 
 def save_article(user, name, article=None):
+    """Create an article, or rename the given one."""
     name = _normalized_name(name)
     if article is None:
         return user.articles.create(name=name)
@@ -97,6 +103,7 @@ def save_article(user, name, article=None):
 
 
 def create_item(shopping_list, *, name, quantity="", checked=False, position=None):
+    """Add an item, or merge the quantity into the existing line with the same name."""
     name = _normalized_name(name)
     quantity = (quantity or "").strip()
     remember_article(shopping_list.user, name)
@@ -128,6 +135,7 @@ def create_item(shopping_list, *, name, quantity="", checked=False, position=Non
 
 
 def _clean_list_icon(icon):
+    """Return a known icon, None when none was given, or raise for an unknown value."""
     if icon in (None, ""):
         return None
     if icon not in ShoppingList.Icon.values:
@@ -136,6 +144,7 @@ def _clean_list_icon(icon):
 
 
 def create_shopping_list(user, *, title, date, items=None, position=0, icon=None):
+    """Create a list and its items. An omitted icon stays the basket default."""
     icon = _clean_list_icon(icon)
     shopping_list = user.shopping_lists.create(
         title=title,
@@ -151,6 +160,7 @@ def create_shopping_list(user, *, title, date, items=None, position=0, icon=None
 
 @transaction.atomic
 def import_shopping_lists(user, lists_data):
+    """Insert imported lists at the front and shift the user's existing lists down."""
     records = [dict(record) for record in lists_data]
     user.shopping_lists.update(position=F("position") + len(records))
     created = []
@@ -162,25 +172,31 @@ def import_shopping_lists(user, lists_data):
 
 @transaction.atomic
 def reorder_shopping_lists(user, list_ids):
+    """Set list positions. The ids must be exactly this user's lists."""
     _reorder_owned(user.shopping_lists, list_ids)
 
 
 @transaction.atomic
 def reorder_items(shopping_list, item_ids):
+    """Set item positions. The ids must be exactly the items of this list."""
     existing = set(shopping_list.items.filter(id__in=item_ids).values_list("id", flat=True))
     if existing != set(item_ids) or len(item_ids) != len(existing):
         raise ValueError(_("Invalid item order."))
     for position, item_id in enumerate(item_ids, start=1):
-        ShoppingItem.objects.filter(pk=item_id, shopping_list=shopping_list).update(position=position)
+        ShoppingItem.objects.filter(pk=item_id, shopping_list=shopping_list).update(
+            position=position
+        )
 
 
 def _line_text(line):
+    """Read a step as a string or as a mapping with a text field."""
     if isinstance(line, str):
         return _normalized_name(line)
     return _normalized_name(line.get("text") or "")
 
 
 def _write_lines(manager, lines):
+    """Replace every step with the given lines, skipping blank text."""
     manager.all().delete()
     for index, line in enumerate(lines or [], start=1):
         text = _line_text(line)
@@ -191,6 +207,7 @@ def _write_lines(manager, lines):
 
 
 def _write_ingredients(manager, ingredients):
+    """Replace every ingredient, skipping lines that have no name."""
     manager.all().delete()
     for index, line in enumerate(ingredients or [], start=1):
         name = _normalized_name(line.get("name") or "")
@@ -202,6 +219,7 @@ def _write_ingredients(manager, ingredients):
 
 
 def _clean_image_url(image_url):
+    """Return a stripped http(s) URL, or an empty string when none was given."""
     image_url = (image_url or "").strip()
     if not image_url:
         return ""
@@ -213,6 +231,7 @@ def _clean_image_url(image_url):
 
 
 def _optional_count(value):
+    """Return None for an empty value, or a non-negative whole number."""
     if value is None or value == "":
         return None
     if isinstance(value, bool):
@@ -240,6 +259,7 @@ def create_recipe(
     recipe=None,
     position=0,
 ):
+    """Create or update a recipe. Ingredients and steps are replaced only when passed."""
     title = _normalized_name(title)
     if not title:
         raise ValueError(_("Enter a title."))
@@ -285,6 +305,7 @@ def create_recipe(
 
 @transaction.atomic
 def import_recipes(user, recipes_data):
+    """Insert imported recipes at the front and shift the user's existing recipes down."""
     records = [dict(record) for record in recipes_data]
     user.recipes.update(position=F("position") + len(records))
     created = []
@@ -296,28 +317,38 @@ def import_recipes(user, recipes_data):
 
 @transaction.atomic
 def reorder_recipes(user, recipe_ids):
+    """Set recipe positions. The ids must be exactly this user's recipes."""
     _reorder_owned(user.recipes, recipe_ids)
 
 
 def add_recipe_line(recipe, kind, text="", name="", quantity=""):
+    """Append an ingredient or a step at the next position."""
     manager = _recipe_lines(recipe, kind)
     position = (manager.aggregate(last=Max("position"))["last"] or 0) + 1
     if kind == "ingredient":
-        return manager.create(name=_normalized_name(name), quantity=(quantity or "").strip(), position=position)
+        return manager.create(
+            name=_normalized_name(name), quantity=(quantity or "").strip(), position=position
+        )
     return manager.create(text=_normalized_name(text), position=position)
 
 
 def reorder_recipe_lines(recipe, kind, line_ids):
+    """Set positions for one kind of line. The ids must belong to that recipe."""
     manager = _recipe_lines(recipe, kind)
     model = manager.model
     _reorder(manager, line_ids, model, "recipe", recipe)
 
 
 def _ingredient_name_and_quantity(text):
+    """Split free-text into a name and a quantity. A short token beside the amount is the unit."""
     text = _normalized_name(text)
     leading = _LEADING_INGREDIENT.match(text)
     if leading:
-        amount, second, rest = leading.group("amount"), leading.group("second"), leading.group("rest")
+        amount, second, rest = (
+            leading.group("amount"),
+            leading.group("second"),
+            leading.group("rest"),
+        )
         if second and rest and len(second) <= 4:
             return _normalized_name(rest), f"{amount} {second}"
         if second and rest:
@@ -327,7 +358,11 @@ def _ingredient_name_and_quantity(text):
         return text, ""
     trailing = _TRAILING_INGREDIENT.match(text)
     if trailing and not trailing.group("name")[:1].isdigit():
-        name, amount, unit = trailing.group("name"), trailing.group("amount"), trailing.group("unit")
+        name, amount, unit = (
+            trailing.group("name"),
+            trailing.group("amount"),
+            trailing.group("unit"),
+        )
         if unit and len(unit) <= 4:
             return _normalized_name(name), f"{amount} {unit}"
         if unit:
@@ -337,6 +372,7 @@ def _ingredient_name_and_quantity(text):
 
 
 def add_recipe_ingredients_to_list(recipe, shopping_list):
+    """Copy the recipe's ingredients onto a list owned by the same user."""
     if shopping_list.user_id != recipe.user_id:
         raise ValueError(_("Invalid shopping list."))
     for ingredient in recipe.ingredients.all():
@@ -345,6 +381,7 @@ def add_recipe_ingredients_to_list(recipe, shopping_list):
 
 
 def _recipe_lines(recipe, kind):
+    """Return the ingredients or steps manager for this recipe."""
     if kind == "ingredient":
         return recipe.ingredients
     if kind == "step":
@@ -353,14 +390,20 @@ def _recipe_lines(recipe, kind):
 
 
 def _reorder_owned(manager, ordered_ids):
+    """Require the ids to be exactly these records, then write positions from 1."""
     existing = set(manager.filter(id__in=ordered_ids).values_list("id", flat=True))
-    if existing != set(ordered_ids) or len(ordered_ids) != len(existing) or manager.count() != len(ordered_ids):
+    if (
+        existing != set(ordered_ids)
+        or len(ordered_ids) != len(existing)
+        or manager.count() != len(ordered_ids)
+    ):
         raise ValueError(_("Invalid order."))
     for position, record_id in enumerate(ordered_ids, start=1):
         manager.filter(pk=record_id).update(position=position)
 
 
 def _reorder(manager, ordered_ids, model, parent_field, parent):
+    """Require the ids to be these lines, then write positions on that parent."""
     existing = set(manager.filter(id__in=ordered_ids).values_list("id", flat=True))
     if existing != set(ordered_ids) or len(ordered_ids) != len(existing):
         raise ValueError(_("Invalid order."))

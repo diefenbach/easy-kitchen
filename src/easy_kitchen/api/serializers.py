@@ -4,22 +4,32 @@ from easy_kitchen.services import create_item, create_recipe, create_shopping_li
 
 
 class ReorderItemsSerializer(serializers.Serializer):
+    """Item ids in the order they should be saved."""
+
     item_ids = serializers.ListField(child=serializers.IntegerField())
 
 
 class ReorderLinesSerializer(serializers.Serializer):
+    """Ingredient or step ids in the order they should be saved."""
+
     line_ids = serializers.ListField(child=serializers.IntegerField())
 
 
 class ReorderListsSerializer(serializers.Serializer):
+    """Shopping-list ids in the order they should be saved."""
+
     list_ids = serializers.ListField(child=serializers.IntegerField())
 
 
 class ReorderRecipesSerializer(serializers.Serializer):
+    """Recipe ids in the order they should be saved."""
+
     recipe_ids = serializers.ListField(child=serializers.IntegerField())
 
 
 class ShoppingItemSerializer(serializers.ModelSerializer):
+    """One shopping-list line for the API."""
+
     class Meta:
         model = ShoppingItem
         fields = ("id", "name", "quantity", "checked", "position")
@@ -27,6 +37,8 @@ class ShoppingItemSerializer(serializers.ModelSerializer):
 
 
 class ShoppingListSerializer(serializers.ModelSerializer):
+    """A shopping list and its items. An omitted icon stays the basket."""
+
     items = ShoppingItemSerializer(many=True, required=False)
     icon = serializers.ChoiceField(choices=ShoppingList.Icon.choices, required=False)
 
@@ -36,9 +48,11 @@ class ShoppingListSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "position", "created_at", "updated_at")
 
     def create(self, validated_data):
+        """Create the list and its items for the authenticated user."""
         return create_shopping_list(self.context["request"].user, **validated_data)
 
     def update(self, instance, validated_data):
+        """Update the list fields and replace its items when items were sent."""
         items = validated_data.pop("items", None)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -51,14 +65,21 @@ class ShoppingListSerializer(serializers.ModelSerializer):
 
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
+    """One ingredient line for the API."""
+
     class Meta:
         model = RecipeIngredient
         fields = ("id", "name", "quantity", "position")
         read_only_fields = ("id",)
-        extra_kwargs = {"position": {"required": False}, "quantity": {"required": False, "allow_blank": True}}
+        extra_kwargs = {
+            "position": {"required": False},
+            "quantity": {"required": False, "allow_blank": True},
+        }
 
 
 class RecipeStepSerializer(serializers.ModelSerializer):
+    """One preparation step for the API."""
+
     text = serializers.CharField(max_length=2000)
 
     class Meta:
@@ -69,6 +90,8 @@ class RecipeStepSerializer(serializers.ModelSerializer):
 
 
 class RecipeSerializer(serializers.ModelSerializer):
+    """A recipe with optional nutrition. Empty nutrition means the value is unknown."""
+
     ingredients = RecipeIngredientSerializer(many=True, required=False)
     steps = RecipeStepSerializer(many=True, required=False)
     image = serializers.SerializerMethodField()
@@ -100,32 +123,40 @@ class RecipeSerializer(serializers.ModelSerializer):
         }
 
     def get_image(self, recipe):
+        """Absolute URL of the uploaded image, or an empty string when there is none."""
         if not recipe.image:
             return ""
         return self._absolute(recipe.image.url)
 
     def get_picture_url(self, recipe):
+        """Absolute URL of the uploaded image, otherwise the stored image URL."""
         if recipe.image:
             return self._absolute(recipe.image.url)
         return recipe.image_url
 
     def _absolute(self, url):
+        """Build an absolute URL when the request is available."""
         request = self.context.get("request")
         if request is None:
             return url
         return request.build_absolute_uri(url)
 
     def create(self, validated_data):
+        """Create the recipe for the authenticated user."""
         return create_recipe(self.context["request"].user, **self._recipe_data(validated_data))
 
     def update(self, instance, validated_data):
+        """Update the recipe. Omitted ingredients and steps stay as they are."""
         data = self._recipe_data(validated_data, instance)
         return create_recipe(instance.user, recipe=instance, **data)
 
     def _recipe_data(self, validated_data, instance=None):
+        """Keep omitted ingredients and steps unchanged when updating a recipe."""
         data = {
             "title": validated_data.get("title", instance.title if instance else ""),
-            "description": validated_data.get("description", instance.description if instance else ""),
+            "description": validated_data.get(
+                "description", instance.description if instance else ""
+            ),
             "image_url": validated_data.get("image_url", instance.image_url if instance else ""),
             "calories": validated_data.get("calories", instance.calories if instance else None),
             "protein": validated_data.get("protein", instance.protein if instance else None),

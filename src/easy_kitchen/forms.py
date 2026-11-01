@@ -11,6 +11,8 @@ from .services import _normalized_name, save_article
 
 
 class ShoppingListForm(forms.ModelForm):
+    """Edit a list title, icon, and date. A missing icon stays the basket."""
+
     class Meta:
         model = ShoppingList
         fields = ("title", "icon", "date")
@@ -26,6 +28,7 @@ class ShoppingListForm(forms.ModelForm):
         self.fields["icon"].required = False
 
     def clean_icon(self):
+        """Keep a known icon and use the basket when the field was left empty."""
         icon = self.cleaned_data.get("icon")
         if icon in ShoppingList.Icon.values:
             return icon
@@ -33,6 +36,8 @@ class ShoppingListForm(forms.ModelForm):
 
 
 class ShoppingItemForm(forms.ModelForm):
+    """Edit an item name and quantity. The name field suggests saved articles."""
+
     class Meta:
         model = ShoppingItem
         fields = ("name", "quantity")
@@ -49,6 +54,8 @@ class ShoppingItemForm(forms.ModelForm):
 
 
 class ArticleForm(forms.Form):
+    """Create or rename a saved article, rejecting a duplicate name for this user."""
+
     name = forms.CharField(label=_("Article"), max_length=255)
 
     def __init__(self, *args, user, instance=None, **kwargs):
@@ -57,6 +64,7 @@ class ArticleForm(forms.Form):
         super().__init__(*args, **kwargs)
 
     def clean_name(self):
+        """Normalize the name and reject a blank or duplicate article."""
         name = _normalized_name(self.cleaned_data["name"])
         if not name:
             raise forms.ValidationError(_("Enter an article name."))
@@ -68,14 +76,24 @@ class ArticleForm(forms.Form):
         return name
 
     def save(self):
+        """Create the article, or rename the instance this form was given."""
         return save_article(self.user, self.cleaned_data["name"], article=self.instance)
 
 
-_RECIPE_KEYS = {"ingredients", "steps", "description", "image_url", "calories", "protein", "preparation_minutes"}
+_RECIPE_KEYS = {
+    "ingredients",
+    "steps",
+    "description",
+    "image_url",
+    "calories",
+    "protein",
+    "preparation_minutes",
+}
 _LIST_KEYS = {"items", "date", "icon"}
 
 
 def _import_kind(record):
+    """Classify one record as a list or a recipe. Mixed signals and unknown records return None."""
     if not isinstance(record, dict):
         return None
     recipe = bool(_RECIPE_KEYS & record.keys())
@@ -90,6 +108,7 @@ def _import_kind(record):
 
 
 def _split_import_payload(payload):
+    """Split wrapped or bare JSON into list and recipe records. A title alone is a recipe."""
     if isinstance(payload, dict) and {"lists", "recipes"} & payload.keys():
         lists = payload["lists"] if "lists" in payload else None
         recipes = payload["recipes"] if "recipes" in payload else None
@@ -115,12 +134,15 @@ def _split_import_payload(payload):
 
 
 class ImportForm(forms.Form):
+    """Accept JSON and split it into shopping lists and recipes."""
+
     json_data = forms.CharField(
         label=_("JSON"),
         widget=forms.Textarea(attrs={"class": "form-control font-monospace", "rows": 16}),
     )
 
     def clean_json_data(self):
+        """Parse the JSON and validate each side with the API serializers."""
         try:
             payload = json.loads(self.cleaned_data["json_data"])
         except json.JSONDecodeError as error:
@@ -128,7 +150,9 @@ class ImportForm(forms.Form):
 
         split = _split_import_payload(payload)
         if split is None:
-            raise forms.ValidationError(_("Could not tell whether this is a shopping list or a recipe."))
+            raise forms.ValidationError(
+                _("Could not tell whether this is a shopping list or a recipe.")
+            )
         lists, recipes = split
         return {
             "lists": self._validate(ShoppingListSerializer, lists),
@@ -136,17 +160,22 @@ class ImportForm(forms.Form):
         }
 
     def _validate(self, serializer_class, records):
+        """Return validated records, or None when that side of the import was omitted."""
         if records is None:
             return None
         serializer = serializer_class(data=records, many=True)
         try:
             serializer.is_valid(raise_exception=True)
         except DRFValidationError as error:
-            raise forms.ValidationError(_("The JSON does not match the EasyKitchen format.")) from error
+            raise forms.ValidationError(
+                _("The JSON does not match the EasyKitchen format.")
+            ) from error
         return serializer.validated_data
 
 
 class RecipeForm(forms.ModelForm):
+    """Edit a recipe, including optional nutrition and an uploaded image or image URL."""
+
     image_url = forms.URLField(
         label=_("Image URL"),
         assume_scheme="https",
@@ -157,7 +186,15 @@ class RecipeForm(forms.ModelForm):
 
     class Meta:
         model = Recipe
-        fields = ("title", "description", "calories", "protein", "preparation_minutes", "image", "image_url")
+        fields = (
+            "title",
+            "description",
+            "calories",
+            "protein",
+            "preparation_minutes",
+            "image",
+            "image_url",
+        )
         labels = {
             "title": _("Title"),
             "description": _("Description"),
@@ -175,11 +212,15 @@ class RecipeForm(forms.ModelForm):
 
 
 class RecipeLineForm(forms.Form):
+    """Edit either an ingredient name and quantity or the text of a preparation step."""
+
     def __init__(self, *args, kind="ingredient", **kwargs):
         super().__init__(*args, **kwargs)
         if kind == "ingredient":
             self.fields["name"] = forms.CharField(label=_("Ingredient"), max_length=255)
-            self.fields["quantity"] = forms.CharField(label=_("quantity"), max_length=100, required=False)
+            self.fields["quantity"] = forms.CharField(
+                label=_("quantity"), max_length=100, required=False
+            )
         else:
             self.fields["text"] = forms.CharField(
                 label=_("Step"),
@@ -189,6 +230,8 @@ class RecipeLineForm(forms.Form):
 
 
 class AddRecipeToListForm(forms.Form):
+    """Choose one of the user's lists, or name a new list for the recipe's ingredients."""
+
     shopping_list = forms.ModelChoiceField(
         label=_("Shopping list"),
         queryset=ShoppingList.objects.none(),
@@ -202,6 +245,7 @@ class AddRecipeToListForm(forms.Form):
         self.fields["shopping_list"].queryset = ShoppingList.objects.filter(user=user)
 
     def clean(self):
+        """Require an existing list or a title for a new one."""
         cleaned = super().clean()
         title = _normalized_name(cleaned.get("title") or "")
         cleaned["title"] = title

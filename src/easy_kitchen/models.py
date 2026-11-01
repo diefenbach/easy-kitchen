@@ -8,6 +8,7 @@ from django.utils.translation import gettext_lazy as _
 
 
 def _place_new_record_first(instance):
+    """Shift this user's existing records down so a new one without a position is stored first."""
     if not instance._state.adding or instance.position:
         return
     type(instance).objects.filter(user_id=instance.user_id).update(position=F("position") + 1)
@@ -15,7 +16,11 @@ def _place_new_record_first(instance):
 
 
 class ShoppingList(models.Model):
+    """A dated shopping list belonging to one user."""
+
     class Icon(models.TextChoices):
+        """Icon shown on the list card. New lists use the basket."""
+
         BASKET = "basket", _("Basket")
         CART = "cart", _("Cart")
         BAG = "bag", _("Bag")
@@ -50,7 +55,9 @@ class ShoppingList(models.Model):
         Icon.HEART: "bi-heart",
     }
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="shopping_lists")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="shopping_lists"
+    )
     title = models.CharField(_("title"), max_length=255)
     icon = models.CharField(_("icon"), max_length=20, choices=Icon.choices, default=Icon.BASKET)
     date = models.DateField(_("date"), default=timezone.localdate)
@@ -68,6 +75,7 @@ class ShoppingList(models.Model):
 
     @property
     def icon_class(self):
+        """Bootstrap Icons class for this list, falling back to the basket."""
         return self.ICON_CLASSES.get(self.icon, self.ICON_CLASSES[self.Icon.BASKET])
 
     def save(self, *args, **kwargs):
@@ -77,6 +85,8 @@ class ShoppingList(models.Model):
 
 
 class ShoppingItem(models.Model):
+    """One line on a shopping list."""
+
     shopping_list = models.ForeignKey(ShoppingList, on_delete=models.CASCADE, related_name="items")
     name = models.CharField(_("item"), max_length=255)
     quantity = models.CharField(_("quantity"), max_length=100, blank=True)
@@ -95,7 +105,11 @@ class ShoppingItem(models.Model):
 
 
 class Article(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="articles")
+    """A saved item name suggested while filling a shopping list."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="articles"
+    )
     name = models.CharField(_("article"), max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -105,7 +119,9 @@ class Article(models.Model):
         verbose_name = _("article")
         verbose_name_plural = _("articles")
         constraints = [
-            models.UniqueConstraint(Lower("name"), "user", name="shopping_article_unique_name_per_user"),
+            models.UniqueConstraint(
+                Lower("name"), "user", name="shopping_article_unique_name_per_user"
+            ),
         ]
 
     def __str__(self):
@@ -113,7 +129,11 @@ class Article(models.Model):
 
 
 class Recipe(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="recipes")
+    """A recipe belonging to one user. Empty nutrition fields mean the value is unknown."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="recipes"
+    )
     title = models.CharField(_("title"), max_length=255)
     description = models.TextField(_("description"), blank=True)
     image = models.ImageField(_("image"), upload_to="recipes/", blank=True)
@@ -145,12 +165,15 @@ class Recipe(models.Model):
 
     @property
     def picture_url(self):
+        """Uploaded image when one is set, otherwise the image URL."""
         if self.image:
             return self.image.url
         return self.image_url
 
 
 class RecipeIngredient(models.Model):
+    """One ingredient line of a recipe."""
+
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name="ingredients")
     name = models.CharField(_("ingredient"), max_length=255)
     quantity = models.CharField(_("quantity"), max_length=100, blank=True)
@@ -166,6 +189,8 @@ class RecipeIngredient(models.Model):
 
 
 class RecipeStep(models.Model):
+    """One preparation step of a recipe."""
+
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name="steps")
     text = models.TextField(_("step"))
     position = models.PositiveIntegerField(default=0)

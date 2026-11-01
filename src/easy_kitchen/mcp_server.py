@@ -31,20 +31,27 @@ mcp = MCPServer(
 
 
 class ShoppingItemInput(BaseModel):
+    """One item to put on a shopping list created through MCP."""
+
     name: Annotated[str, Field(min_length=1, max_length=255)]
     quantity: Annotated[str, Field(max_length=100)] = ""
 
 
 class IngredientInput(BaseModel):
+    """One ingredient to put on a recipe created through MCP."""
+
     name: Annotated[str, Field(min_length=1, max_length=255)]
     quantity: Annotated[str, Field(max_length=100)] = ""
 
 
 class StepInput(BaseModel):
+    """One preparation step to put on a recipe created through MCP."""
+
     text: Annotated[str, Field(min_length=1, max_length=2000)]
 
 
 def _allowed_hosts() -> list[str]:
+    """Hosts allowed to call the MCP server, from the environment or local defaults."""
     configured = os.environ.get("MCP_ALLOWED_HOSTS", "")
     hosts = [item.strip() for item in configured.split(",") if item.strip()]
     if hosts:
@@ -58,6 +65,7 @@ def _allowed_hosts() -> list[str]:
 
 
 def _allowed_origins() -> list[str]:
+    """Origins allowed to call the MCP server, from the environment or local defaults."""
     configured = os.environ.get("MCP_ALLOWED_ORIGINS", "")
     origins = [item.strip() for item in configured.split(",") if item.strip()]
     if origins:
@@ -71,6 +79,7 @@ def _allowed_origins() -> list[str]:
 
 
 def _authorization(ctx: Context) -> str | None:
+    """Read the Authorization header from the MCP request, if one was sent."""
     request = ctx.request_context.request
     if request is None:
         return None
@@ -78,6 +87,7 @@ def _authorization(ctx: Context) -> str | None:
 
 
 def user_from_authorization(authorization: str | None):
+    """Resolve the EasyKitchen user from an Authorization: Token header."""
     message = "Send the user's EasyKitchen token in the Authorization header: Token <token>."
     if not authorization or not authorization.lower().startswith("token "):
         raise ToolError(message)
@@ -161,7 +171,9 @@ def create_recipe(
             calories=calories,
             protein=protein,
             preparation_minutes=preparation_minutes,
-            ingredients=[IngredientInput.model_validate(item).model_dump() for item in ingredients or []],
+            ingredients=[
+                IngredientInput.model_validate(item).model_dump() for item in ingredients or []
+            ],
             steps=[StepInput.model_validate(item).model_dump() for item in steps or []],
         )
     except ValueError as error:
@@ -175,13 +187,15 @@ def create_recipe(
         "protein": recipe.protein,
         "preparation_minutes": recipe.preparation_minutes,
         "ingredients": [
-            {"id": line.id, "name": line.name, "quantity": line.quantity} for line in recipe.ingredients.all()
+            {"id": line.id, "name": line.name, "quantity": line.quantity}
+            for line in recipe.ingredients.all()
         ],
         "steps": [{"id": line.id, "text": line.text} for line in recipe.steps.all()],
     }
 
 
 def main() -> None:
+    """Refuse to start while migrations are unapplied, then serve the MCP endpoint."""
     from easy_kitchen.startup import ensure_migrations_applied
 
     ensure_migrations_applied()

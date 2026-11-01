@@ -88,6 +88,7 @@ SPECTACULAR_SETTINGS = {
 
 
 def postgres_database_from_environment():
+    """Build the PostgreSQL DATABASES entry from POSTGRES_* environment variables."""
     return {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": os.environ["POSTGRES_DB"],

@@ -9,7 +9,14 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.translation import gettext as _, ngettext
 from django.views import View
-from django.views.generic import CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    TemplateView,
+    UpdateView,
+)
 
 from .forms import ArticleForm, ImportForm, ShoppingItemForm, ShoppingListForm
 from .models import Article, ShoppingItem, ShoppingList
@@ -24,25 +31,31 @@ from .services import (
 
 
 class UserListMixin(LoginRequiredMixin):
+    """Limit shopping-list querysets to the signed-in user."""
+
     def get_queryset(self):
         return ShoppingList.objects.filter(user=self.request.user)
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
+    """Show the three newest lists and recipes for the signed-in user."""
+
     template_name = "easy_kitchen/home.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["shopping_lists"] = (
-            self.request.user.shopping_lists.order_by("-created_at", "-id").prefetch_related("items")[:3]
-        )
-        context["recipes"] = (
-            self.request.user.recipes.order_by("-created_at", "-id").prefetch_related("ingredients")[:3]
-        )
+        context["shopping_lists"] = self.request.user.shopping_lists.order_by(
+            "-created_at", "-id"
+        ).prefetch_related("items")[:3]
+        context["recipes"] = self.request.user.recipes.order_by(
+            "-created_at", "-id"
+        ).prefetch_related("ingredients")[:3]
         return context
 
 
 class ShoppingListListView(LoginRequiredMixin, ListView):
+    """Show every shopping list of the signed-in user."""
+
     model = ShoppingList
     template_name = "easy_kitchen/lists/overview.html"
     context_object_name = "shopping_lists"
@@ -52,6 +65,8 @@ class ShoppingListListView(LoginRequiredMixin, ListView):
 
 
 class ShoppingListReorderView(LoginRequiredMixin, View):
+    """Save a new order for the signed-in user's lists."""
+
     def post(self, request):
         try:
             payload = json.loads(request.body)
@@ -62,6 +77,8 @@ class ShoppingListReorderView(LoginRequiredMixin, View):
 
 
 class ShoppingListDetailView(UserListMixin, DetailView):
+    """Show one list, its items, and the user's saved articles."""
+
     model = ShoppingList
     template_name = "easy_kitchen/lists/detail.html"
 
@@ -74,6 +91,8 @@ class ShoppingListDetailView(UserListMixin, DetailView):
 
 
 class ShoppingListCreateView(LoginRequiredMixin, CreateView):
+    """Create a list owned by the signed-in user."""
+
     model = ShoppingList
     form_class = ShoppingListForm
     template_name = "easy_kitchen/lists/form.html"
@@ -92,6 +111,8 @@ class ShoppingListCreateView(LoginRequiredMixin, CreateView):
 
 
 class ImportView(LoginRequiredMixin, View):
+    """Import JSON that may contain lists, recipes, or both."""
+
     template_name = "easy_kitchen/import.html"
 
     def get(self, request):
@@ -109,13 +130,17 @@ class ImportView(LoginRequiredMixin, View):
             count = len(import_shopping_lists(request.user, lists))
             messages.success(
                 request,
-                ngettext("Imported %(count)d shopping list.", "Imported %(count)d shopping lists.", count) % {"count": count},
+                ngettext(
+                    "Imported %(count)d shopping list.", "Imported %(count)d shopping lists.", count
+                )
+                % {"count": count},
             )
         if recipes is not None:
             count = len(import_recipes(request.user, recipes))
             messages.success(
                 request,
-                ngettext("Imported %(count)d recipe.", "Imported %(count)d recipes.", count) % {"count": count},
+                ngettext("Imported %(count)d recipe.", "Imported %(count)d recipes.", count)
+                % {"count": count},
             )
         if lists is not None and recipes is None:
             return redirect("easy_kitchen:list")
@@ -125,6 +150,8 @@ class ImportView(LoginRequiredMixin, View):
 
 
 class ShoppingListUpdateView(UserListMixin, UpdateView):
+    """Edit a list and return to the overview or the list that opened the form."""
+
     model = ShoppingList
     form_class = ShoppingListForm
     template_name = "easy_kitchen/lists/form.html"
@@ -141,23 +168,35 @@ class ShoppingListUpdateView(UserListMixin, UpdateView):
 
 
 class ShoppingListDeleteView(UserListMixin, DeleteView):
+    """Delete one list belonging to the signed-in user."""
+
     model = ShoppingList
     template_name = "easy_kitchen/lists/confirm_delete.html"
     success_url = reverse_lazy("easy_kitchen:list")
 
 
 class ItemCreateView(LoginRequiredMixin, View):
+    """Add an item, merging the quantity when that name is already on the list."""
+
     def post(self, request, list_pk):
         shopping_list = get_object_or_404(ShoppingList, pk=list_pk, user=request.user)
         form = ShoppingItemForm(request.POST)
         if form.is_valid():
             existing_ids = set(shopping_list.items.values_list("id", flat=True))
-            item = create_item(shopping_list, name=form.cleaned_data["name"], quantity=form.cleaned_data["quantity"])
+            item = create_item(
+                shopping_list,
+                name=form.cleaned_data["name"],
+                quantity=form.cleaned_data["quantity"],
+            )
             if request.headers.get("HX-Request"):
                 response = render(
                     request,
                     "easy_kitchen/lists/partials/item.html",
-                    {"item": item, "shopping_list": shopping_list, "include_modal": item.id not in existing_ids},
+                    {
+                        "item": item,
+                        "shopping_list": shopping_list,
+                        "include_modal": item.id not in existing_ids,
+                    },
                 )
                 response.content += render_to_string(
                     "easy_kitchen/lists/partials/article_options.html",
@@ -173,19 +212,31 @@ class ItemCreateView(LoginRequiredMixin, View):
             return render(
                 request,
                 "easy_kitchen/lists/partials/item_form.html",
-                {"form": form, "shopping_list": shopping_list, "articles": request.user.articles.all()},
+                {
+                    "form": form,
+                    "shopping_list": shopping_list,
+                    "articles": request.user.articles.all(),
+                },
                 status=422,
             )
         return redirect("easy_kitchen:detail", pk=shopping_list.pk)
 
 
 class ItemUpdateView(LoginRequiredMixin, View):
+    """Edit one item on a list belonging to the signed-in user."""
+
     def get_item(self, request, list_pk, pk):
-        return get_object_or_404(ShoppingItem, pk=pk, shopping_list__pk=list_pk, shopping_list__user=request.user)
+        return get_object_or_404(
+            ShoppingItem, pk=pk, shopping_list__pk=list_pk, shopping_list__user=request.user
+        )
 
     def get(self, request, list_pk, pk):
         item = self.get_item(request, list_pk, pk)
-        return render(request, "easy_kitchen/lists/partials/item_edit_form.html", {"item": item, "form": ShoppingItemForm(instance=item)})
+        return render(
+            request,
+            "easy_kitchen/lists/partials/item_edit_form.html",
+            {"item": item, "form": ShoppingItemForm(instance=item)},
+        )
 
     def post(self, request, list_pk, pk):
         item = self.get_item(request, list_pk, pk)
@@ -193,23 +244,44 @@ class ItemUpdateView(LoginRequiredMixin, View):
         if form.is_valid():
             form.save()
             remember_article(request.user, item.name)
-            return render(request, "easy_kitchen/lists/partials/item.html", {"item": item, "shopping_list": item.shopping_list})
-        return render(request, "easy_kitchen/lists/partials/item_edit_form.html", {"item": item, "form": form}, status=422)
+            return render(
+                request,
+                "easy_kitchen/lists/partials/item.html",
+                {"item": item, "shopping_list": item.shopping_list},
+            )
+        return render(
+            request,
+            "easy_kitchen/lists/partials/item_edit_form.html",
+            {"item": item, "form": form},
+            status=422,
+        )
 
 
 class ItemToggleView(LoginRequiredMixin, View):
+    """Mark one item completed or open again."""
+
     def post(self, request, list_pk, pk):
-        item = get_object_or_404(ShoppingItem, pk=pk, shopping_list__pk=list_pk, shopping_list__user=request.user)
+        item = get_object_or_404(
+            ShoppingItem, pk=pk, shopping_list__pk=list_pk, shopping_list__user=request.user
+        )
         item.checked = not item.checked
         item.save(update_fields=["checked", "updated_at"])
         if request.headers.get("HX-Request"):
-            return render(request, "easy_kitchen/lists/partials/item.html", {"item": item, "shopping_list": item.shopping_list})
+            return render(
+                request,
+                "easy_kitchen/lists/partials/item.html",
+                {"item": item, "shopping_list": item.shopping_list},
+            )
         return redirect("easy_kitchen:detail", pk=list_pk)
 
 
 class ItemDeleteView(LoginRequiredMixin, View):
+    """Delete one item from a list belonging to the signed-in user."""
+
     def post(self, request, list_pk, pk):
-        item = get_object_or_404(ShoppingItem, pk=pk, shopping_list__pk=list_pk, shopping_list__user=request.user)
+        item = get_object_or_404(
+            ShoppingItem, pk=pk, shopping_list__pk=list_pk, shopping_list__user=request.user
+        )
         item.delete()
         if request.headers.get("HX-Request"):
             return HttpResponseRedirect("")
@@ -217,6 +289,8 @@ class ItemDeleteView(LoginRequiredMixin, View):
 
 
 class ItemReorderView(LoginRequiredMixin, View):
+    """Save a new order for the items of one list."""
+
     def post(self, request, list_pk):
         shopping_list = get_object_or_404(ShoppingList, pk=list_pk, user=request.user)
         try:
@@ -228,6 +302,7 @@ class ItemReorderView(LoginRequiredMixin, View):
 
 
 def return_list_for(request):
+    """Return the user's list named by return_list or list, when that id is theirs."""
     raw = request.POST.get("return_list") or request.GET.get("list")
     if not str(raw).isdigit():
         return None
@@ -235,6 +310,7 @@ def return_list_for(request):
 
 
 def redirect_to_articles(request):
+    """Redirect to the articles page, keeping the list that opened it."""
     shopping_list = return_list_for(request)
     url = reverse("easy_kitchen:articles")
     if shopping_list is None:
@@ -243,6 +319,8 @@ def redirect_to_articles(request):
 
 
 class ArticleListView(LoginRequiredMixin, View):
+    """Show and create saved article names for the signed-in user."""
+
     template_name = "easy_kitchen/lists/articles.html"
 
     def get(self, request):
@@ -265,16 +343,25 @@ class ArticleListView(LoginRequiredMixin, View):
 
 
 class ArticleUpdateView(LoginRequiredMixin, View):
+    """Rename one saved article belonging to the signed-in user."""
+
     def post(self, request, pk):
         article = get_object_or_404(Article, pk=pk, user=request.user)
         form = ArticleForm(request.POST, user=request.user, instance=article)
         if form.is_valid():
             form.save()
             return redirect_to_articles(request)
-        return render(request, "easy_kitchen/lists/articles.html", ArticleListView()._context(request, edit_form=form), status=422)
+        return render(
+            request,
+            "easy_kitchen/lists/articles.html",
+            ArticleListView()._context(request, edit_form=form),
+            status=422,
+        )
 
 
 class ArticleDeleteView(LoginRequiredMixin, View):
+    """Delete one saved article without changing shopping-list items."""
+
     def post(self, request, pk):
         article = get_object_or_404(Article, pk=pk, user=request.user)
         article.delete()
@@ -282,6 +369,8 @@ class ArticleDeleteView(LoginRequiredMixin, View):
 
 
 class ItemsResetCheckedView(LoginRequiredMixin, View):
+    """Mark every completed item on the list as open."""
+
     def post(self, request, list_pk):
         shopping_list = get_object_or_404(ShoppingList, pk=list_pk, user=request.user)
         shopping_list.items.filter(checked=True).update(checked=False, updated_at=timezone.now())

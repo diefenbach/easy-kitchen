@@ -23,6 +23,7 @@ from .serializers import (
 
 
 def _import_records(payload, key):
+    """Accept a bare list or an object whose key holds the records."""
     if isinstance(payload, list):
         return payload
     if isinstance(payload, dict):
@@ -33,6 +34,8 @@ def _import_records(payload, key):
 
 
 class ShoppingListViewSet(viewsets.ModelViewSet):
+    """Shopping lists of the authenticated user, including reorder and JSON import."""
+
     serializer_class = ShoppingListSerializer
 
     def get_queryset(self):
@@ -49,7 +52,9 @@ class ShoppingListViewSet(viewsets.ModelViewSet):
         shopping_list.refresh_from_db()
         return Response(self.get_serializer(shopping_list).data)
 
-    @extend_schema(request=ReorderListsSerializer, responses={200: ShoppingListSerializer(many=True)})
+    @extend_schema(
+        request=ReorderListsSerializer, responses={200: ShoppingListSerializer(many=True)}
+    )
     @action(detail=False, methods=["post"], url_path="reorder")
     def reorder_lists(self, request):
         try:
@@ -93,10 +98,14 @@ class ShoppingListViewSet(viewsets.ModelViewSet):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
+    """Recipes of the authenticated user, including reorder and JSON import."""
+
     serializer_class = RecipeSerializer
 
     def get_queryset(self):
-        return Recipe.objects.filter(user=self.request.user).prefetch_related("ingredients", "steps")
+        return Recipe.objects.filter(user=self.request.user).prefetch_related(
+            "ingredients", "steps"
+        )
 
     def _reorder(self, request, kind):
         recipe = self.get_object()
@@ -135,7 +144,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
                         "type": "object",
                         "required": ["recipes"],
                         "properties": {
-                            "recipes": {"type": "array", "items": {"$ref": "#/components/schemas/Recipe"}}
+                            "recipes": {
+                                "type": "array",
+                                "items": {"$ref": "#/components/schemas/Recipe"},
+                            }
                         },
                     },
                 ]
@@ -154,4 +166,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=records, many=True)
         serializer.is_valid(raise_exception=True)
         recipes = import_recipes(request.user, serializer.validated_data)
-        return Response(self.get_serializer(recipes, many=True).data, status=status.HTTP_201_CREATED)
+        return Response(
+            self.get_serializer(recipes, many=True).data, status=status.HTTP_201_CREATED
+        )
