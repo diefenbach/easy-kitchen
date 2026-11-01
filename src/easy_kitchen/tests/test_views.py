@@ -1,0 +1,385 @@
+import json
+
+import pytest
+from django.test import Client
+from django.urls import reverse
+from datetime import date
+from easy_kitchen.models import ShoppingItem, ShoppingList
+
+
+@pytest.mark.django_db
+def test_lists_are_scoped_to_current_user(client, user, other_user):
+    own = ShoppingList.objects.create(user=user, title="Meine")
+    ShoppingList.objects.create(user=other_user, title="Fremde")
+    client.force_login(user)
+    response = client.get(reverse("easy_kitchen:list"))
+    assert response.status_code == 200
+    assert "Meine" in response.content.decode()
+    assert "Fremde" not in response.content.decode()
+    assert client.get(reverse("easy_kitchen:detail", args=[own.pk])).status_code == 200
+
+
+@pytest.mark.django_db
+def test_user_cannot_access_other_list(client, user, other_user):
+    other_list = ShoppingList.objects.create(user=other_user, title="Privat")
+    client.force_login(user)
+    assert client.get(reverse("easy_kitchen:detail", args=[other_list.pk])).status_code == 404
+
+
+@pytest.mark.django_db
+def test_item_name_suggests_saved_articles(client, user, shopping_list):
+    from easy_kitchen.services import create_item
+
+    client.force_login(user)
+    create_item(shopping_list, name="Hafermilch")
+    detail = client.get(reverse("easy_kitchen:detail", args=[shopping_list.pk])).content.decode()
+    assert 'class="article-field"' in detail
+    assert 'class="article-suggestions"' in detail
+    assert 'list="articles"' not in detail
+    assert '<option value="Hafermilch"></option>' in detail
+
+    response = client.post(
+        reverse("easy_kitchen:item-create", args=[shopping_list.pk]),
+        {"name": "Brokkoli", "quantity": "1"},
+        HTTP_HX_REQUEST="true",
+    )
+    suggestions = response.content.decode()
+    assert 'id="articles"' in suggestions
+    assert 'hx-swap-oob="outerHTML"' in suggestions
+    assert '<option value="Hafermilch"></option>' in suggestions
+    assert '<option value="Brokkoli"></option>' in suggestions
+
+
+@pytest.mark.django_db
+def test_articles_can_be_managed_without_changing_list_items(client, user, other_user, shopping_list):
+    from easy_kitchen.models import Article
+    from easy_kitchen.services import create_item
+
+    client.force_login(user)
+    create_item(shopping_list, name="Milch", quantity="1 l")
+    create_item(shopping_list, name="Brot")
+    milk = Article.objects.get(user=user, name="Milch")
+    bread = Article.objects.get(user=user, name="Brot")
+
+    renamed = client.post(reverse("easy_kitchen:article-update", args=[milk.pk]), {"name": "Hafermilch"})
+    assert renamed.status_code == 302
+    milk.refresh_from_db()
+    assert milk.name == "Hafermilch"
+    assert shopping_list.items.get(quantity="1 l").name == "Milch"
+
+    duplicate = client.post(reverse("easy_kitchen:article-update", args=[milk.pk]), {"name": " brot "})
+    assert duplicate.status_code == 422
+    assert "already exists" in duplicate.content.decode()
+    milk.refresh_from_db()
+    assert milk.name == "Hafermilch"
+
+    overview = client.get(reverse("easy_kitchen:articles"))
+    assert overview.status_code == 200
+    content = overview.content.decode()
+    assert ">Articles</span>" in content
+    assert 'aria-label="Save"' in content
+    assert 'class="bi bi-check-lg"' in content
+    assert 'aria-label="Delete"' in content
+    assert 'data-edit-toggle aria-pressed' not in content
+    assert 'class="bi bi-trash"' in content
+    assert ">Save</button>" not in content
+    assert ">Delete</button>" not in content
+    created = client.post(reverse("easy_kitchen:articles"), {"name": "Reis"})
+    assert created.status_code == 302
+    assert Article.objects.filter(user=user, name="Reis").exists()
+
+    client.post(reverse("easy_kitchen:article-delete", args=[bread.pk]))
+    assert not Article.objects.filter(pk=bread.pk).exists()
+    assert shopping_list.items.filter(name="Brot").exists()
+
+    client.force_login(other_user)
+    hidden = client.get(reverse("easy_kitchen:articles")).content.decode()
+    assert "Hafermilch" not in hidden
+    assert client.post(reverse("easy_kitchen:article-update", args=[milk.pk]), {"name": "Geheim"}).status_code == 404
+    assert client.post(reverse("easy_kitchen:article-delete", args=[milk.pk])).status_code == 404
+
+
+@pytest.mark.django_db
+def test_articles_return_to_the_page_they_were_opened_from(client, user, other_user, shopping_list):
+    client.force_login(user)
+    detail_url = reverse("easy_kitchen:detail", args=[shopping_list.pk])
+    articles_url = reverse("easy_kitchen:articles")
+
+    overview = client.get(reverse("easy_kitchen:list")).content.decode()
+    assert f'href="{articles_url}"' in overview
+    assert f"{articles_url}?list=" not in overview
+    opened_from_overview = client.get(articles_url).content.decode()
+    assert f'href="{reverse("easy_kitchen:list")}"' in opened_from_overview
+    assert "Shopping lists" in opened_from_overview
+
+    detail = client.get(detail_url).content.decode()
+    assert f'href="{articles_url}?list={shopping_list.pk}"' in detail
+    opened_from_list = client.get(f"{articles_url}?list={shopping_list.pk}").content.decode()
+    assert f'href="{detail_url}"' in opened_from_list
+    assert shopping_list.title in opened_from_list
+
+    other_list = ShoppingList.objects.create(user=other_user, title="Privat")
+    foreign = client.get(f"{articles_url}?list={other_list.pk}").content.decode()
+    assert reverse("easy_kitchen:detail", args=[other_list.pk]) not in foreign
+    assert "Privat" not in foreign
+
+    created = client.post(articles_url, {"name": "Reis", "return_list": shopping_list.pk})
+    assert created.status_code == 302
+    assert created["Location"] == f"{articles_url}?list={shopping_list.pk}"
+
+
+@pytest.mark.django_db
+def test_only_identical_counts_are_added_when_the_same_item_is_posted(client, user, shopping_list):
+    client.force_login(user)
+    url = reverse("easy_kitchen:item-create", args=[shopping_list.pk])
+    client.post(url, {"name": "Äpfel", "quantity": "2 Stück"}, HTTP_HX_REQUEST="true")
+    response = client.post(url, {"name": "Äpfel", "quantity": "2 Stück"}, HTTP_HX_REQUEST="true")
+
+    assert response.status_code == 200
+    assert "4 Stück" in response.content.decode()
+
+    response = client.post(url, {"name": "Äpfel", "quantity": "4 Teile"}, HTTP_HX_REQUEST="true")
+    assert "4 Stück, 4 Teile" in response.content.decode()
+    assert ShoppingItem.objects.get(shopping_list=shopping_list).quantity == "4 Stück, 4 Teile"
+
+
+@pytest.mark.django_db
+def test_adding_the_same_item_updates_the_existing_row(client, user, shopping_list):
+    client.force_login(user)
+    create_url = reverse("easy_kitchen:item-create", args=[shopping_list.pk])
+    client.post(create_url, {"name": "Milch", "quantity": "1 l"}, HTTP_HX_REQUEST="true")
+    response = client.post(create_url, {"name": "Milch", "quantity": "500 ml"}, HTTP_HX_REQUEST="true")
+
+    item = ShoppingItem.objects.get(shopping_list=shopping_list)
+    assert response.status_code == 200
+    assert response["HX-Retarget"] == f'.shopping-item[data-item-id="{item.id}"]'
+    assert response["HX-Reswap"] == "outerHTML"
+    content = response.content.decode()
+    assert "1 l, 500 ml" in content
+    assert f'id="delete-item-modal-{item.id}"' not in content
+
+
+@pytest.mark.django_db
+def test_htmx_item_create_and_toggle(client, user, shopping_list):
+    client.force_login(user)
+    response = client.post(reverse("easy_kitchen:item-create", args=[shopping_list.pk]), {"name": "Tofu", "quantity": "400 g"}, HTTP_HX_REQUEST="true")
+    assert response.status_code == 200
+    item = ShoppingItem.objects.get(shopping_list=shopping_list)
+    response = client.post(reverse("easy_kitchen:item-toggle", args=[shopping_list.pk, item.pk]), HTTP_HX_REQUEST="true")
+    item.refresh_from_db()
+    assert item.checked is True
+    assert "☑" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_item_toggle_requires_and_accepts_csrf_token(client, user, shopping_list):
+    item = ShoppingItem.objects.create(shopping_list=shopping_list, name="Tofu")
+    csrf_client = Client(enforce_csrf_checks=True)
+    csrf_client.force_login(user)
+    detail_response = csrf_client.get(reverse("easy_kitchen:detail", args=[shopping_list.pk]))
+    assert "htmx:configRequest" in detail_response.content.decode()
+    assert csrf_client.post(
+        reverse("easy_kitchen:item-toggle", args=[shopping_list.pk, item.pk]),
+        HTTP_HX_REQUEST="true",
+    ).status_code == 403
+    token = csrf_client.cookies["csrftoken"].value
+    response = csrf_client.post(
+        reverse("easy_kitchen:item-toggle", args=[shopping_list.pk, item.pk]),
+        HTTP_HX_REQUEST="true",
+        HTTP_X_CSRFTOKEN=token,
+    )
+    assert response.status_code == 200
+    item.refresh_from_db()
+    assert item.checked is True
+
+
+@pytest.mark.django_db
+def test_login_displays_invalid_credentials_error(client):
+    response = client.post(reverse("login"), {"username": "unknown", "password": "wrong"})
+    assert response.status_code == 200
+    assert "alert-danger" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_list_detail_uses_modal_delete_confirmations(client, user, shopping_list):
+    ShoppingItem.objects.create(shopping_list=shopping_list, name="Tofu")
+    client.force_login(user)
+
+    response = client.get(reverse("easy_kitchen:detail", args=[shopping_list.pk]))
+
+    content = response.content.decode()
+    assert 'data-bs-target="#delete-list-modal"' in content
+    assert 'data-bs-target="#delete-item-modal-' in content
+    assert 'role="group" aria-label="Item actions"' in content
+    assert 'class="drag-handle edit-only' in content
+    assert 'class="btn-group edit-only" role="group" aria-label="Item actions"' in content
+    assert "hx-confirm" not in content
+
+
+@pytest.mark.django_db
+def test_list_detail_uses_a_minimal_icon_header(client, user, shopping_list):
+    client.force_login(user)
+
+    response = client.get(reverse("easy_kitchen:detail", args=[shopping_list.pk]))
+
+    content = response.content.decode()
+    assert 'class="btn btn-outline-secondary btn-sm list-back-button mb-3"' in content
+    assert 'class="list-detail-header card border-0 mb-4"' in content
+    assert "bi-arrow-left" in content
+    assert "bi-calendar3" in content
+    assert ">Shopping lists</span>" in content
+    assert 'aria-label="Edit list"' in content
+    assert 'aria-label="Delete list"' in content
+    assert "data-edit-toggle" in content
+
+
+@pytest.mark.django_db
+def test_edit_list_prefills_html_date_input(client, user, shopping_list):
+    shopping_list.date = date(2026, 10, 30)
+    shopping_list.save()
+    client.force_login(user)
+
+    response = client.get(reverse("easy_kitchen:update", args=[shopping_list.pk]))
+
+    assert '<input type="date" name="date" value="2026-10-30"' in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_reset_checked_items_marks_all_items_as_open(client, user, shopping_list):
+    completed = ShoppingItem.objects.create(shopping_list=shopping_list, name="Tofu", checked=True)
+    open_item = ShoppingItem.objects.create(shopping_list=shopping_list, name="Reis")
+    client.force_login(user)
+
+    response = client.post(reverse("easy_kitchen:items-reset-checked", args=[shopping_list.pk]))
+
+    assert response.status_code == 302
+    completed.refresh_from_db()
+    open_item.refresh_from_db()
+    assert completed.checked is False
+    assert open_item.checked is False
+
+
+@pytest.mark.django_db
+def test_list_overview_offers_edit_and_modal_delete_actions(client, user, shopping_list):
+    client.force_login(user)
+
+    response = client.get(reverse("easy_kitchen:list"))
+
+    content = response.content.decode()
+    assert 'class="card-body position-relative"' in content
+    assert 'stretched-link text-decoration-none link-dark' in content
+    assert f'{reverse("easy_kitchen:update", args=[shopping_list.pk])}?return_to=overview' in content
+    assert f'data-bs-target="#delete-list-modal-{shopping_list.pk}"' in content
+    assert 'data-edit-toggle' in content
+    assert 'data-card-reorder' in content
+    assert 'aria-label="Move"' in content
+    assert ">Move</span>" not in content
+    assert 'class="card-footer bg-white d-flex flex-nowrap align-items-center gap-2 edit-only"' in content
+    assert 'bi-upload' in content
+    assert 'bi-plus-lg' in content
+    assert "Import JSON" in content
+    assert 'd-none d-md-inline">New list</span>' in content
+
+
+@pytest.mark.django_db
+def test_list_overview_reorder_keeps_other_users_lists(client, user, other_user):
+    first = ShoppingList.objects.create(user=user, title="First")
+    second = ShoppingList.objects.create(user=user, title="Second")
+    foreign = ShoppingList.objects.create(user=other_user, title="Foreign")
+    client.force_login(user)
+
+    response = client.post(
+        reverse("easy_kitchen:list-reorder"),
+        json.dumps({"list_ids": [first.pk, second.pk, foreign.pk]}),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert list(user.shopping_lists.values_list("title", flat=True)) == ["Second", "First"]
+    kept = client.post(
+        reverse("easy_kitchen:list-reorder"),
+        json.dumps({"list_ids": [first.pk, second.pk]}),
+        content_type="application/json",
+    )
+    assert kept.status_code == 302
+    assert list(user.shopping_lists.values_list("title", flat=True)) == ["First", "Second"]
+
+
+@pytest.mark.django_db
+def test_edit_from_overview_returns_to_list_overview(client, user, shopping_list):
+    client.force_login(user)
+
+    response = client.post(
+        f'{reverse("easy_kitchen:update", args=[shopping_list.pk])}?return_to=overview',
+        {"title": "Umbenannte Liste", "date": "2026-10-30"},
+    )
+
+    assert response.url == reverse("easy_kitchen:list")
+
+
+@pytest.mark.django_db
+def test_edit_from_detail_returns_to_list_detail(client, user, shopping_list):
+    client.force_login(user)
+
+    response = client.post(
+        reverse("easy_kitchen:update", args=[shopping_list.pk]),
+        {"title": "Umbenannte Liste", "date": "2026-10-30"},
+    )
+
+    assert response.url == reverse("easy_kitchen:detail", args=[shopping_list.pk])
+
+
+@pytest.mark.django_db
+def test_edit_from_overview_cancels_to_list_overview(client, user, shopping_list):
+    client.force_login(user)
+
+    response = client.get(f'{reverse("easy_kitchen:update", args=[shopping_list.pk])}?return_to=overview')
+
+    content = response.content.decode()
+    assert f'href="{reverse("easy_kitchen:list")}"' in content
+    assert 'd-none d-md-inline">Cancel</span>' in content
+
+
+@pytest.mark.django_db
+def test_edit_from_detail_cancels_to_list_detail(client, user, shopping_list):
+    client.force_login(user)
+
+    response = client.get(reverse("easy_kitchen:update", args=[shopping_list.pk]))
+
+    content = response.content.decode()
+    assert f'href="{reverse("easy_kitchen:detail", args=[shopping_list.pk])}"' in content
+    assert 'd-none d-md-inline">Cancel</span>' in content
+
+
+@pytest.mark.django_db
+def test_json_import_creates_lists_and_items_for_current_user(client, user):
+    client.force_login(user)
+
+    response = client.post(
+        reverse("easy_kitchen:import-json"),
+        {
+            "json_data": """{
+                \"lists\": [{
+                    \"title\": \"Tofu pan\",
+                    \"date\": \"2026-10-31\",
+                    \"items\": [{\"name\": \"Tofu\", \"quantity\": \"400 g\"}]
+                }]
+            }"""
+        },
+    )
+
+    assert response.status_code == 302
+    imported_list = ShoppingList.objects.get(user=user, title="Tofu pan")
+    assert imported_list.date == date(2026, 10, 31)
+    assert list(imported_list.items.values_list("name", "quantity")) == [("Tofu", "400 g")]
+
+
+@pytest.mark.django_db
+def test_json_import_rejects_invalid_json_without_creating_a_list(client, user):
+    client.force_login(user)
+
+    response = client.post(reverse("easy_kitchen:import-json"), {"json_data": "not json"})
+
+    assert response.status_code == 200
+    assert ShoppingList.objects.filter(user=user).count() == 0
+    assert "invalid-feedback" in response.content.decode()

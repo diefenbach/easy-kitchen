@@ -1,7 +1,7 @@
-# EasyList in ChatGPT
+# EasyKitchen in ChatGPT
 
 This directory contains a deliberately small Action definition for a **private**
-EasyList GPT. It can read shopping lists and create new ones for the user whose
+EasyKitchen GPT. It can read shopping lists and create new ones for the user whose
 DRF token is configured in the Action.
 
 ## Configure the Action
@@ -15,12 +15,12 @@ DRF token is configured in the Action.
    editor.
 
 Keep the GPT private. Anyone allowed to use it would otherwise act through the
-configured EasyList account.
+configured EasyKitchen account.
 
 ## Suggested GPT instructions
 
 ```text
-Use EasyList only when the user explicitly asks to read or create a shopping
+Use EasyKitchen only when the user explicitly asks to read or create a shopping
 list. Before creating a list, confirm any missing title, date, or unclear item.
 Use ISO dates (YYYY-MM-DD). Do not claim that a list was created until
 createShoppingList returned successfully. Never reveal or request the API token.

@@ -33,7 +33,7 @@ def test_saved_articles_are_suggested_and_can_be_renamed(authenticated_page):
     name.locator("xpath=ancestor::form[1]").get_by_role("button", name="Save").click()
     expect(page.get_by_role("textbox", name="Edit Räuchertofu")).to_have_value("Räuchertofu")
 
-    page.get_by_role("link", name="EasyList").click()
+    page.get_by_role("link", name="EasyKitchen").click()
     page.get_by_role("link", name="Vorrat").click()
     expect(page.locator('#articles option[value="Räuchertofu"]')).to_have_count(1)
     expect(page.locator('#articles option[value="Naturtofu"]')).to_have_count(0)
@@ -76,7 +76,7 @@ def test_articles_return_to_the_page_they_were_opened_from(authenticated_page):
     page.get_by_role("link", name="Vorrat").click()
     expect(page.get_by_role("heading", name="Vorrat")).to_be_visible()
 
-    page.get_by_role("link", name="EasyList").click()
+    page.get_by_role("link", name="EasyKitchen").click()
     page.get_by_role("link", name="Articles").click()
     page.locator("main").get_by_role("link", name="Shopping lists").click()
     expect(page.get_by_role("heading", name="Shopping lists")).to_be_visible()
@@ -159,7 +159,7 @@ def test_adding_the_same_item_again_shows_both_quantities(authenticated_page):
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
 def test_user_cannot_see_another_users_list(authenticated_page, other_user):
-    from shopping.models import ShoppingList
+    from easy_kitchen.models import ShoppingList
 
     ShoppingList.objects.create(user=other_user, title="Private Liste")
     page = authenticated_page
@@ -169,13 +169,13 @@ def test_user_cannot_see_another_users_list(authenticated_page, other_user):
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
 def test_user_can_hide_and_reset_completed_items(authenticated_page, user):
-    from shopping.models import ShoppingItem, ShoppingList
+    from easy_kitchen.models import ShoppingItem, ShoppingList
 
     shopping_list = ShoppingList.objects.create(user=user, title="Wocheneinkauf")
     completed = ShoppingItem.objects.create(shopping_list=shopping_list, name="Tofu", checked=True)
     ShoppingItem.objects.create(shopping_list=shopping_list, name="Reis")
     page = authenticated_page
-    page.route("**/easylist.css", lambda route: route.abort())
+    page.route("**/easykitchen.css", lambda route: route.abort())
     page.goto(f"{page.url.rstrip('/')}/lists/{shopping_list.pk}/")
 
     completed_item = page.locator(f'.shopping-item[data-item-id="{completed.pk}"]')
@@ -190,8 +190,8 @@ def test_user_can_hide_and_reset_completed_items(authenticated_page, user):
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
 def test_edit_mode_starts_off_and_resets_when_the_page_reloads(authenticated_page, user):
-    from shopping.models import ShoppingItem, ShoppingList
-    from shopping.services import create_recipe
+    from easy_kitchen.models import ShoppingItem, ShoppingList
+    from easy_kitchen.services import create_recipe
 
     shopping_list = ShoppingList.objects.create(user=user, title="Wocheneinkauf")
     ShoppingItem.objects.create(shopping_list=shopping_list, name="Tofu", position=1)
@@ -263,7 +263,7 @@ def test_edit_mode_starts_off_and_resets_when_the_page_reloads(authenticated_pag
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
 def test_user_can_edit_a_list_from_the_overview(authenticated_page, user):
-    from shopping.models import ShoppingList
+    from easy_kitchen.models import ShoppingList
 
     shopping_list = ShoppingList.objects.create(user=user, title="Alter Titel")
     page = authenticated_page
@@ -280,7 +280,7 @@ def test_user_can_edit_a_list_from_the_overview(authenticated_page, user):
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
 def test_user_can_edit_a_list_from_its_detail_page(authenticated_page, user):
-    from shopping.models import ShoppingList
+    from easy_kitchen.models import ShoppingList
 
     shopping_list = ShoppingList.objects.create(user=user, title="Alter Titel")
     page = authenticated_page
@@ -297,7 +297,7 @@ def test_user_can_edit_a_list_from_its_detail_page(authenticated_page, user):
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
 def test_user_can_delete_a_list_from_the_overview_modal(authenticated_page, user):
-    from shopping.models import ShoppingList
+    from easy_kitchen.models import ShoppingList
 
     ShoppingList.objects.create(user=user, title="Zu löschen")
     page = authenticated_page
@@ -315,8 +315,8 @@ def test_user_can_delete_a_list_from_the_overview_modal(authenticated_page, user
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
 def test_user_can_reorder_lists_and_recipes_on_the_overview(authenticated_page, user):
-    from shopping.models import ShoppingList
-    from shopping.services import create_recipe
+    from easy_kitchen.models import ShoppingList
+    from easy_kitchen.services import create_recipe
 
     older = ShoppingList.objects.create(user=user, title="Older list")
     newer = ShoppingList.objects.create(user=user, title="Newer list")
@@ -348,7 +348,7 @@ def test_user_can_reorder_lists_and_recipes_on_the_overview(authenticated_page, 
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
 def test_user_can_reorder_items_with_drag_and_drop(authenticated_page, user):
-    from shopping.models import ShoppingItem, ShoppingList
+    from easy_kitchen.models import ShoppingItem, ShoppingList
 
     shopping_list = ShoppingList.objects.create(user=user, title="Wocheneinkauf")
     tofu = ShoppingItem.objects.create(shopping_list=shopping_list, name="Tofu", position=1)
@@ -416,7 +416,7 @@ def test_user_can_save_calories_protein_and_preparation_time(authenticated_page)
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
 def test_clicking_a_recipe_picture_opens_the_recipe(authenticated_page, user):
-    from shopping.services import create_recipe
+    from easy_kitchen.services import create_recipe
 
     create_recipe(user, title="Pancakes")
     page = authenticated_page
@@ -432,7 +432,7 @@ def test_clicking_a_recipe_picture_opens_the_recipe(authenticated_page, user):
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
 def test_user_can_edit_a_recipe_from_the_overview(authenticated_page, user):
-    from shopping.services import create_recipe
+    from easy_kitchen.services import create_recipe
 
     create_recipe(user, title="Alter Titel")
     page = authenticated_page
@@ -451,7 +451,7 @@ def test_user_can_edit_a_recipe_from_the_overview(authenticated_page, user):
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
 def test_user_can_edit_a_recipe_from_its_detail_page(authenticated_page, user):
-    from shopping.services import create_recipe
+    from easy_kitchen.services import create_recipe
 
     recipe = create_recipe(user, title="Alter Titel")
     page = authenticated_page
@@ -516,7 +516,7 @@ def test_logged_in_user_sees_swagger_ui(page, live_server, user):
         page.goto(f"{live_server.url}/api/v1/")
 
         swagger = page.locator("#swagger-ui")
-        expect(swagger.get_by_text("EasyList API")).to_be_visible()
+        expect(swagger.get_by_text("EasyKitchen API")).to_be_visible()
         for path in (
             "/api/v1/shopping-lists/",
             "/api/v1/shopping-lists/{id}/",

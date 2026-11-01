@@ -1,4 +1,4 @@
-# EasyList
+# EasyKitchen
 
 A private, responsive shopping list application built with Django 5.2 LTS. It uses server-rendered Django templates, HTMX for small partial updates, Bootstrap 5.3, and SortableJS for ordering.
 
@@ -48,7 +48,7 @@ A private, responsive shopping list application built with Django 5.2 LTS. It us
 - `POST /api/v1/recipes/{id}/reorder-ingredients/` and `POST /api/v1/recipes/{id}/reorder-steps/` accept `{"line_ids": [3, 1, 2]}`.
 - `POST /api/v1/recipes/import_json/` accepts `{"recipes": [...]}` or a bare list. The fields are described under [Recipe JSON](#recipe-json). An image file is not part of the JSON; send `image_url` or upload the file in the app.
 - Swagger UI at `/api/v1/` and the OpenAPI schema at `/api/v1/schema/` are public. List and recipe operations stay authenticated.
-- The web UI, the API, and MCP call the same operations in `shopping/services.py`.
+- The web UI, the API, and MCP call the same operations in `easy_kitchen/services.py`.
 
 ### MCP server
 
@@ -155,13 +155,13 @@ cp .env.example .env
 docker compose up -d
 ```
 
-The service is available only at `localhost:5432` and stores its data in the `easylist_postgres` Docker volume. Check its status with:
+The service is available only at `localhost:5432` and stores its data in the `easykitchen_postgres` Docker volume. Check its status with:
 
 ```sh
 docker compose ps
 ```
 
-Then start EasyList locally:
+Then start EasyKitchen locally:
 
 ```sh
 cp .env.example .env
@@ -172,38 +172,38 @@ uv run --env-file .env python src/manage.py createsuperuser
 uv run --env-file .env python src/manage.py runserver
 ```
 
-`uv` loads the local `.env`; Django does not require a dotenv library. The application is then available at `http://localhost:8000`. The development settings deliberately enable `DEBUG` so Django serves source static files directly from `src/shopping/static/`.
+`uv` loads the local `.env`; Django does not require a dotenv library. The application is then available at `http://localhost:8000`. The development settings deliberately enable `DEBUG` so Django serves source static files directly from `src/easy_kitchen/static/`.
 
 A database backup can be imported into the running local PostgreSQL container. Run `migrate` afterwards to apply any missing migrations.
 
 ## Production: existing iqpp Compose stack
 
-The image is built as `registry.iqpp.de/iqpp/easylist:latest` and listens internally on port `8000`. It is added to the existing `iqpp_prod` Compose stack. Compose loads `./easylist/.env` through `env_file`; Django reads only standard environment variables.
+The image is built as `registry.iqpp.de/iqpp/easykitchen:latest` and listens internally on port `8000`. It is added to the existing `iqpp_prod` Compose stack. Compose loads `./kitchen/.env` through `env_file`; Django reads only standard environment variables.
 
 The production environment file requires at least:
 
 ```dotenv
 DJANGO_SECRET_KEY=<long-random-value>
-DJANGO_ALLOWED_HOSTS=easylist.iqpp.de
-DJANGO_CSRF_TRUSTED_ORIGINS=https://easylist.iqpp.de
-POSTGRES_DB=easylist
+DJANGO_ALLOWED_HOSTS=kitchen.iqpp.de
+DJANGO_CSRF_TRUSTED_ORIGINS=https://kitchen.iqpp.de
+POSTGRES_DB=easykitchen
 POSTGRES_USER=<user>
 POSTGRES_PASSWORD=<password>
 POSTGRES_HOST=postgres
 POSTGRES_PORT=5432
 ```
 
-The container runs migrations and `collectstatic` when it starts. The output is placed in a shared `easylist_static` volume that Nginx serves at `/static/`. Uploaded recipe pictures are stored in `easylist_media` and served at `/media/`. Do not commit `src/staticfiles/` or `src/media/`.
+The container runs migrations and `collectstatic` when it starts. The output is placed in a shared `easykitchen_static` volume that Nginx serves at `/static/`. Uploaded recipe pictures are stored in `easykitchen_media` and served at `/media/`. Do not commit `src/staticfiles/` or `src/media/`.
 
 The MCP server is a second process from the same image. It listens on port `8001` at `/mcp` and creates lists for whichever user owns the DRF token on that request. Publish it only through Nginx, on the internal Docker network:
 
 ```yaml
-command: ["python", "-m", "shopping.mcp_server"]
+command: ["python", "-m", "easy_kitchen.mcp_server"]
 ```
 
 ```nginx
 location /mcp {
-    proxy_pass http://easylist-mcp:8001;
+    proxy_pass http://kitchen-mcp:8001;
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header Authorization $http_authorization;
@@ -211,7 +211,7 @@ location /mcp {
 }
 ```
 
-Clients call `https://easylist.iqpp.de/mcp` with `Authorization: Token <token>`. There is no user argument. `DJANGO_ALLOWED_HOSTS` is accepted as the MCP host allowlist. Override it with `MCP_ALLOWED_HOSTS` when the proxy host differs.
+Clients call `https://kitchen.iqpp.de/mcp` with `Authorization: Token <token>`. There is no user argument. `DJANGO_ALLOWED_HOSTS` is accepted as the MCP host allowlist. Override it with `MCP_ALLOWED_HOSTS` when the proxy host differs.
 
 ## API
 
@@ -236,7 +236,7 @@ Run the MCP server locally with the development settings:
 
 ```sh
 DJANGO_SETTINGS_MODULE=project.settings.development PYTHONPATH=src \
-  uv run --env-file .env python -m shopping.mcp_server
+  uv run --env-file .env python -m easy_kitchen.mcp_server
 ```
 
 It listens on `http://127.0.0.1:8001/mcp`. Create a token with `drf_create_token` and send it as `Authorization: Token <token>`.
@@ -259,4 +259,4 @@ To run browser tests only:
 uv run pytest e2e
 ```
 
-The web UI, the API, and MCP call the same operations in `shopping/services.py`.
+The web UI, the API, and MCP call the same operations in `easy_kitchen/services.py`.

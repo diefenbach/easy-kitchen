@@ -6,8 +6,8 @@ from django.urls import include, path
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("django.contrib.auth.urls")),
-    path("api/v1/", include("shopping.api.urls")),
-    path("", include("shopping.urls")),
+    path("api/v1/", include("easy_kitchen.api.urls")),
+    path("", include("easy_kitchen.urls")),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

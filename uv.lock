@@ -330,7 +330,7 @@ wheels = [
 ]
 
 [[package]]
-name = "easylist"
+name = "django-easy-kitchen"
 version = "0.6.0"
 source = { virtual = "." }
 dependencies = [

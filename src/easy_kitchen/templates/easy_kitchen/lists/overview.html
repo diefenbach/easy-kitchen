@@ -1,0 +1,82 @@
+{% extends "easy_kitchen/base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Shopping lists" %} · EasyKitchen{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+  <h1 class="h2 mb-0">{% translate "Shopping lists" %}</h1>
+  <div class="d-flex flex-wrap gap-2">
+    {% if shopping_lists %}{% include "easy_kitchen/partials/edit_mode_button.html" %}{% endif %}
+    <a href="{% url 'easy_kitchen:import-json' %}" class="btn btn-outline-secondary" aria-label="{% translate 'Import JSON' %}">
+      <i class="bi bi-upload" aria-hidden="true"></i>
+      <span class="d-none d-md-inline">{% translate "Import JSON" %}</span>
+    </a>
+    <a href="{% url 'easy_kitchen:create' %}" class="btn btn-primary" aria-label="{% translate 'New list' %}">
+      <i class="bi bi-plus-lg" aria-hidden="true"></i>
+      <span class="d-none d-md-inline">{% translate "New list" %}</span>
+    </a>
+  </div>
+</div>
+{% if shopping_lists %}
+  <div id="shopping-lists" class="row g-3" data-card-reorder="{% url 'easy_kitchen:list-reorder' %}" data-id-field="list_ids">
+    {% for list in shopping_lists %}
+      <div class="col-12 col-md-6 col-lg-4" data-list-id="{{ list.pk }}">
+        <article class="card h-100 shadow-sm list-card">
+          <div class="card-body position-relative">
+            <h2 class="h5"><a class="stretched-link text-decoration-none link-dark" href="{% url 'easy_kitchen:detail' list.pk %}">{{ list.title }}</a></h2>
+            <p class="text-secondary mb-2">{{ list.date|date:"D, d. M Y" }}</p>
+            <span class="badge text-bg-light">{% blocktranslate count counter=list.items.count %}{{ counter }} item{% plural %}{{ counter }} items{% endblocktranslate %}</span>
+          </div>
+          <div class="card-footer bg-white d-flex flex-nowrap align-items-center gap-2 edit-only">
+            <button class="drag-handle btn btn-sm text-secondary" type="button" aria-label="{% translate 'Move' %}">
+              <i class="bi bi-grip-vertical" aria-hidden="true"></i>
+            </button>
+            <a href="{% url 'easy_kitchen:update' list.pk %}?return_to=overview" class="btn btn-outline-secondary ms-auto" aria-label="{% translate 'Edit' %}">
+              <i class="bi bi-pencil" aria-hidden="true"></i>
+              <span class="d-none d-md-inline">{% translate "Edit" %}</span>
+            </a>
+            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#delete-list-modal-{{ list.pk }}" aria-label="{% translate 'Delete list' %}">
+              <i class="bi bi-trash" aria-hidden="true"></i>
+              <span class="d-none d-md-inline">{% translate "Delete list" %}</span>
+            </button>
+          </div>
+        </article>
+      </div>
+    {% endfor %}
+  </div>
+  {% for list in shopping_lists %}
+      <div class="modal fade" id="delete-list-modal-{{ list.pk }}" tabindex="-1" aria-labelledby="delete-list-title-{{ list.pk }}" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2 class="modal-title fs-5" id="delete-list-title-{{ list.pk }}">{% translate "Delete list?" %}</h2>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate 'Close' %}"></button>
+            </div>
+            <div class="modal-body">{% blocktranslate with title=list.title %}"{{ title }}" and all items will be permanently deleted.{% endblocktranslate %}</div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" aria-label="{% translate 'Cancel' %}">
+                <i class="bi bi-x-lg" aria-hidden="true"></i>
+                <span class="d-none d-md-inline">{% translate "Cancel" %}</span>
+              </button>
+              <form method="post" action="{% url 'easy_kitchen:delete' list.pk %}">
+                {% csrf_token %}
+                <button class="btn btn-danger" aria-label="{% translate 'Delete permanently' %}">
+                  <i class="bi bi-trash" aria-hidden="true"></i>
+                  <span class="d-none d-md-inline">{% translate "Delete permanently" %}</span>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+{% else %}
+  <div class="text-center py-5 bg-white rounded shadow-sm">
+    <h2 class="h4">{% translate "No shopping list yet" %}</h2>
+    <p class="text-secondary">{% translate "Create your first list." %}</p>
+    <a href="{% url 'easy_kitchen:create' %}" class="btn btn-primary" aria-label="{% translate 'Create list' %}">
+      <i class="bi bi-plus-lg" aria-hidden="true"></i>
+      <span class="d-none d-md-inline">{% translate "Create list" %}</span>
+    </a>
+  </div>
+{% endif %}
+{% endblock %}

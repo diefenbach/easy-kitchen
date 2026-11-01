@@ -1,5 +1,5 @@
 [project]
-name = "easylist"
+name = "django-easy-kitchen"
 version = "0.6.0"
 description = "A simple, private shopping list application."
 readme = "README.md"

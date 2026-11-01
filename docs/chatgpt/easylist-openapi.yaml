@@ -1,16 +1,16 @@
 openapi: 3.1.0
 info:
-  title: EasyList API
+  title: EasyKitchen API
   version: 1.0.0
   description: |
-    Private shopping lists for the authenticated EasyList user. Use this API to
+    Private shopping lists for the authenticated EasyKitchen user. Use this API to
     read lists and create a new list with its items. Never expose the API token
     in responses.
 servers:
-  - url: https://easylist.iqpp.de/api/v1
+  - url: https://kitchen.iqpp.de/api/v1
     description: Production
 security:
-  - EasyListToken: []
+  - EasyKitchenToken: []
 paths:
   /shopping-lists/:
     get:
@@ -61,7 +61,7 @@ paths:
           $ref: '#/components/responses/NotFound'
 components:
   securitySchemes:
-    EasyListToken:
+    EasyKitchenToken:
       type: apiKey
       in: header
       name: Authorization

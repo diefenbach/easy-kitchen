@@ -1,0 +1,22 @@
+{% load i18n %}
+<form hx-post="{% url 'easy_kitchen:item-create' shopping_list.pk %}" hx-target="#items" hx-swap="beforeend" hx-on::after-request="if(event.detail.successful) this.reset()" class="row g-2 align-items-end">
+  {% csrf_token %}
+  <div class="col-12 col-sm">
+    <label class="form-label" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+    <div class="article-field">
+      {{ form.name }}
+      <ul class="article-suggestions" role="listbox" hidden aria-label="{% translate 'Articles' %}"></ul>
+    </div>
+    {% include "easy_kitchen/lists/partials/article_options.html" %}
+  </div>
+  <div class="col-7 col-sm-3">
+    <label class="form-label" for="{{ form.quantity.id_for_label }}">{{ form.quantity.label }}</label>
+    {{ form.quantity }}
+  </div>
+  <div class="col-5 col-sm-auto">
+    <button class="btn btn-primary w-100" aria-label="{% translate 'Add' %}">
+      <i class="bi bi-plus-lg" aria-hidden="true"></i>
+      <span class="d-none d-md-inline">{% translate "Add" %}</span>
+    </button>
+  </div>
+</form>

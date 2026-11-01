@@ -17,7 +17,7 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "drf_spectacular",
     "drf_spectacular_sidecar",
-    "shopping",
+    "easy_kitchen",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -61,7 +61,7 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = SRC_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "shopping:list"
+LOGIN_REDIRECT_URL = "easy_kitchen:list"
 LOGOUT_REDIRECT_URL = "login"
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -72,7 +72,7 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 SPECTACULAR_SETTINGS = {
-    "TITLE": "EasyList API",
+    "TITLE": "EasyKitchen API",
     "DESCRIPTION": "Private shopping lists and recipes for the authenticated user.",
     "VERSION": "0.6.0",
     "SERVE_INCLUDE_SCHEMA": False,
