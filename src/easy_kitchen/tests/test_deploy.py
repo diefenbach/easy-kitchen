@@ -14,4 +14,6 @@ def test_deploy_script_waits_for_kitchen_and_mcp():
     assert "wait_for \"kitchen\" kitchen_ready" in script
     assert "wait_for \"kitchen-mcp\" mcp_ready" in script
     assert "https://kitchen.iqpp.de/" in script
+    assert "socket.create_connection(('127.0.0.1', 8000), 2)" in script
+    assert "urllib.request" not in script
     assert "--retry 8" not in script
