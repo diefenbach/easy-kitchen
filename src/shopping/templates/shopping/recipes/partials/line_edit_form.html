@@ -21,7 +21,10 @@
       </div>
     {% endif %}
     <div class="col-auto">
-      <button class="btn btn-primary btn-sm">{% translate "Save" %}</button>
+      <button class="btn btn-primary btn-sm" aria-label="{% translate 'Save' %}">
+        <i class="bi bi-check-lg" aria-hidden="true"></i>
+        <span class="d-none d-md-inline">{% translate "Save" %}</span>
+      </button>
     </div>
   </form>
 </div>

@@ -6,8 +6,14 @@
   <h1 class="h2 mb-0">{% translate "Shopping lists" %}</h1>
   <div class="d-flex flex-wrap gap-2">
     {% if shopping_lists %}{% include "shopping/partials/edit_mode_button.html" %}{% endif %}
-    <a href="{% url 'shopping:import-json' %}" class="btn btn-outline-secondary">{% translate "Import JSON" %}</a>
-    <a href="{% url 'shopping:create' %}" class="btn btn-primary">{% translate "New list" %}</a>
+    <a href="{% url 'shopping:import-json' %}" class="btn btn-outline-secondary" aria-label="{% translate 'Import JSON' %}">
+      <i class="bi bi-upload" aria-hidden="true"></i>
+      <span class="d-none d-md-inline">{% translate "Import JSON" %}</span>
+    </a>
+    <a href="{% url 'shopping:create' %}" class="btn btn-primary" aria-label="{% translate 'New list' %}">
+      <i class="bi bi-plus-lg" aria-hidden="true"></i>
+      <span class="d-none d-md-inline">{% translate "New list" %}</span>
+    </a>
   </div>
 </div>
 {% if shopping_lists %}
@@ -21,14 +27,17 @@
             <span class="badge text-bg-light">{% blocktranslate count counter=list.items.count %}{{ counter }} item{% plural %}{{ counter }} items{% endblocktranslate %}</span>
           </div>
           <div class="card-footer bg-white d-flex flex-nowrap align-items-center gap-2 edit-only">
-            <button class="drag-handle btn btn-sm text-secondary icon-action" type="button" aria-label="{% translate 'Move' %}">
+            <button class="drag-handle btn btn-sm text-secondary" type="button" aria-label="{% translate 'Move' %}">
               <i class="bi bi-grip-vertical" aria-hidden="true"></i>
+              <span class="d-none d-md-inline">{% translate "Move" %}</span>
             </button>
-            <a href="{% url 'shopping:update' list.pk %}?return_to=overview" class="btn btn-outline-secondary icon-action ms-auto" aria-label="{% translate 'Edit' %}">
+            <a href="{% url 'shopping:update' list.pk %}?return_to=overview" class="btn btn-outline-secondary ms-auto" aria-label="{% translate 'Edit' %}">
               <i class="bi bi-pencil" aria-hidden="true"></i>
+              <span class="d-none d-md-inline">{% translate "Edit" %}</span>
             </a>
-            <button type="button" class="btn btn-outline-danger icon-action" data-bs-toggle="modal" data-bs-target="#delete-list-modal-{{ list.pk }}" aria-label="{% translate 'Delete list' %}">
+            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#delete-list-modal-{{ list.pk }}" aria-label="{% translate 'Delete list' %}">
               <i class="bi bi-trash" aria-hidden="true"></i>
+              <span class="d-none d-md-inline">{% translate "Delete list" %}</span>
             </button>
           </div>
         </article>
@@ -45,10 +54,16 @@
             </div>
             <div class="modal-body">{% blocktranslate with title=list.title %}"{{ title }}" and all items will be permanently deleted.{% endblocktranslate %}</div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Cancel" %}</button>
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" aria-label="{% translate 'Cancel' %}">
+                <i class="bi bi-x-lg" aria-hidden="true"></i>
+                <span class="d-none d-md-inline">{% translate "Cancel" %}</span>
+              </button>
               <form method="post" action="{% url 'shopping:delete' list.pk %}">
                 {% csrf_token %}
-                <button class="btn btn-danger">{% translate "Delete permanently" %}</button>
+                <button class="btn btn-danger" aria-label="{% translate 'Delete permanently' %}">
+                  <i class="bi bi-trash" aria-hidden="true"></i>
+                  <span class="d-none d-md-inline">{% translate "Delete permanently" %}</span>
+                </button>
               </form>
             </div>
           </div>
@@ -59,7 +74,10 @@
   <div class="text-center py-5 bg-white rounded shadow-sm">
     <h2 class="h4">{% translate "No shopping list yet" %}</h2>
     <p class="text-secondary">{% translate "Create your first list." %}</p>
-    <a href="{% url 'shopping:create' %}" class="btn btn-primary">{% translate "Create list" %}</a>
+    <a href="{% url 'shopping:create' %}" class="btn btn-primary" aria-label="{% translate 'Create list' %}">
+      <i class="bi bi-plus-lg" aria-hidden="true"></i>
+      <span class="d-none d-md-inline">{% translate "Create list" %}</span>
+    </a>
   </div>
 {% endif %}
 {% endblock %}

@@ -2,9 +2,9 @@
 {% load i18n %}
 {% block title %}{{ object.title }} · EasyList{% endblock %}
 {% block content %}
-<a class="btn btn-outline-secondary btn-sm list-back-button mb-3" href="{% url 'shopping:list' %}">
+<a class="btn btn-outline-secondary btn-sm list-back-button mb-3" href="{% url 'shopping:list' %}" aria-label="{% translate 'Shopping lists' %}">
   <i class="bi bi-arrow-left" aria-hidden="true"></i>
-  {% translate "Shopping lists" %}
+  <span class="d-none d-md-inline">{% translate "Shopping lists" %}</span>
 </a>
 <header class="list-detail-header card border-0 mb-4">
   <div class="card-body p-4 d-flex flex-column flex-sm-row gap-3 align-items-sm-start justify-content-between">
@@ -17,11 +17,13 @@
     </div>
     <div class="btn-group edit-actions flex-shrink-0 align-self-start" role="group" aria-label="{% translate 'List actions' %}">
       {% include "shopping/partials/edit_mode_button.html" %}
-      <a href="{% url 'shopping:update' object.pk %}" class="btn btn-outline-secondary icon-action edit-only" aria-label="{% translate 'Edit list' %}">
+      <a href="{% url 'shopping:update' object.pk %}" class="btn btn-outline-secondary edit-only" aria-label="{% translate 'Edit list' %}">
         <i class="bi bi-pencil" aria-hidden="true"></i>
+        <span class="d-none d-md-inline">{% translate "Edit list" %}</span>
       </a>
-      <button type="button" class="btn btn-outline-danger icon-action edit-only" data-bs-toggle="modal" data-bs-target="#delete-list-modal" aria-label="{% translate 'Delete list' %}">
+      <button type="button" class="btn btn-outline-danger edit-only" data-bs-toggle="modal" data-bs-target="#delete-list-modal" aria-label="{% translate 'Delete list' %}">
         <i class="bi bi-trash" aria-hidden="true"></i>
+        <span class="d-none d-md-inline">{% translate "Delete list" %}</span>
       </button>
     </div>
   </div>
@@ -30,10 +32,16 @@
   <div class="card-body" id="item-form">{% include "shopping/lists/partials/item_form.html" %}</div>
 </section>
 <div class="d-flex flex-wrap gap-2 mb-3">
-  <button id="toggle-checked-items" type="button" class="btn btn-outline-secondary btn-sm" aria-pressed="false" data-label-hide="{% translate 'Hide completed' %}" data-label-show="{% translate 'Show completed' %}">{% translate "Hide completed" %}</button>
+  <button id="toggle-checked-items" type="button" class="btn btn-outline-secondary btn-sm" aria-pressed="false" aria-label="{% translate 'Hide completed' %}" data-label-hide="{% translate 'Hide completed' %}" data-label-show="{% translate 'Show completed' %}">
+    <i class="bi bi-eye-slash" aria-hidden="true"></i>
+    <span class="btn-label d-none d-md-inline">{% translate "Hide completed" %}</span>
+  </button>
   <form method="post" action="{% url 'shopping:items-reset-checked' object.pk %}">
     {% csrf_token %}
-    <button class="btn btn-outline-secondary btn-sm">{% translate "Mark all as not completed" %}</button>
+    <button class="btn btn-outline-secondary btn-sm" aria-label="{% translate 'Mark all as not completed' %}">
+      <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+      <span class="d-none d-md-inline">{% translate "Mark all as not completed" %}</span>
+    </button>
   </form>
 </div>
 <div id="items" data-reorder-url="{% url 'shopping:item-reorder' object.pk %}">
@@ -52,10 +60,16 @@
       </div>
       <div class="modal-body">{% blocktranslate with title=object.title %}"{{ title }}" and all items will be permanently deleted.{% endblocktranslate %}</div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Cancel" %}</button>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" aria-label="{% translate 'Cancel' %}">
+                <i class="bi bi-x-lg" aria-hidden="true"></i>
+                <span class="d-none d-md-inline">{% translate "Cancel" %}</span>
+              </button>
         <form method="post" action="{% url 'shopping:delete' object.pk %}">
           {% csrf_token %}
-          <button class="btn btn-danger">{% translate "Delete permanently" %}</button>
+          <button class="btn btn-danger" aria-label="{% translate 'Delete permanently' %}">
+                  <i class="bi bi-trash" aria-hidden="true"></i>
+                  <span class="d-none d-md-inline">{% translate "Delete permanently" %}</span>
+                </button>
         </form>
       </div>
     </div>
@@ -131,7 +145,10 @@ checkedItemsToggle?.addEventListener("click", () => {
   itemsContainer.querySelectorAll(".shopping-item.checked").forEach((item) => {
     item.hidden = hidden;
   });
-  checkedItemsToggle.textContent = hidden ? checkedItemsToggle.dataset.labelShow : checkedItemsToggle.dataset.labelHide;
+  const text = hidden ? checkedItemsToggle.dataset.labelShow : checkedItemsToggle.dataset.labelHide;
+  const label = checkedItemsToggle.querySelector(".btn-label");
+  if (label) label.textContent = text;
+  checkedItemsToggle.setAttribute("aria-label", text);
   checkedItemsToggle.setAttribute("aria-pressed", hidden);
 });
 new Sortable(itemsContainer, {

@@ -16,8 +16,14 @@
         {% endfor %}
       </div>
       <div class="card-footer bg-white d-flex gap-2">
-        <button class="btn btn-primary">{% translate "Save" %}</button>
-        <a class="btn btn-outline-secondary" href="{{ cancel_url }}">{% translate "Cancel" %}</a>
+        <button class="btn btn-primary" aria-label="{% translate 'Save' %}">
+          <i class="bi bi-check-lg" aria-hidden="true"></i>
+          <span class="d-none d-md-inline">{% translate "Save" %}</span>
+        </button>
+        <a class="btn btn-outline-secondary" href="{{ cancel_url }}" aria-label="{% translate 'Cancel' %}">
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
+          <span class="d-none d-md-inline">{% translate "Cancel" %}</span>
+        </a>
       </div>
     </form>
   </div>

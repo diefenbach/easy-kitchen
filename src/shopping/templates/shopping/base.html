@@ -19,12 +19,24 @@
       <a class="navbar-brand fw-bold" href="{% url 'shopping:list' %}">EasyList</a>
       {% if user.is_authenticated %}
         <div class="ms-auto d-flex align-items-center gap-2">
-          <a class="btn btn-sm btn-outline-secondary" href="{% url 'shopping:list' %}">{% translate "Shopping lists" %}</a>
-          <a class="btn btn-sm btn-outline-secondary" href="{% url 'shopping:recipes' %}">{% translate "Recipes" %}</a>
-          <a class="btn btn-sm btn-outline-secondary" href="{% url 'shopping:articles' %}{% if request.resolver_match.namespace == 'shopping' and request.resolver_match.url_name == 'detail' or request.resolver_match.namespace == 'shopping' and request.resolver_match.url_name == 'update' %}?list={{ request.resolver_match.kwargs.pk }}{% elif return_list %}?list={{ return_list.pk }}{% endif %}">{% translate "Articles" %}</a>
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'shopping:list' %}" aria-label="{% translate 'Shopping lists' %}">
+            <i class="bi bi-list-check" aria-hidden="true"></i>
+            <span class="d-none d-md-inline">{% translate "Shopping lists" %}</span>
+          </a>
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'shopping:recipes' %}" aria-label="{% translate 'Recipes' %}">
+            <i class="bi bi-journal-text" aria-hidden="true"></i>
+            <span class="d-none d-md-inline">{% translate "Recipes" %}</span>
+          </a>
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'shopping:articles' %}{% if request.resolver_match.namespace == 'shopping' and request.resolver_match.url_name == 'detail' or request.resolver_match.namespace == 'shopping' and request.resolver_match.url_name == 'update' %}?list={{ request.resolver_match.kwargs.pk }}{% elif return_list %}?list={{ return_list.pk }}{% endif %}" aria-label="{% translate 'Articles' %}">
+            <i class="bi bi-bookmark" aria-hidden="true"></i>
+            <span class="d-none d-md-inline">{% translate "Articles" %}</span>
+          </a>
           <form method="post" action="{% url 'logout' %}">
             {% csrf_token %}
-            <button class="btn btn-sm btn-outline-secondary">{% translate "Log out" %}</button>
+            <button class="btn btn-sm btn-outline-secondary" aria-label="{% translate 'Log out' %}">
+              <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+              <span class="d-none d-md-inline">{% translate "Log out" %}</span>
+            </button>
           </form>
         </div>
       {% endif %}
@@ -52,7 +64,10 @@
         const editing = document.body.classList.toggle("editing");
         const icon = button.querySelector("i");
         button.setAttribute("aria-pressed", editing ? "true" : "false");
-        button.setAttribute("aria-label", editing ? button.dataset.labelOn : button.dataset.labelOff);
+        const text = editing ? button.dataset.labelOn : button.dataset.labelOff;
+        button.setAttribute("aria-label", text);
+        const label = button.querySelector(".btn-label");
+        if (label) label.textContent = text;
         icon.classList.remove(editing ? icon.dataset.iconOff : icon.dataset.iconOn);
         icon.classList.add(editing ? icon.dataset.iconOn : icon.dataset.iconOff);
       });

@@ -76,7 +76,7 @@ def test_articles_can_be_managed_without_changing_list_items(client, user, other
     overview = client.get(reverse("shopping:articles"))
     assert overview.status_code == 200
     content = overview.content.decode()
-    assert ">Articles</a>" in content
+    assert ">Articles</span>" in content
     assert 'aria-label="Save"' in content
     assert 'class="bi bi-check-lg"' in content
     assert 'aria-label="Delete"' in content
@@ -227,7 +227,7 @@ def test_list_detail_uses_a_minimal_icon_header(client, user, shopping_list):
     assert 'class="list-detail-header card border-0 mb-4"' in content
     assert "bi-arrow-left" in content
     assert "bi-calendar3" in content
-    assert ">Shopping lists</a>" in content
+    assert ">Shopping lists</span>" in content
     assert 'aria-label="Edit list"' in content
     assert 'aria-label="Delete list"' in content
     assert "data-edit-toggle" in content
@@ -274,6 +274,10 @@ def test_list_overview_offers_edit_and_modal_delete_actions(client, user, shoppi
     assert 'data-card-reorder' in content
     assert 'aria-label="Move"' in content
     assert 'class="card-footer bg-white d-flex flex-nowrap align-items-center gap-2 edit-only"' in content
+    assert 'bi-upload' in content
+    assert 'bi-plus-lg' in content
+    assert "Import JSON" in content
+    assert 'd-none d-md-inline">New list</span>' in content
 
 
 @pytest.mark.django_db
@@ -330,7 +334,9 @@ def test_edit_from_overview_cancels_to_list_overview(client, user, shopping_list
 
     response = client.get(f'{reverse("shopping:update", args=[shopping_list.pk])}?return_to=overview')
 
-    assert f'<a class="btn btn-outline-secondary" href="{reverse("shopping:list")}">Cancel</a>' in response.content.decode()
+    content = response.content.decode()
+    assert f'href="{reverse("shopping:list")}"' in content
+    assert 'd-none d-md-inline">Cancel</span>' in content
 
 
 @pytest.mark.django_db
@@ -339,7 +345,9 @@ def test_edit_from_detail_cancels_to_list_detail(client, user, shopping_list):
 
     response = client.get(reverse("shopping:update", args=[shopping_list.pk]))
 
-    assert f'<a class="btn btn-outline-secondary" href="{reverse("shopping:detail", args=[shopping_list.pk])}">Cancel</a>' in response.content.decode()
+    content = response.content.decode()
+    assert f'href="{reverse("shopping:detail", args=[shopping_list.pk])}"' in content
+    assert 'd-none d-md-inline">Cancel</span>' in content
 
 
 @pytest.mark.django_db

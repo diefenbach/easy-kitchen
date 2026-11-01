@@ -20,6 +20,9 @@
     </div>
   {% endif %}
   <div class="col-5 col-sm-auto">
-    <button class="btn btn-primary w-100">{% translate "Add" %}</button>
+    <button class="btn btn-primary w-100" aria-label="{% translate 'Add' %}">
+      <i class="bi bi-plus-lg" aria-hidden="true"></i>
+      <span class="d-none d-md-inline">{% translate "Add" %}</span>
+    </button>
   </div>
 </form>

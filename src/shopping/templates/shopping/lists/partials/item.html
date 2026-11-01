@@ -1,8 +1,9 @@
 {% load i18n %}
 <div class="shopping-item card mb-2 {% if item.checked %}checked{% endif %}" data-item-id="{{ item.id }}">
   <div class="card-body py-2 px-3 d-flex align-items-center gap-2">
-    <button class="drag-handle edit-only btn btn-sm text-secondary icon-action" type="button" aria-label="{% translate 'Move' %}">
+    <button class="drag-handle edit-only btn btn-sm text-secondary" type="button" aria-label="{% translate 'Move' %}">
       <i class="bi bi-grip-vertical" aria-hidden="true"></i>
+      <span class="d-none d-md-inline">{% translate "Move" %}</span>
     </button>
     <button class="btn btn-sm p-0 border-0 bg-transparent" hx-post="{% url 'shopping:item-toggle' shopping_list.pk item.pk %}" hx-target="closest .shopping-item" hx-swap="outerHTML" aria-label="{% translate 'Toggle completed' %}">
       <span class="checkmark">{% if item.checked %}☑{% else %}☐{% endif %}</span>
@@ -12,11 +13,13 @@
       {% if item.quantity %}<small class="item-quantity text-secondary ms-2">{{ item.quantity }}</small>{% endif %}
     </button>
     <div class="btn-group edit-only" role="group" aria-label="{% translate 'Item actions' %}">
-      <button class="btn btn-outline-secondary icon-action" hx-get="{% url 'shopping:item-update' shopping_list.pk item.pk %}" hx-target="closest .shopping-item" hx-swap="outerHTML" aria-label="{% translate 'Edit item' %}">
+      <button class="btn btn-outline-secondary" hx-get="{% url 'shopping:item-update' shopping_list.pk item.pk %}" hx-target="closest .shopping-item" hx-swap="outerHTML" aria-label="{% translate 'Edit item' %}">
         <i class="bi bi-pencil" aria-hidden="true"></i>
+        <span class="d-none d-md-inline">{% translate "Edit item" %}</span>
       </button>
-      <button type="button" class="btn btn-outline-danger icon-action" data-bs-toggle="modal" data-bs-target="#delete-item-modal-{{ item.id }}" aria-label="{% translate 'Delete item' %}">
+      <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#delete-item-modal-{{ item.id }}" aria-label="{% translate 'Delete item' %}">
         <i class="bi bi-trash" aria-hidden="true"></i>
+        <span class="d-none d-md-inline">{% translate "Delete item" %}</span>
       </button>
     </div>
   </div>
@@ -31,10 +34,16 @@
       </div>
       <div class="modal-body">{% blocktranslate with name=item.name %}"{{ name }}" will be permanently deleted.{% endblocktranslate %}</div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Cancel" %}</button>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" aria-label="{% translate 'Cancel' %}">
+                <i class="bi bi-x-lg" aria-hidden="true"></i>
+                <span class="d-none d-md-inline">{% translate "Cancel" %}</span>
+              </button>
         <form method="post" action="{% url 'shopping:item-delete' shopping_list.pk item.pk %}">
           {% csrf_token %}
-          <button class="btn btn-danger">{% translate "Delete permanently" %}</button>
+          <button class="btn btn-danger" aria-label="{% translate 'Delete permanently' %}">
+                  <i class="bi bi-trash" aria-hidden="true"></i>
+                  <span class="d-none d-md-inline">{% translate "Delete permanently" %}</span>
+                </button>
         </form>
       </div>
     </div>

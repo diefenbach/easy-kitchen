@@ -48,7 +48,7 @@ def test_german_translation_is_available(client, user, shopping_list):
     assert "Liste bearbeiten" in edit_content
     assert "Titel" in edit_content
     assert "Datum" in edit_content
-    assert ">Abbrechen</a>" in edit_content
+    assert ">Abbrechen</span>" in edit_content
 
 
 @pytest.mark.django_db
@@ -57,13 +57,13 @@ def test_article_management_uses_the_active_language(client, user):
 
     english = client.get(reverse("shopping:articles")).content.decode()
     assert "<h1" in english and "Articles" in english
-    assert ">Articles</a>" in client.get(reverse("shopping:list")).content.decode()
+    assert ">Articles</span>" in client.get(reverse("shopping:list")).content.decode()
 
     with translation.override("de"):
         german = client.get(reverse("shopping:articles")).content.decode()
         overview = client.get(reverse("shopping:list")).content.decode()
     assert "Artikel" in german
-    assert ">Artikel</a>" in overview
+    assert ">Artikel</span>" in overview
 
 
 @pytest.mark.django_db
@@ -86,16 +86,17 @@ def test_recipe_pages_use_the_active_language(client, user):
     assert "Recipes" in english
     assert "New recipe" in english
     overview = client.get(reverse("shopping:list")).content.decode()
-    assert ">Recipes</a>" in overview
-    assert f'href="{reverse("shopping:list")}">Shopping lists</a>' in overview
+    assert ">Recipes</span>" in overview
+    assert f'href="{reverse("shopping:list")}"' in overview
+    assert ">Shopping lists</span>" in overview
 
     with translation.override("de"):
         german = client.get(reverse("shopping:recipes")).content.decode()
         overview = client.get(reverse("shopping:list")).content.decode()
     assert "Rezepte" in german
     assert "Neues Rezept" in german
-    assert ">Rezepte</a>" in overview
-    assert ">Einkaufslisten</a>" in overview
+    assert ">Rezepte</span>" in overview
+    assert ">Einkaufslisten</span>" in overview
 
 
 @pytest.mark.django_db

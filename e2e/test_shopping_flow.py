@@ -88,7 +88,7 @@ def test_article_actions_stay_beside_the_name_on_a_phone(authenticated_page):
     page = authenticated_page
     page.set_viewport_size({"width": 390, "height": 844})
     page.get_by_role("link", name="Articles").click()
-    page.get_by_label("Article").fill("Apfel")
+    page.get_by_label("Article", exact=True).fill("Apfel")
     page.get_by_role("button", name="Add").click()
 
     row = page.locator(".article-row")

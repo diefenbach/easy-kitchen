@@ -6,8 +6,14 @@
   <h1 class="h2 mb-0">{% translate "Recipes" %}</h1>
   <div class="d-flex flex-wrap gap-2">
     {% if recipes %}{% include "shopping/partials/edit_mode_button.html" %}{% endif %}
-    <a href="{% url 'shopping:recipe-import' %}" class="btn btn-outline-secondary">{% translate "Import JSON" %}</a>
-    <a href="{% url 'shopping:recipe-create' %}" class="btn btn-primary">{% translate "New recipe" %}</a>
+    <a href="{% url 'shopping:recipe-import' %}" class="btn btn-outline-secondary" aria-label="{% translate 'Import JSON' %}">
+      <i class="bi bi-upload" aria-hidden="true"></i>
+      <span class="d-none d-md-inline">{% translate "Import JSON" %}</span>
+    </a>
+    <a href="{% url 'shopping:recipe-create' %}" class="btn btn-primary" aria-label="{% translate 'New recipe' %}">
+      <i class="bi bi-plus-lg" aria-hidden="true"></i>
+      <span class="d-none d-md-inline">{% translate "New recipe" %}</span>
+    </a>
   </div>
 </div>
 {% if recipes %}
@@ -23,14 +29,17 @@
             <span class="badge text-bg-light">{% blocktranslate count counter=recipe.ingredients.count %}{{ counter }} ingredient{% plural %}{{ counter }} ingredients{% endblocktranslate %}</span>
           </div>
           <div class="card-footer bg-white d-flex flex-nowrap align-items-center gap-2 edit-only">
-            <button class="drag-handle btn btn-sm text-secondary icon-action" type="button" aria-label="{% translate 'Move' %}">
+            <button class="drag-handle btn btn-sm text-secondary" type="button" aria-label="{% translate 'Move' %}">
               <i class="bi bi-grip-vertical" aria-hidden="true"></i>
+              <span class="d-none d-md-inline">{% translate "Move" %}</span>
             </button>
-            <a href="{% url 'shopping:recipe-update' recipe.pk %}?return_to=overview" class="btn btn-outline-secondary icon-action ms-auto" aria-label="{% translate 'Edit' %}">
+            <a href="{% url 'shopping:recipe-update' recipe.pk %}?return_to=overview" class="btn btn-outline-secondary ms-auto" aria-label="{% translate 'Edit' %}">
               <i class="bi bi-pencil" aria-hidden="true"></i>
+              <span class="d-none d-md-inline">{% translate "Edit" %}</span>
             </a>
-            <button type="button" class="btn btn-outline-danger icon-action" data-bs-toggle="modal" data-bs-target="#delete-recipe-modal-{{ recipe.pk }}" aria-label="{% translate 'Delete recipe' %}">
+            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#delete-recipe-modal-{{ recipe.pk }}" aria-label="{% translate 'Delete recipe' %}">
               <i class="bi bi-trash" aria-hidden="true"></i>
+              <span class="d-none d-md-inline">{% translate "Delete recipe" %}</span>
             </button>
           </div>
         </article>
@@ -47,10 +56,16 @@
             </div>
             <div class="modal-body">{% blocktranslate with title=recipe.title %}"{{ title }}" and its ingredients and steps will be permanently deleted.{% endblocktranslate %}</div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Cancel" %}</button>
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" aria-label="{% translate 'Cancel' %}">
+                <i class="bi bi-x-lg" aria-hidden="true"></i>
+                <span class="d-none d-md-inline">{% translate "Cancel" %}</span>
+              </button>
               <form method="post" action="{% url 'shopping:recipe-delete' recipe.pk %}">
                 {% csrf_token %}
-                <button class="btn btn-danger">{% translate "Delete permanently" %}</button>
+                <button class="btn btn-danger" aria-label="{% translate 'Delete permanently' %}">
+                  <i class="bi bi-trash" aria-hidden="true"></i>
+                  <span class="d-none d-md-inline">{% translate "Delete permanently" %}</span>
+                </button>
               </form>
             </div>
           </div>
@@ -61,7 +76,10 @@
   <div class="text-center py-5 bg-white rounded shadow-sm">
     <h2 class="h4">{% translate "No recipes yet" %}</h2>
     <p class="text-secondary">{% translate "Save a recipe with ingredients and steps." %}</p>
-    <a href="{% url 'shopping:recipe-create' %}" class="btn btn-primary">{% translate "Create recipe" %}</a>
+    <a href="{% url 'shopping:recipe-create' %}" class="btn btn-primary" aria-label="{% translate 'Create recipe' %}">
+      <i class="bi bi-plus-lg" aria-hidden="true"></i>
+      <span class="d-none d-md-inline">{% translate "Create recipe" %}</span>
+    </a>
   </div>
 {% endif %}
 {% endblock %}

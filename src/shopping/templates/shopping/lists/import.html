@@ -18,8 +18,14 @@
             {% endfor %}
           </div>
           <div class="d-flex gap-2">
-            <button class="btn btn-primary">{% translate "Import" %}</button>
-            <a href="{% url 'shopping:list' %}" class="btn btn-outline-secondary">{% translate "Cancel" %}</a>
+            <button class="btn btn-primary" aria-label="{% translate 'Import' %}">
+              <i class="bi bi-upload" aria-hidden="true"></i>
+              <span class="d-none d-md-inline">{% translate "Import" %}</span>
+            </button>
+            <a href="{% url 'shopping:list' %}" class="btn btn-outline-secondary" aria-label="{% translate 'Cancel' %}">
+              <i class="bi bi-x-lg" aria-hidden="true"></i>
+              <span class="d-none d-md-inline">{% translate "Cancel" %}</span>
+            </a>
           </div>
         </form>
       </div>

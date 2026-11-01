@@ -72,6 +72,10 @@ def test_a_new_recipe_is_placed_first_and_the_overview_can_be_reordered(client, 
     assert 'data-card-reorder' in overview
     assert 'aria-label="Move"' in overview
     assert f'{reverse("shopping:recipe-update", args=[second.pk])}?return_to=overview' in overview
+    assert "bi-upload" in overview
+    assert "bi-plus-lg" in overview
+    assert "Import JSON" in overview
+    assert "New recipe" in overview
     rejected = client.post(
         reverse("shopping:recipe-reorder"),
         json.dumps({"recipe_ids": [first.pk, foreign.pk]}),
@@ -122,7 +126,9 @@ def test_edit_from_overview_cancels_to_recipe_overview(client, user):
 
     response = client.get(f'{reverse("shopping:recipe-update", args=[recipe.pk])}?return_to=overview')
 
-    assert f'<a class="btn btn-outline-secondary" href="{reverse("shopping:recipes")}">Cancel</a>' in response.content.decode()
+    content = response.content.decode()
+    assert f'href="{reverse("shopping:recipes")}"' in content
+    assert 'd-none d-md-inline">Cancel</span>' in content
 
 
 @pytest.mark.django_db
@@ -132,10 +138,9 @@ def test_edit_from_detail_cancels_to_recipe_detail(client, user):
 
     response = client.get(reverse("shopping:recipe-update", args=[recipe.pk]))
 
-    assert (
-        f'<a class="btn btn-outline-secondary" href="{reverse("shopping:recipe-detail", args=[recipe.pk])}">Cancel</a>'
-        in response.content.decode()
-    )
+    content = response.content.decode()
+    assert f'href="{reverse("shopping:recipe-detail", args=[recipe.pk])}"' in content
+    assert 'd-none d-md-inline">Cancel</span>' in content
 
 
 @pytest.mark.django_db

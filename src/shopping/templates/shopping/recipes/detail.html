@@ -2,9 +2,9 @@
 {% load i18n %}
 {% block title %}{{ recipe.title }} · EasyList{% endblock %}
 {% block content %}
-<a class="btn btn-outline-secondary btn-sm list-back-button mb-3" href="{% url 'shopping:recipes' %}">
+<a class="btn btn-outline-secondary btn-sm list-back-button mb-3" href="{% url 'shopping:recipes' %}" aria-label="{% translate 'Recipes' %}">
   <i class="bi bi-arrow-left" aria-hidden="true"></i>
-  {% translate "Recipes" %}
+  <span class="d-none d-md-inline">{% translate "Recipes" %}</span>
 </a>
 <header class="list-detail-header card border-0 mb-4">
   <div class="card-body p-4 d-flex flex-column flex-sm-row gap-3 align-items-sm-start justify-content-between">
@@ -14,11 +14,13 @@
     </div>
     <div class="btn-group edit-actions flex-shrink-0 align-self-start" role="group" aria-label="{% translate 'Recipe actions' %}">
       {% include "shopping/partials/edit_mode_button.html" %}
-      <a href="{% url 'shopping:recipe-update' recipe.pk %}" class="btn btn-outline-secondary icon-action edit-only" aria-label="{% translate 'Edit recipe' %}">
+      <a href="{% url 'shopping:recipe-update' recipe.pk %}" class="btn btn-outline-secondary edit-only" aria-label="{% translate 'Edit recipe' %}">
         <i class="bi bi-pencil" aria-hidden="true"></i>
+        <span class="d-none d-md-inline">{% translate "Edit recipe" %}</span>
       </a>
-      <button type="button" class="btn btn-outline-danger icon-action edit-only" data-bs-toggle="modal" data-bs-target="#delete-recipe-modal" aria-label="{% translate 'Delete recipe' %}">
+      <button type="button" class="btn btn-outline-danger edit-only" data-bs-toggle="modal" data-bs-target="#delete-recipe-modal" aria-label="{% translate 'Delete recipe' %}">
         <i class="bi bi-trash" aria-hidden="true"></i>
+        <span class="d-none d-md-inline">{% translate "Delete recipe" %}</span>
       </button>
     </div>
   </div>
@@ -81,7 +83,10 @@
           {{ add_to_list_form.title.errors }}
         </div>
         <div class="col-12 col-md-auto">
-          <button class="btn btn-primary">{% translate "Add to list" %}</button>
+          <button class="btn btn-primary" aria-label="{% translate 'Add to list' %}">
+            <i class="bi bi-cart-plus" aria-hidden="true"></i>
+            <span class="d-none d-md-inline">{% translate "Add to list" %}</span>
+          </button>
         </div>
       </div>
     </form>
@@ -97,10 +102,16 @@
       </div>
       <div class="modal-body">{% blocktranslate with title=recipe.title %}"{{ title }}" and its ingredients and steps will be permanently deleted.{% endblocktranslate %}</div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Cancel" %}</button>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" aria-label="{% translate 'Cancel' %}">
+                <i class="bi bi-x-lg" aria-hidden="true"></i>
+                <span class="d-none d-md-inline">{% translate "Cancel" %}</span>
+              </button>
         <form method="post" action="{% url 'shopping:recipe-delete' recipe.pk %}">
           {% csrf_token %}
-          <button class="btn btn-danger">{% translate "Delete permanently" %}</button>
+          <button class="btn btn-danger" aria-label="{% translate 'Delete permanently' %}">
+                  <i class="bi bi-trash" aria-hidden="true"></i>
+                  <span class="d-none d-md-inline">{% translate "Delete permanently" %}</span>
+                </button>
         </form>
       </div>
     </div>

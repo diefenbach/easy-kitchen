@@ -6,7 +6,6 @@ body:not(.editing) .edit-actions > .btn { border-radius: var(--bs-border-radius)
 .list-detail-header { background-color: #fff; border-left: .25rem solid var(--bs-primary) !important; }
 .list-detail-date { color: var(--bs-secondary-color); font-size: .875rem; }
 .list-detail-date .bi { margin-right: .35rem; }
-.icon-action { align-items: center; display: inline-flex; justify-content: center; min-height: 2.75rem; min-width: 2.75rem; padding: .5rem; }
 .shopping-item.checked { opacity: .62; }
 .shopping-item.checked .item-name,
 .shopping-item.checked .item-quantity { text-decoration: line-through; }
@@ -44,7 +43,6 @@ body:not(.editing) .edit-actions > .btn { border-radius: var(--bs-border-radius)
 .article-row,
 .article-name-form { min-width: 0; }
 .article-name-form input { flex: 1 1 auto; min-width: 0; width: auto; }
-.article-row .icon-action { flex: 0 0 auto; }
 .hide-completed .shopping-item.checked { display: none; }
 .drag-handle { cursor: grab; font-size: 1.1rem; line-height: 1; }
 .checkmark { font-size: 1.3rem; }
