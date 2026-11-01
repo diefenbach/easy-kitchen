@@ -1,0 +1,9 @@
+{% if list.items.all %}
+  <ul class="list-preview">
+    {% for item in list.items.all %}
+      {% if forloop.counter <= 4 %}
+        <li>{{ item.name }}{% if item.quantity %} <span class="text-secondary">{{ item.quantity }}</span>{% endif %}</li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+{% endif %}

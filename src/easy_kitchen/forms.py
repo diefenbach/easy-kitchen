@@ -5,7 +5,7 @@ from django.core.validators import URLValidator
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError as DRFValidationError
 
-from .api.serializers import ShoppingListSerializer
+from .api.serializers import RecipeSerializer, ShoppingListSerializer
 from .models import Recipe, ShoppingItem, ShoppingList
 from .services import _normalized_name, save_article
 
@@ -13,9 +13,23 @@ from .services import _normalized_name, save_article
 class ShoppingListForm(forms.ModelForm):
     class Meta:
         model = ShoppingList
-        fields = ("title", "date")
-        widgets = {"date": forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"})}
+        fields = ("title", "icon", "date")
+        labels = {"icon": _("Icon")}
+        widgets = {
+            "icon": forms.RadioSelect(),
+            "date": forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
+        }
         input_formats = {"date": ["%Y-%m-%d"]}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["icon"].required = False
+
+    def clean_icon(self):
+        icon = self.cleaned_data.get("icon")
+        if icon in ShoppingList.Icon.values:
+            return icon
+        return ShoppingList.Icon.BASKET
 
 
 class ShoppingItemForm(forms.ModelForm):
@@ -57,9 +71,52 @@ class ArticleForm(forms.Form):
         return save_article(self.user, self.cleaned_data["name"], article=self.instance)
 
 
-class ShoppingListImportForm(forms.Form):
+_RECIPE_KEYS = {"ingredients", "steps", "description", "image_url", "calories", "protein", "preparation_minutes"}
+_LIST_KEYS = {"items", "date", "icon"}
+
+
+def _import_kind(record):
+    if not isinstance(record, dict):
+        return None
+    recipe = bool(_RECIPE_KEYS & record.keys())
+    shopping_list = bool(_LIST_KEYS & record.keys())
+    if recipe and shopping_list:
+        return None
+    if recipe or ("title" in record and not shopping_list):
+        return "recipe"
+    if shopping_list:
+        return "list"
+    return None
+
+
+def _split_import_payload(payload):
+    if isinstance(payload, dict) and {"lists", "recipes"} & payload.keys():
+        lists = payload["lists"] if "lists" in payload else None
+        recipes = payload["recipes"] if "recipes" in payload else None
+        if lists is not None and not isinstance(lists, list):
+            return None
+        if recipes is not None and not isinstance(recipes, list):
+            return None
+        return lists, recipes
+
+    records = [payload] if isinstance(payload, dict) else payload
+    if not isinstance(records, list) or not records:
+        return None
+    lists, recipes = [], []
+    for record in records:
+        kind = _import_kind(record)
+        if kind == "list":
+            lists.append(record)
+        elif kind == "recipe":
+            recipes.append(record)
+        else:
+            return None
+    return (lists or None), (recipes or None)
+
+
+class ImportForm(forms.Form):
     json_data = forms.CharField(
-        label=_("Shopping-list JSON"),
+        label=_("JSON"),
         widget=forms.Textarea(attrs={"class": "form-control font-monospace", "rows": 16}),
     )
 
@@ -69,11 +126,19 @@ class ShoppingListImportForm(forms.Form):
         except json.JSONDecodeError as error:
             raise forms.ValidationError(_("Enter valid JSON.")) from error
 
-        records = payload.get("lists") if isinstance(payload, dict) else payload
-        if not isinstance(records, list):
-            raise forms.ValidationError(_("Expected a list or an object with a 'lists' array."))
+        split = _split_import_payload(payload)
+        if split is None:
+            raise forms.ValidationError(_("Could not tell whether this is a shopping list or a recipe."))
+        lists, recipes = split
+        return {
+            "lists": self._validate(ShoppingListSerializer, lists),
+            "recipes": self._validate(RecipeSerializer, recipes),
+        }
 
-        serializer = ShoppingListSerializer(data=records, many=True)
+    def _validate(self, serializer_class, records):
+        if records is None:
+            return None
+        serializer = serializer_class(data=records, many=True)
         try:
             serializer.is_valid(raise_exception=True)
         except DRFValidationError as error:
@@ -143,29 +208,3 @@ class AddRecipeToListForm(forms.Form):
         if not title and not cleaned.get("shopping_list"):
             raise forms.ValidationError(_("Choose a list or enter a title for a new one."))
         return cleaned
-
-
-class RecipeImportForm(forms.Form):
-    json_data = forms.CharField(
-        label=_("Recipe JSON"),
-        widget=forms.Textarea(attrs={"class": "form-control font-monospace", "rows": 16}),
-    )
-
-    def clean_json_data(self):
-        from .api.serializers import RecipeSerializer
-
-        try:
-            payload = json.loads(self.cleaned_data["json_data"])
-        except json.JSONDecodeError as error:
-            raise forms.ValidationError(_("Enter valid JSON.")) from error
-
-        records = payload.get("recipes") if isinstance(payload, dict) else payload
-        if not isinstance(records, list):
-            raise forms.ValidationError(_("Expected a list or an object with a 'recipes' array."))
-
-        serializer = RecipeSerializer(data=records, many=True)
-        try:
-            serializer.is_valid(raise_exception=True)
-        except DRFValidationError as error:
-            raise forms.ValidationError(_("The JSON does not match the EasyKitchen format.")) from error
-        return serializer.validated_data

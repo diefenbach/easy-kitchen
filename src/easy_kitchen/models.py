@@ -15,8 +15,44 @@ def _place_new_record_first(instance):
 
 
 class ShoppingList(models.Model):
+    class Icon(models.TextChoices):
+        BASKET = "basket", _("Basket")
+        CART = "cart", _("Cart")
+        BAG = "bag", _("Bag")
+        EGG = "egg", _("Fried egg")
+        CUP = "cup", _("Drink")
+        APPLE = "apple", _("Apple")
+        COOKIE = "cookie", _("Cookie")
+        CAKE = "cake", _("Cake")
+        DROPLET = "droplet", _("Drop")
+        FLOWER = "flower", _("Flower")
+        FIRE = "fire", _("Flame")
+        SNOW = "snow", _("Frozen")
+        HOUSE = "house", _("Home")
+        GIFT = "gift", _("Gift")
+        HEART = "heart", _("Heart")
+
+    ICON_CLASSES = {
+        Icon.BASKET: "bi-basket",
+        Icon.CART: "bi-cart",
+        Icon.BAG: "bi-bag",
+        Icon.EGG: "bi-egg-fried",
+        Icon.CUP: "bi-cup-hot",
+        Icon.APPLE: "bi-apple",
+        Icon.COOKIE: "bi-cookie",
+        Icon.CAKE: "bi-cake2",
+        Icon.DROPLET: "bi-droplet",
+        Icon.FLOWER: "bi-flower1",
+        Icon.FIRE: "bi-fire",
+        Icon.SNOW: "bi-snow",
+        Icon.HOUSE: "bi-house",
+        Icon.GIFT: "bi-gift",
+        Icon.HEART: "bi-heart",
+    }
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="shopping_lists")
     title = models.CharField(_("title"), max_length=255)
+    icon = models.CharField(_("icon"), max_length=20, choices=Icon.choices, default=Icon.BASKET)
     date = models.DateField(_("date"), default=timezone.localdate)
     position = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -29,6 +65,10 @@ class ShoppingList(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def icon_class(self):
+        return self.ICON_CLASSES.get(self.icon, self.ICON_CLASSES[self.Icon.BASKET])
 
     def save(self, *args, **kwargs):
         with transaction.atomic():

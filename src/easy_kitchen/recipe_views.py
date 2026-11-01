@@ -10,14 +10,13 @@ from django.utils.translation import gettext as _, ngettext
 from django.views import View
 from django.views.generic import CreateView, DeleteView, UpdateView
 
-from .forms import AddRecipeToListForm, RecipeForm, RecipeImportForm, RecipeLineForm
+from .forms import AddRecipeToListForm, RecipeForm, RecipeLineForm
 from .models import Recipe
 from .services import (
     _normalized_name,
     add_recipe_ingredients_to_list,
     add_recipe_line,
     create_shopping_list,
-    import_recipes,
     reorder_recipe_lines,
     reorder_recipes,
 )
@@ -84,29 +83,6 @@ class RecipeDeleteView(UserRecipeMixin, DeleteView):
 
     def get_success_url(self):
         return reverse("easy_kitchen:recipes")
-
-
-class RecipeImportView(LoginRequiredMixin, View):
-    template_name = "easy_kitchen/recipes/import.html"
-
-    def get(self, request):
-        return render(request, self.template_name, {"form": RecipeImportForm()})
-
-    def post(self, request):
-        form = RecipeImportForm(request.POST)
-        if not form.is_valid():
-            return render(request, self.template_name, {"form": form})
-        imported = import_recipes(request.user, form.cleaned_data["json_data"])
-        messages.success(
-            request,
-            ngettext(
-                "Imported %(count)d recipe.",
-                "Imported %(count)d recipes.",
-                len(imported),
-            )
-            % {"count": len(imported)},
-        )
-        return redirect("easy_kitchen:recipes")
 
 
 class RecipeDetailView(UserRecipeMixin, View):

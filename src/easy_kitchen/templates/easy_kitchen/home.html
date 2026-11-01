@@ -1,0 +1,65 @@
+{% extends "easy_kitchen/base.html" %}
+{% load i18n static %}
+{% block content %}
+<section class="mb-5">
+  <div class="d-flex justify-content-between align-items-baseline gap-3 mb-3">
+    <h1 class="h3 mb-0">{% translate "Shopping lists" %}</h1>
+    <a class="home-more" href="{% url 'easy_kitchen:list' %}">{% translate "See all lists" %} <i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+  </div>
+  {% if shopping_lists %}
+    <div class="row g-3">
+      {% for list in shopping_lists %}
+        <div class="col-12 col-lg-6 col-xxl-4">
+          <article class="card h-100 list-card list-accent list-accent-{{ list.icon }} position-relative">
+            <div class="card-header">
+              <div class="d-flex align-items-center gap-2">
+                {% include "easy_kitchen/lists/partials/icon.html" with shopping_list=list %}
+                <h2 class="h5 mb-0"><a class="stretched-link text-decoration-none link-dark" href="{% url 'easy_kitchen:detail' list.pk %}">{{ list.title }}</a></h2>
+              </div>
+            </div>
+            {% if list.items.all %}
+              <div class="card-body">
+                {% include "easy_kitchen/lists/partials/preview.html" %}
+              </div>
+            {% endif %}
+            {% include "easy_kitchen/lists/partials/card_date.html" %}
+          </article>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-secondary mb-0">{% translate "No shopping list yet" %}</p>
+  {% endif %}
+  <a href="{% url 'easy_kitchen:create' %}" class="btn btn-primary mt-3" aria-label="{% translate 'New list' %}">
+    <i class="bi bi-plus-lg" aria-hidden="true"></i>
+    {% translate "New list" %}
+  </a>
+</section>
+<section class="mb-4">
+  <div class="d-flex justify-content-between align-items-baseline gap-3 mb-3">
+    <h2 class="h3 mb-0">{% translate "Recipes" %}</h2>
+    <a class="home-more" href="{% url 'easy_kitchen:recipes' %}">{% translate "See all recipes" %} <i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+  </div>
+  {% if recipes %}
+    <div class="row g-3">
+      {% for recipe in recipes %}
+        <div class="col-12 col-lg-6 col-xxl-4">
+          <article class="card h-100 list-card position-relative">
+            <img class="card-img-top recipe-card-picture" src="{% if recipe.picture_url %}{{ recipe.picture_url }}{% else %}{% static 'easy_kitchen/recipe-placeholder.svg' %}{% endif %}" alt="">
+            <div class="card-body">
+              <h3 class="h5 mb-0"><a class="stretched-link text-decoration-none link-dark" href="{% url 'easy_kitchen:recipe-detail' recipe.pk %}">{{ recipe.title }}</a></h3>
+            </div>
+            {% include "easy_kitchen/recipes/partials/card_facts.html" %}
+          </article>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-secondary mb-0">{% translate "No recipes yet" %}</p>
+  {% endif %}
+  <a href="{% url 'easy_kitchen:recipe-create' %}" class="btn btn-primary mt-3" aria-label="{% translate 'New recipe' %}">
+    <i class="bi bi-plus-lg" aria-hidden="true"></i>
+    {% translate "New recipe" %}
+  </a>
+</section>
+{% endblock %}

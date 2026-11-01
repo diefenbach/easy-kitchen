@@ -6,10 +6,6 @@
   <h1 class="h2 mb-0">{% translate "Recipes" %}</h1>
   <div class="d-flex flex-wrap gap-2">
     {% if recipes %}{% include "easy_kitchen/partials/edit_mode_button.html" %}{% endif %}
-    <a href="{% url 'easy_kitchen:recipe-import' %}" class="btn btn-outline-secondary" aria-label="{% translate 'Import JSON' %}">
-      <i class="bi bi-upload" aria-hidden="true"></i>
-      <span class="d-none d-md-inline">{% translate "Import JSON" %}</span>
-    </a>
     <a href="{% url 'easy_kitchen:recipe-create' %}" class="btn btn-primary" aria-label="{% translate 'New recipe' %}">
       <i class="bi bi-plus-lg" aria-hidden="true"></i>
       <span class="d-none d-md-inline">{% translate "New recipe" %}</span>
@@ -19,14 +15,13 @@
 {% if recipes %}
   <div id="recipes" class="row g-3" data-card-reorder="{% url 'easy_kitchen:recipe-reorder' %}" data-id-field="recipe_ids">
     {% for recipe in recipes %}
-      <div class="col-12 col-md-6 col-lg-4" data-list-id="{{ recipe.pk }}">
+      <div class="col-12 col-lg-6 col-xxl-4" data-list-id="{{ recipe.pk }}">
         <article class="card h-100 shadow-sm list-card position-relative">
           <img class="card-img-top recipe-card-picture" src="{% if recipe.picture_url %}{{ recipe.picture_url }}{% else %}{% static 'easy_kitchen/recipe-placeholder.svg' %}{% endif %}" alt="">
           <div class="card-body">
-            <h2 class="h5"><a class="stretched-link text-decoration-none link-dark" href="{% url 'easy_kitchen:recipe-detail' recipe.pk %}">{{ recipe.title }}</a></h2>
-            {% include "easy_kitchen/recipes/partials/facts.html" with facts_class="mb-2" %}
-            <span class="badge text-bg-light">{% blocktranslate count counter=recipe.ingredients.count %}{{ counter }} ingredient{% plural %}{{ counter }} ingredients{% endblocktranslate %}</span>
+            <h2 class="h5 mb-0"><a class="stretched-link text-decoration-none link-dark" href="{% url 'easy_kitchen:recipe-detail' recipe.pk %}">{{ recipe.title }}</a></h2>
           </div>
+          {% include "easy_kitchen/recipes/partials/card_facts.html" %}
           <div class="card-footer bg-white d-flex flex-nowrap align-items-center gap-2 edit-only position-relative z-2">
             <button class="drag-handle btn btn-sm text-secondary" type="button" aria-label="{% translate 'Move' %}">
               <i class="bi bi-grip-vertical" aria-hidden="true"></i>

@@ -9,14 +9,22 @@ from easy_kitchen.models import ShoppingList
 def test_interface_is_english_by_default(client, user):
     client.force_login(user)
 
-    response = client.get(reverse("easy_kitchen:list"))
+    response = client.get(reverse("easy_kitchen:home"))
 
     content = response.content.decode()
     assert response.status_code == 200
     assert 'lang="en"' in content
     assert "Shopping lists" in content
+    assert "See all lists" in content
+    assert "See all recipes" in content
+    assert "Overview" in content
+    assert "Account" in content
     assert "New list" in content
+    assert "New recipe" in content
     assert "Einkaufslisten" not in content
+    assert "Übersicht" not in content
+    assert "Alle Listen ansehen" not in content
+    assert reverse("easy_kitchen:list") == "/lists/"
     assert reverse("easy_kitchen:create") == "/lists/new/"
 
 
@@ -25,9 +33,17 @@ def test_german_translation_is_available(client, user, shopping_list):
     client.force_login(user)
 
     with translation.override("de"):
+        home = client.get(reverse("easy_kitchen:home"))
         overview = client.get(reverse("easy_kitchen:list"))
+    home_content = home.content.decode()
     overview_content = overview.content.decode()
-    assert 'lang="de"' in overview_content
+    assert 'lang="de"' in home_content
+    assert "Alle Listen ansehen" in home_content
+    assert "Alle Rezepte ansehen" in home_content
+    assert "Neue Liste" in home_content
+    assert "Neues Rezept" in home_content
+    assert "Übersicht" in home_content
+    assert "Konto" in home_content
     assert "Einkaufslisten" in overview_content
     assert "Neue Liste" in overview_content
     assert "Bearbeiten" in overview_content
@@ -104,13 +120,13 @@ def test_import_page_uses_the_active_language(client, user):
     client.force_login(user)
 
     english = client.get(reverse("easy_kitchen:import-json")).content.decode()
-    assert "Import shopping lists" in english
-    assert "Shopping-list JSON" in english
+    assert "Import JSON" in english
+    assert "Shopping lists and recipes are recognized automatically." in english
 
     with translation.override("de"):
         german = client.get(reverse("easy_kitchen:import-json")).content.decode()
-    assert "Einkaufslisten importieren" in german
-    assert "Einkaufslisten-JSON" in german
+    assert "JSON importieren" in german
+    assert "Einkaufslisten und Rezepte werden automatisch erkannt." in german
 
 
 @pytest.mark.django_db

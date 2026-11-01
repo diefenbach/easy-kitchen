@@ -38,6 +38,7 @@ def test_mcp_creates_a_list_for_the_token_owner(user, other_user):
 
     shopping_list = ShoppingList.objects.get(pk=result["id"])
     assert shopping_list.user == user
+    assert result["icon"] == "basket"
     assert result["title"] == "Pasta"
     assert result["date"] == "2026-10-31"
     assert ShoppingList.objects.filter(user=other_user).count() == 0
@@ -79,7 +80,7 @@ def test_mcp_rejects_a_missing_or_unknown_token(user):
 
 def test_mcp_create_tool_does_not_accept_a_user_argument():
     tool = next(tool for tool in mcp._tool_manager.list_tools() if tool.name == "create_shopping_list")
-    assert set(tool.parameters["properties"]) == {"title", "date", "items"}
+    assert set(tool.parameters["properties"]) == {"title", "date", "items", "icon"}
 
 
 @pytest.mark.django_db

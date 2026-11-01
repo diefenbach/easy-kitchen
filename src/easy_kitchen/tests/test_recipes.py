@@ -68,6 +68,10 @@ def test_recipe_stores_calories_protein_and_preparation_time(client, user):
     assert "450 kcal" in overview
     assert "12 g protein" in overview
     assert "25 min" in overview
+    assert 'class="card-footer list-card-date"' in overview
+    assert 'class="recipe-card-facts mb-0"' in overview
+    assert "recipe-card-facts" not in detail
+    assert "0 ingredients" not in overview
 
     with translation.override("de"):
         german = client.get(reverse("easy_kitchen:recipe-detail", args=[recipe.pk])).content.decode()
@@ -85,6 +89,7 @@ def test_recipe_stores_calories_protein_and_preparation_time(client, user):
     overview = client.get(reverse("easy_kitchen:recipes")).content.decode()
     plain_card = overview.split(f'data-list-id="{plain.pk}"', 1)[1].split("data-list-id=", 1)[0]
     assert "recipe-facts" not in plain_card
+    assert "list-card-date" not in plain_card
     assert "kcal" not in plain_card
 
     timed = create_recipe(user, title="Salad", preparation_minutes=10)
@@ -131,9 +136,9 @@ def test_a_new_recipe_is_placed_first_and_the_overview_can_be_reordered(client, 
     assert 'aria-label="Move"' in overview
     assert ">Move</span>" not in overview
     assert f'{reverse("easy_kitchen:recipe-update", args=[second.pk])}?return_to=overview' in overview
-    assert "bi-upload" in overview
+    assert 'class="dropdown-item" href="/import/" aria-label="Import JSON"' in overview
+    assert 'class="btn btn-outline-secondary" aria-label="Import JSON"' not in overview
     assert "bi-plus-lg" in overview
-    assert "Import JSON" in overview
     assert "New recipe" in overview
     rejected = client.post(
         reverse("easy_kitchen:recipe-reorder"),
@@ -278,7 +283,7 @@ def test_recipe_json_import_accepts_an_image_url(client, user):
             }
         ]
     }
-    response = client.post(reverse("easy_kitchen:recipe-import"), {"json_data": json.dumps(payload)})
+    response = client.post(reverse("easy_kitchen:import-json"), {"json_data": json.dumps(payload)})
     recipe = Recipe.objects.get(user=user, title="Pancakes")
     assert response.status_code == 302
     assert recipe.image_url == "https://example.com/pancakes.jpg"

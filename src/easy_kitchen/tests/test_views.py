@@ -3,8 +3,78 @@ import json
 import pytest
 from django.test import Client
 from django.urls import reverse
+from django.utils.formats import date_format
 from datetime import date
 from easy_kitchen.models import ShoppingItem, ShoppingList
+
+
+@pytest.mark.django_db
+def test_home_shows_the_three_newest_lists_and_recipes(client, user, other_user):
+    from easy_kitchen.models import Recipe
+
+    client.force_login(user)
+    oldest_list = ShoppingList.objects.create(user=user, title="Oldest list")
+    ShoppingList.objects.create(user=user, title="Second list")
+    ShoppingList.objects.create(user=user, title="Third list")
+    newest_list = ShoppingList.objects.create(user=user, title="Newest list")
+    for position, name in enumerate(["Apples", "Bread", "Milk", "Cheese", "Honey"], start=1):
+        ShoppingItem.objects.create(shopping_list=newest_list, name=name, quantity=f"{position}00 g", position=position)
+    ShoppingList.objects.create(user=other_user, title="Foreign list")
+    Recipe.objects.create(user=user, title="Oldest recipe")
+    Recipe.objects.create(user=user, title="Second recipe")
+    Recipe.objects.create(user=user, title="Third recipe")
+    newest_recipe = Recipe.objects.create(user=user, title="Newest recipe")
+    Recipe.objects.create(user=other_user, title="Foreign recipe")
+
+    response = client.get(reverse("easy_kitchen:home"))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert reverse("easy_kitchen:list") == "/lists/"
+    for title in ("Newest list", "Third list", "Second list", "Newest recipe", "Third recipe", "Second recipe"):
+        assert title in content
+    assert "Oldest list" not in content
+    assert "Oldest recipe" not in content
+    assert "Foreign list" not in content
+    assert "Foreign recipe" not in content
+    assert reverse("easy_kitchen:detail", args=[newest_list.pk]) in content
+    assert reverse("easy_kitchen:detail", args=[oldest_list.pk]) not in content
+    assert reverse("easy_kitchen:recipe-detail", args=[newest_recipe.pk]) in content
+    assert "Apples" in content and "100 g" in content
+    assert "Cheese" in content and "400 g" in content
+    assert "Honey" not in content
+    assert "5 items" in content
+    assert 'class="card-header"' in content
+    assert 'class="list-preview"' in content
+    assert 'class="card-footer list-card-date"' in content
+    assert "bi-calendar3" in content
+    assert date_format(newest_list.date, "j. F Y") in content
+    assert "Sun," not in content
+    assert 'class="btn btn-sm btn-outline-secondary is-active" href="/" aria-label="Overview"' in content
+    assert 'aria-label="Account"' in content
+    assert 'class="dropdown-item"' in content
+    assert 'class="btn btn-sm btn-outline-secondary" href="/lists/" aria-label="Shopping lists"' in content
+    assert "See all lists" in content
+    assert "See all recipes" in content
+    recipes_heading = '<h2 class="h3 mb-0">Recipes</h2>'
+    assert content.index('href="/lists/new/"') < content.index(recipes_heading)
+    assert content.index(recipes_heading) < content.index('href="/recipes/new/"')
+    assert 'aria-label="New list"' in content
+    assert 'aria-label="New recipe"' in content
+    assert 'data-edit-toggle aria-pressed' not in content
+    assert "edit-only" not in content
+
+    lists = client.get(reverse("easy_kitchen:list")).content.decode()
+    assert "Oldest list" in lists
+    assert 'class="btn btn-sm btn-outline-secondary is-active" href="/lists/" aria-label="Shopping lists"' in lists
+
+
+@pytest.mark.django_db
+def test_login_lands_on_the_home_page(client, user):
+    response = client.post(reverse("login"), {"username": "kai", "password": "test-password"})
+
+    assert response.status_code == 302
+    assert response.url == reverse("easy_kitchen:home")
 
 
 @pytest.mark.django_db
@@ -217,6 +287,52 @@ def test_list_detail_uses_modal_delete_confirmations(client, user, shopping_list
 
 
 @pytest.mark.django_db
+def test_list_icon_defaults_to_a_basket_and_can_be_changed(client, user):
+    client.force_login(user)
+
+    created = client.post(
+        reverse("easy_kitchen:create"),
+        {"title": "Market", "date": "2026-11-01"},
+    )
+    shopping_list = ShoppingList.objects.get(user=user, title="Market")
+    assert created.status_code == 302
+    assert shopping_list.icon == ShoppingList.Icon.BASKET
+
+    overview = client.get(reverse("easy_kitchen:list")).content.decode()
+    assert "bi-basket" in overview
+    assert "list-icon-basket" in overview
+    assert "list-accent-basket" in overview
+    home = client.get(reverse("easy_kitchen:home")).content.decode()
+    assert "bi-basket" in home
+    assert "list-accent-basket" in home
+
+    form = client.get(reverse("easy_kitchen:update", args=[shopping_list.pk])).content.decode()
+    for icon_class in ShoppingList.ICON_CLASSES.values():
+        assert icon_class in form
+
+    updated = client.post(
+        reverse("easy_kitchen:update", args=[shopping_list.pk]),
+        {"title": "Market", "date": "2026-11-01", "icon": "flower"},
+    )
+    assert updated.status_code == 302
+    shopping_list.refresh_from_db()
+    assert shopping_list.icon == ShoppingList.Icon.FLOWER
+    detail = client.get(reverse("easy_kitchen:detail", args=[shopping_list.pk])).content.decode()
+    assert "bi-flower1" in detail
+    assert "list-icon-flower" in detail
+    overview = client.get(reverse("easy_kitchen:list")).content.decode()
+    assert "list-accent-flower" in overview
+
+    rejected = client.post(
+        reverse("easy_kitchen:update", args=[shopping_list.pk]),
+        {"title": "Market", "date": "2026-11-01", "icon": "pasta"},
+    )
+    assert rejected.status_code == 200
+    shopping_list.refresh_from_db()
+    assert shopping_list.icon == ShoppingList.Icon.FLOWER
+
+
+@pytest.mark.django_db
 def test_list_detail_uses_a_minimal_icon_header(client, user, shopping_list):
     client.force_login(user)
 
@@ -266,7 +382,8 @@ def test_list_overview_offers_edit_and_modal_delete_actions(client, user, shoppi
     response = client.get(reverse("easy_kitchen:list"))
 
     content = response.content.decode()
-    assert 'class="card-body position-relative"' in content
+    assert 'class="card h-100 list-card list-accent list-accent-basket position-relative"' in content
+    assert 'class="card-header"' in content
     assert 'stretched-link text-decoration-none link-dark' in content
     assert f'{reverse("easy_kitchen:update", args=[shopping_list.pk])}?return_to=overview' in content
     assert f'data-bs-target="#delete-list-modal-{shopping_list.pk}"' in content
@@ -274,10 +391,10 @@ def test_list_overview_offers_edit_and_modal_delete_actions(client, user, shoppi
     assert 'data-card-reorder' in content
     assert 'aria-label="Move"' in content
     assert ">Move</span>" not in content
-    assert 'class="card-footer bg-white d-flex flex-nowrap align-items-center gap-2 edit-only"' in content
-    assert 'bi-upload' in content
+    assert 'class="card-footer bg-white d-flex flex-nowrap align-items-center gap-2 edit-only position-relative z-2"' in content
+    assert 'class="dropdown-item" href="/import/" aria-label="Import JSON"' in content
+    assert 'class="btn btn-outline-secondary" aria-label="Import JSON"' not in content
     assert 'bi-plus-lg' in content
-    assert "Import JSON" in content
     assert 'd-none d-md-inline">New list</span>' in content
 
 
@@ -369,6 +486,7 @@ def test_json_import_creates_lists_and_items_for_current_user(client, user):
     )
 
     assert response.status_code == 302
+    assert response.url == reverse("easy_kitchen:list")
     imported_list = ShoppingList.objects.get(user=user, title="Tofu pan")
     assert imported_list.date == date(2026, 10, 31)
     assert list(imported_list.items.values_list("name", "quantity")) == [("Tofu", "400 g")]
@@ -383,3 +501,29 @@ def test_json_import_rejects_invalid_json_without_creating_a_list(client, user):
     assert response.status_code == 200
     assert ShoppingList.objects.filter(user=user).count() == 0
     assert "invalid-feedback" in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_json_import_recognizes_a_recipe_without_a_wrapper(client, user):
+    from easy_kitchen.models import Recipe
+
+    client.force_login(user)
+
+    response = client.post(
+        reverse("easy_kitchen:import-json"),
+        {"json_data": '[{"title": "Soup", "ingredients": [{"name": "Onion", "quantity": "1"}]}]'},
+    )
+
+    assert response.status_code == 302
+    assert response.url == reverse("easy_kitchen:recipes")
+    assert Recipe.objects.filter(user=user, title="Soup").exists()
+
+
+@pytest.mark.django_db
+def test_json_import_rejects_json_that_is_neither_list_nor_recipe(client, user):
+    client.force_login(user)
+
+    response = client.post(reverse("easy_kitchen:import-json"), {"json_data": '{"hello": 1}'})
+
+    assert response.status_code == 200
+    assert "Could not tell whether this is a shopping list or a recipe." in response.content.decode()

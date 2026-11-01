@@ -3,11 +3,12 @@ from . import recipe_views, views
 
 app_name = "easy_kitchen"
 urlpatterns = [
-    path("", views.ShoppingListListView.as_view(), name="list"),
+    path("", views.HomeView.as_view(), name="home"),
+    path("lists/", views.ShoppingListListView.as_view(), name="list"),
     path("recipes/", recipe_views.RecipeListView.as_view(), name="recipes"),
     path("recipes/reorder/", recipe_views.RecipeReorderView.as_view(), name="recipe-reorder"),
     path("recipes/new/", recipe_views.RecipeCreateView.as_view(), name="recipe-create"),
-    path("recipes/import/", recipe_views.RecipeImportView.as_view(), name="recipe-import"),
+    path("import/", views.ImportView.as_view(), name="import-json"),
     path("recipes/<int:pk>/", recipe_views.RecipeDetailView.as_view(), name="recipe-detail"),
     path("recipes/<int:pk>/edit/", recipe_views.RecipeUpdateView.as_view(), name="recipe-update"),
     path("recipes/<int:pk>/delete/", recipe_views.RecipeDeleteView.as_view(), name="recipe-delete"),
@@ -57,7 +58,6 @@ urlpatterns = [
     path("articles/<int:pk>/delete/", views.ArticleDeleteView.as_view(), name="article-delete"),
     path("lists/reorder/", views.ShoppingListReorderView.as_view(), name="list-reorder"),
     path("lists/new/", views.ShoppingListCreateView.as_view(), name="create"),
-    path("lists/import/", views.ShoppingListImportView.as_view(), name="import-json"),
     path("lists/<int:pk>/", views.ShoppingListDetailView.as_view(), name="detail"),
     path("lists/<int:pk>/edit/", views.ShoppingListUpdateView.as_view(), name="update"),
     path("lists/<int:pk>/delete/", views.ShoppingListDeleteView.as_view(), name="delete"),

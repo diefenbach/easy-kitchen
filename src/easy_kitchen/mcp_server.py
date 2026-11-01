@@ -104,19 +104,25 @@ def create_shopping_list(
     date: Date,
     ctx: Context,
     items: list[ShoppingItemInput] | None = None,
+    icon: Annotated[str, Field(max_length=20)] = "",
 ) -> dict:
     """Create a shopping list for the authenticated user."""
     user = user_from_authorization(_authorization(ctx))
     normalized_items = [ShoppingItemInput.model_validate(item) for item in items or []]
-    shopping_list = save_shopping_list(
-        user,
-        title=title.strip(),
-        date=date,
-        items=[item.model_dump() for item in normalized_items],
-    )
+    try:
+        shopping_list = save_shopping_list(
+            user,
+            title=title.strip(),
+            date=date,
+            icon=icon,
+            items=[item.model_dump() for item in normalized_items],
+        )
+    except ValueError as error:
+        raise ToolError(str(error)) from None
     return {
         "id": shopping_list.id,
         "title": shopping_list.title,
+        "icon": shopping_list.icon,
         "date": shopping_list.date.isoformat(),
         "items": [
             {"id": item.id, "name": item.name, "quantity": item.quantity}

@@ -61,7 +61,7 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = SRC_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "easy_kitchen:list"
+LOGIN_REDIRECT_URL = "easy_kitchen:home"
 LOGOUT_REDIRECT_URL = "login"
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [

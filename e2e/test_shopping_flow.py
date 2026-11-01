@@ -8,14 +8,24 @@ def show_edit_actions(page):
     page.get_by_role("button", name="Edit", exact=True).click()
 
 
+def open_shopping_lists(page):
+    page.get_by_role("link", name="Shopping lists", exact=True).click()
+    expect(page).to_have_url(re.compile(r"/lists/$"))
+
+
+def open_account_menu(page):
+    page.get_by_role("button", name="Account", exact=True).click()
+
+
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
 def test_saved_articles_are_suggested_and_can_be_renamed(authenticated_page):
     page = authenticated_page
-    articles = page.get_by_role("link", name="Articles")
-    logout = page.get_by_role("button", name="Log out")
-    expect(articles).to_be_visible()
-    assert articles.bounding_box()["x"] < logout.bounding_box()["x"]
+    overview = page.get_by_role("link", name="Overview", exact=True)
+    lists = page.get_by_role("link", name="Shopping lists", exact=True)
+    account = page.get_by_role("button", name="Account", exact=True)
+    expect(overview).to_be_visible()
+    assert overview.bounding_box()["x"] < lists.bounding_box()["x"] < account.bounding_box()["x"]
 
     page.get_by_role("link", name="New list").click()
     page.locator("input[name=title]").fill("Vorrat")
@@ -25,7 +35,8 @@ def test_saved_articles_are_suggested_and_can_be_renamed(authenticated_page):
     page.get_by_role("button", name="Add").click()
     expect(page.locator(".shopping-item", has_text="Naturtofu")).to_be_visible()
 
-    page.get_by_role("link", name="Articles").click()
+    open_account_menu(page)
+    page.get_by_role("link", name="Articles", exact=True).click()
     expect(page.get_by_role("heading", name="Articles")).to_be_visible()
     name = page.get_by_role("textbox", name="Edit Naturtofu")
     expect(name).to_have_value("Naturtofu")
@@ -72,12 +83,14 @@ def test_articles_return_to_the_page_they_were_opened_from(authenticated_page):
     page.locator("input[name=title]").fill("Vorrat")
     page.locator("input[name=date]").fill("2026-11-01")
     page.get_by_role("button", name="Save").click()
-    page.get_by_role("link", name="Articles").click()
+    open_account_menu(page)
+    page.get_by_role("link", name="Articles", exact=True).click()
     page.get_by_role("link", name="Vorrat").click()
     expect(page.get_by_role("heading", name="Vorrat")).to_be_visible()
 
     page.get_by_role("link", name="EasyKitchen").click()
-    page.get_by_role("link", name="Articles").click()
+    open_account_menu(page)
+    page.get_by_role("link", name="Articles", exact=True).click()
     page.locator("main").get_by_role("link", name="Shopping lists").click()
     expect(page.get_by_role("heading", name="Shopping lists")).to_be_visible()
 
@@ -87,7 +100,8 @@ def test_articles_return_to_the_page_they_were_opened_from(authenticated_page):
 def test_article_actions_stay_beside_the_name_on_a_phone(authenticated_page):
     page = authenticated_page
     page.set_viewport_size({"width": 390, "height": 844})
-    page.get_by_role("link", name="Articles").click()
+    open_account_menu(page)
+    page.get_by_role("link", name="Articles", exact=True).click()
     page.get_by_label("Article", exact=True).fill("Apfel")
     page.get_by_role("button", name="Add").click()
 
@@ -204,6 +218,7 @@ def test_edit_mode_starts_off_and_resets_when_the_page_reloads(authenticated_pag
     )
     page = authenticated_page
     page.reload()
+    open_shopping_lists(page)
 
     card = page.locator(".list-card", has_text="Wocheneinkauf")
     overview_edit = card.get_by_role("link", name="Edit", exact=True, include_hidden=True)
@@ -228,7 +243,7 @@ def test_edit_mode_starts_off_and_resets_when_the_page_reloads(authenticated_pag
     page.reload()
     expect(move).to_be_hidden()
 
-    page.get_by_role("link", name="Recipes").click()
+    page.get_by_role("link", name="Recipes", exact=True).click()
     recipe_card = page.locator(".list-card", has_text=recipe_title)
     recipe_edit = recipe_card.get_by_role("link", name="Edit", exact=True, include_hidden=True)
     expect(recipe_edit).to_be_hidden()
@@ -268,6 +283,7 @@ def test_user_can_edit_a_list_from_the_overview(authenticated_page, user):
     shopping_list = ShoppingList.objects.create(user=user, title="Alter Titel")
     page = authenticated_page
     page.reload()
+    open_shopping_lists(page)
     card = page.locator(".list-card", has_text="Alter Titel")
 
     show_edit_actions(page)
@@ -302,6 +318,7 @@ def test_user_can_delete_a_list_from_the_overview_modal(authenticated_page, user
     ShoppingList.objects.create(user=user, title="Zu löschen")
     page = authenticated_page
     page.reload()
+    open_shopping_lists(page)
 
     card = page.locator(".list-card", has_text="Zu löschen")
     show_edit_actions(page)
@@ -325,6 +342,7 @@ def test_user_can_reorder_lists_and_recipes_on_the_overview(authenticated_page, 
     page = authenticated_page
     page.set_viewport_size({"width": 400, "height": 900})
     page.reload()
+    open_shopping_lists(page)
 
     newer_handle = page.locator(f'[data-list-id="{newer.pk}"]').get_by_role("button", name="Move", include_hidden=True)
     older_handle = page.locator(f'[data-list-id="{older.pk}"]').get_by_role("button", name="Move", include_hidden=True)
@@ -335,7 +353,7 @@ def test_user_can_reorder_lists_and_recipes_on_the_overview(authenticated_page, 
     page.reload()
     assert page.locator("#shopping-lists .list-card h2").all_text_contents() == ["Older list", "Newer list"]
 
-    page.get_by_role("link", name="Recipes").click()
+    page.get_by_role("link", name="Recipes", exact=True).click()
     show_edit_actions(page)
     second_handle = page.locator(f'[data-list-id="{second_recipe.pk}"]').get_by_role("button", name="Move")
     first_handle = page.locator(f'[data-list-id="{first_recipe.pk}"]').get_by_role("button", name="Move")
@@ -380,9 +398,10 @@ def test_interface_uses_the_test_settings_language(authenticated_page):
 @pytest.mark.django_db(transaction=True)
 def test_user_can_import_a_json_shopping_list(authenticated_page):
     page = authenticated_page
+    open_account_menu(page)
 
     page.get_by_role("link", name="Import JSON").click()
-    page.get_by_label("Shopping-list JSON").fill(
+    page.get_by_label("JSON", exact=True).fill(
         '''{
           "lists": [{
             "title": "Tofu pan",
@@ -400,7 +419,7 @@ def test_user_can_import_a_json_shopping_list(authenticated_page):
 @pytest.mark.django_db(transaction=True)
 def test_user_can_save_calories_protein_and_preparation_time(authenticated_page):
     page = authenticated_page
-    page.get_by_role("link", name="Recipes").click()
+    page.get_by_role("link", name="Recipes", exact=True).click()
     page.get_by_role("link", name="New recipe").click()
     page.get_by_label("Title").fill("Pancakes")
     page.get_by_label("Calories (kcal)").fill("450")
@@ -420,7 +439,7 @@ def test_clicking_a_recipe_picture_opens_the_recipe(authenticated_page, user):
 
     create_recipe(user, title="Pancakes")
     page = authenticated_page
-    page.get_by_role("link", name="Recipes").click()
+    page.get_by_role("link", name="Recipes", exact=True).click()
     image = page.locator(".recipe-card-picture")
     expect(image).to_have_attribute("src", re.compile(r"recipe-placeholder\.svg$"))
     box = image.bounding_box()
@@ -436,7 +455,7 @@ def test_user_can_edit_a_recipe_from_the_overview(authenticated_page, user):
 
     create_recipe(user, title="Alter Titel")
     page = authenticated_page
-    page.get_by_role("link", name="Recipes").click()
+    page.get_by_role("link", name="Recipes", exact=True).click()
     card = page.locator(".list-card", has_text="Alter Titel")
 
     show_edit_actions(page)
@@ -469,7 +488,7 @@ def test_user_can_edit_a_recipe_from_its_detail_page(authenticated_page, user):
 @pytest.mark.django_db(transaction=True)
 def test_recipe_ingredients_can_be_added_to_a_new_list(authenticated_page):
     page = authenticated_page
-    page.get_by_role("link", name="Recipes").click()
+    page.get_by_role("link", name="Recipes", exact=True).click()
     page.get_by_role("link", name="New recipe").click()
     page.get_by_label("Title").fill("Pancakes")
     page.get_by_label("Description").fill("Sunday breakfast")

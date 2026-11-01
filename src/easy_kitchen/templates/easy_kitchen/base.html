@@ -8,37 +8,70 @@
   <title>{% block title %}EasyKitchen{% endblock %}</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560&family=Nunito:wght@500;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/htmx.org@2.0.4"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
   {% load static %}
   <link href="{% static 'easy_kitchen/easykitchen.css' %}" rel="stylesheet">
 </head>
-<body class="bg-body-tertiary">
-  <nav class="navbar navbar-expand bg-white border-bottom mb-4">
+<body>
+  <nav class="navbar navbar-expand mb-4">
     <div class="container">
-      <a class="navbar-brand fw-bold" href="{% url 'easy_kitchen:list' %}">EasyKitchen</a>
+      <a class="navbar-brand" href="{% url 'easy_kitchen:home' %}">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M16 16.4V8.6"/>
+          <path d="M16 12.2c.1-2.5 1.9-4.3 4.7-4.9-1.1 1.9-.4 3.5.5 4.7"/>
+          <path d="M16 12.8c-.1-2.1-1.6-3.7-4.1-4.4 1 1.7.4 3.1-.3 4.2"/>
+          <path d="M6.2 18.6h19.6"/>
+          <path d="M8.2 18.6c.5 4.4 3.5 7.1 7.8 7.1s7.3-2.7 7.8-7.1"/>
+        </svg>
+        EasyKitchen
+      </a>
       {% if user.is_authenticated %}
+        {% with url_name=request.resolver_match.url_name %}
         <div class="ms-auto d-flex align-items-center gap-2">
-          <a class="btn btn-sm btn-outline-secondary" href="{% url 'easy_kitchen:list' %}" aria-label="{% translate 'Shopping lists' %}">
+          <a class="btn btn-sm btn-outline-secondary{% if url_name == 'home' %} is-active{% endif %}" href="{% url 'easy_kitchen:home' %}" aria-label="{% translate 'Overview' %}">
+            <i class="bi bi-house" aria-hidden="true"></i>
+            <span class="d-none d-md-inline">{% translate "Overview" %}</span>
+          </a>
+          <a class="btn btn-sm btn-outline-secondary{% if url_name == 'list' or url_name == 'create' or url_name == 'detail' or url_name == 'update' or url_name == 'delete' or 'item' in url_name %} is-active{% endif %}" href="{% url 'easy_kitchen:list' %}" aria-label="{% translate 'Shopping lists' %}">
             <i class="bi bi-list-check" aria-hidden="true"></i>
             <span class="d-none d-md-inline">{% translate "Shopping lists" %}</span>
           </a>
-          <a class="btn btn-sm btn-outline-secondary" href="{% url 'easy_kitchen:recipes' %}" aria-label="{% translate 'Recipes' %}">
+          <a class="btn btn-sm btn-outline-secondary{% if url_name == 'recipes' or 'recipe-' in url_name %} is-active{% endif %}" href="{% url 'easy_kitchen:recipes' %}" aria-label="{% translate 'Recipes' %}">
             <i class="bi bi-journal-text" aria-hidden="true"></i>
             <span class="d-none d-md-inline">{% translate "Recipes" %}</span>
           </a>
-          <a class="btn btn-sm btn-outline-secondary" href="{% url 'easy_kitchen:articles' %}{% if request.resolver_match.namespace == 'easy_kitchen' and request.resolver_match.url_name == 'detail' or request.resolver_match.namespace == 'easy_kitchen' and request.resolver_match.url_name == 'update' %}?list={{ request.resolver_match.kwargs.pk }}{% elif return_list %}?list={{ return_list.pk }}{% endif %}" aria-label="{% translate 'Articles' %}">
-            <i class="bi bi-bookmark" aria-hidden="true"></i>
-            <span class="d-none d-md-inline">{% translate "Articles" %}</span>
-          </a>
-          <form method="post" action="{% url 'logout' %}">
-            {% csrf_token %}
-            <button class="btn btn-sm btn-outline-secondary" aria-label="{% translate 'Log out' %}">
-              <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
-              <span class="d-none d-md-inline">{% translate "Log out" %}</span>
+          <div class="dropdown">
+            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{% translate 'Account' %}">
+              <i class="bi bi-person" aria-hidden="true"></i>
             </button>
-          </form>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li>
+                <a class="dropdown-item" href="{% url 'easy_kitchen:import-json' %}" aria-label="{% translate 'Import JSON' %}">
+                  <i class="bi bi-upload" aria-hidden="true"></i>
+                  <span>{% translate "Import JSON" %}</span>
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{% url 'easy_kitchen:articles' %}{% if request.resolver_match.namespace == 'easy_kitchen' and request.resolver_match.url_name == 'detail' or request.resolver_match.namespace == 'easy_kitchen' and request.resolver_match.url_name == 'update' %}?list={{ request.resolver_match.kwargs.pk }}{% elif return_list %}?list={{ return_list.pk }}{% endif %}" aria-label="{% translate 'Articles' %}">
+                  <i class="bi bi-bookmark" aria-hidden="true"></i>
+                  <span>{% translate "Articles" %}</span>
+                </a>
+              </li>
+              <li>
+                <form method="post" action="{% url 'logout' %}">
+                  {% csrf_token %}
+                  <button class="dropdown-item" type="submit" aria-label="{% translate 'Log out' %}">
+                    <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                    <span>{% translate "Log out" %}</span>
+                  </button>
+                </form>
+              </li>
+            </ul>
+          </div>
         </div>
+        {% endwith %}
       {% endif %}
     </div>
   </nav>

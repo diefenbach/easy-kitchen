@@ -1,0 +1,8 @@
+{% load i18n %}
+<div class="card-footer list-card-date">
+  <span>
+    <i class="bi bi-calendar3" aria-hidden="true"></i>
+    {{ list.date|date:"j. F Y" }}
+  </span>
+  <span>{% blocktranslate count counter=list.items.count %}{{ counter }} item{% plural %}{{ counter }} items{% endblocktranslate %}</span>
+</div>

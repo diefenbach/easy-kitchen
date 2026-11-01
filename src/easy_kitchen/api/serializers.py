@@ -28,10 +28,11 @@ class ShoppingItemSerializer(serializers.ModelSerializer):
 
 class ShoppingListSerializer(serializers.ModelSerializer):
     items = ShoppingItemSerializer(many=True, required=False)
+    icon = serializers.ChoiceField(choices=ShoppingList.Icon.choices, required=False)
 
     class Meta:
         model = ShoppingList
-        fields = ("id", "title", "date", "position", "items", "created_at", "updated_at")
+        fields = ("id", "title", "icon", "date", "position", "items", "created_at", "updated_at")
         read_only_fields = ("id", "position", "created_at", "updated_at")
 
     def create(self, validated_data):

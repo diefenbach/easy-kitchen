@@ -2,24 +2,44 @@ import json
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Prefetch
 from django.http import HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.translation import gettext as _, ngettext
 from django.views import View
-from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
+from django.views.generic import CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView
 
-from .forms import ArticleForm, ShoppingItemForm, ShoppingListForm, ShoppingListImportForm
+from .forms import ArticleForm, ImportForm, ShoppingItemForm, ShoppingListForm
 from .models import Article, ShoppingItem, ShoppingList
-from .services import create_item, import_shopping_lists, remember_article, reorder_items, reorder_shopping_lists
+from .services import (
+    create_item,
+    import_recipes,
+    import_shopping_lists,
+    remember_article,
+    reorder_items,
+    reorder_shopping_lists,
+)
 
 
 class UserListMixin(LoginRequiredMixin):
     def get_queryset(self):
         return ShoppingList.objects.filter(user=self.request.user)
+
+
+class HomeView(LoginRequiredMixin, TemplateView):
+    template_name = "easy_kitchen/home.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["shopping_lists"] = (
+            self.request.user.shopping_lists.order_by("-created_at", "-id").prefetch_related("items")[:3]
+        )
+        context["recipes"] = (
+            self.request.user.recipes.order_by("-created_at", "-id").prefetch_related("ingredients")[:3]
+        )
+        return context
 
 
 class ShoppingListListView(LoginRequiredMixin, ListView):
@@ -71,27 +91,37 @@ class ShoppingListCreateView(LoginRequiredMixin, CreateView):
         return context
 
 
-class ShoppingListImportView(LoginRequiredMixin, View):
-    template_name = "easy_kitchen/lists/import.html"
+class ImportView(LoginRequiredMixin, View):
+    template_name = "easy_kitchen/import.html"
 
     def get(self, request):
-        return render(request, self.template_name, {"form": ShoppingListImportForm()})
+        return render(request, self.template_name, {"form": ImportForm()})
 
     def post(self, request):
-        form = ShoppingListImportForm(request.POST)
+        form = ImportForm(request.POST)
         if not form.is_valid():
             return render(request, self.template_name, {"form": form})
 
-        imported_lists = import_shopping_lists(request.user, form.cleaned_data["json_data"])
-        messages.success(
-            request,
-            ngettext(
-                "Imported %(count)d shopping list.",
-                "Imported %(count)d shopping lists.",
-                len(imported_lists),
-            ) % {"count": len(imported_lists)},
-        )
-        return redirect("easy_kitchen:list")
+        imported = form.cleaned_data["json_data"]
+        lists = imported["lists"]
+        recipes = imported["recipes"]
+        if lists is not None:
+            count = len(import_shopping_lists(request.user, lists))
+            messages.success(
+                request,
+                ngettext("Imported %(count)d shopping list.", "Imported %(count)d shopping lists.", count) % {"count": count},
+            )
+        if recipes is not None:
+            count = len(import_recipes(request.user, recipes))
+            messages.success(
+                request,
+                ngettext("Imported %(count)d recipe.", "Imported %(count)d recipes.", count) % {"count": count},
+            )
+        if lists is not None and recipes is None:
+            return redirect("easy_kitchen:list")
+        if recipes is not None and lists is None:
+            return redirect("easy_kitchen:recipes")
+        return redirect("easy_kitchen:home")
 
 
 class ShoppingListUpdateView(UserListMixin, UpdateView):
@@ -113,7 +143,7 @@ class ShoppingListUpdateView(UserListMixin, UpdateView):
 class ShoppingListDeleteView(UserListMixin, DeleteView):
     model = ShoppingList
     template_name = "easy_kitchen/lists/confirm_delete.html"
-    success_url = "/"
+    success_url = reverse_lazy("easy_kitchen:list")
 
 
 class ItemCreateView(LoginRequiredMixin, View):

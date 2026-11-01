@@ -71,9 +71,25 @@ msgstr "Anmelden"
 msgid "Log out"
 msgstr "Abmelden"
 
+#: src/easy_kitchen/templates/easy_kitchen/base.html
+msgid "Overview"
+msgstr "Übersicht"
+
+#: src/easy_kitchen/templates/easy_kitchen/base.html
+msgid "Account"
+msgstr "Konto"
+
 #: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:7
 msgid "Shopping lists"
 msgstr "Einkaufslisten"
+
+#: src/easy_kitchen/templates/easy_kitchen/home.html
+msgid "See all lists"
+msgstr "Alle Listen ansehen"
+
+#: src/easy_kitchen/templates/easy_kitchen/home.html
+msgid "See all recipes"
+msgstr "Alle Rezepte ansehen"
 
 #: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:18
 msgid "List actions"
@@ -184,6 +200,15 @@ msgstr "Importieren"
 #: src/easy_kitchen/templates/easy_kitchen/lists/overview.html:8
 msgid "Import JSON"
 msgstr "JSON importieren"
+
+msgid "JSON"
+msgstr "JSON"
+
+msgid "Paste JSON. Shopping lists and recipes are recognized automatically."
+msgstr "Füge JSON ein. Einkaufslisten und Rezepte werden automatisch erkannt."
+
+msgid "Could not tell whether this is a shopping list or a recipe."
+msgstr "Es ist nicht erkennbar, ob das eine Einkaufsliste oder ein Rezept ist."
 
 #: src/easy_kitchen/templates/easy_kitchen/lists/overview.html:17
 #, python-format
@@ -339,6 +364,68 @@ msgstr "Schritte"
 #: src/easy_kitchen/forms.py
 msgid "Title"
 msgstr "Titel"
+
+#: src/easy_kitchen/forms.py
+msgid "Icon"
+msgstr "Symbol"
+
+#: src/easy_kitchen/models.py
+msgid "icon"
+msgstr "Symbol"
+
+#: src/easy_kitchen/models.py
+msgid "Fried egg"
+msgstr "Spiegelei"
+
+#: src/easy_kitchen/models.py
+msgid "Drink"
+msgstr "Getränk"
+
+#: src/easy_kitchen/models.py
+msgid "Basket"
+msgstr "Warenkorb"
+
+msgid "Cart"
+msgstr "Wagen"
+
+msgid "Bag"
+msgstr "Tasche"
+
+msgid "Apple"
+msgstr "Apfel"
+
+msgid "Cookie"
+msgstr "Keks"
+
+msgid "Cake"
+msgstr "Kuchen"
+
+msgid "Drop"
+msgstr "Tropfen"
+
+msgid "Frozen"
+msgstr "Tiefgekühlt"
+
+msgid "Home"
+msgstr "Zuhause"
+
+msgid "Gift"
+msgstr "Geschenk"
+
+msgid "Heart"
+msgstr "Herz"
+
+#: src/easy_kitchen/models.py
+msgid "Flower"
+msgstr "Blume"
+
+#: src/easy_kitchen/models.py
+msgid "Flame"
+msgstr "Flamme"
+
+#: src/easy_kitchen/services.py
+msgid "Choose an icon."
+msgstr "Wähle ein Symbol."
 
 #: src/easy_kitchen/forms.py
 msgid "Description"

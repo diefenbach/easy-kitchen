@@ -7,6 +7,8 @@ from django.db import transaction
 from django.db.models import F, Max
 from django.utils.translation import gettext as _
 
+from .models import ShoppingItem, ShoppingList
+
 _QUANTITY_AMOUNT = re.compile(r"^(\d+(?:[.,]\d+)?)\s*(.*)$")
 _INGREDIENT_AMOUNT = r"\d+(?:[.,]\d+)?(?:/\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?"
 _LEADING_INGREDIENT = re.compile(
@@ -15,8 +17,6 @@ _LEADING_INGREDIENT = re.compile(
 _TRAILING_INGREDIENT = re.compile(
     rf"^(?P<name>.+?)\s+(?P<amount>{_INGREDIENT_AMOUNT})(?:\s+(?P<unit>\S+))?$"
 )
-
-from .models import ShoppingItem
 
 
 def _normalized_name(name):
@@ -127,8 +127,22 @@ def create_item(shopping_list, *, name, quantity="", checked=False, position=Non
     )
 
 
-def create_shopping_list(user, *, title, date, items=None, position=0):
-    shopping_list = user.shopping_lists.create(title=title, date=date, position=position)
+def _clean_list_icon(icon):
+    if icon in (None, ""):
+        return None
+    if icon not in ShoppingList.Icon.values:
+        raise ValueError(_("Choose an icon."))
+    return icon
+
+
+def create_shopping_list(user, *, title, date, items=None, position=0, icon=None):
+    icon = _clean_list_icon(icon)
+    shopping_list = user.shopping_lists.create(
+        title=title,
+        date=date,
+        position=position,
+        **({"icon": icon} if icon else {}),
+    )
     for item_position, item_data in enumerate(items or [], start=1):
         item_data = dict(item_data)
         create_item(shopping_list, position=item_data.pop("position", item_position), **item_data)
