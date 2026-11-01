@@ -8,3 +8,4 @@ htmlcov/
 staticfiles/
 media/
 db.sqlite3
+*.code-workspace
