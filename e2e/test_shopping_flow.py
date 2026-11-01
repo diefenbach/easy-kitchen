@@ -401,7 +401,8 @@ def test_user_can_import_a_json_shopping_list(authenticated_page):
     open_account_menu(page)
 
     page.get_by_role("link", name="Import JSON").click()
-    page.get_by_label("JSON", exact=True).fill(
+    expect(page.get_by_role("heading", name="Import JSON")).to_be_visible()
+    page.locator("#id_json_data").fill(
         '''{
           "lists": [{
             "title": "Tofu pan",

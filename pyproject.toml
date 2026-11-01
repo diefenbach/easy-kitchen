@@ -20,6 +20,7 @@ dev = [
   "pytest-django>=4.9,<5",
   "pytest-playwright>=0.7,<1",
   "pytest-xdist>=3.6,<4",
+  "ruff>=0.14,<0.15",
 ]
 
 [tool.pytest.ini_options]
