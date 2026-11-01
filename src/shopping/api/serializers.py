@@ -11,6 +11,14 @@ class ReorderLinesSerializer(serializers.Serializer):
     line_ids = serializers.ListField(child=serializers.IntegerField())
 
 
+class ReorderListsSerializer(serializers.Serializer):
+    list_ids = serializers.ListField(child=serializers.IntegerField())
+
+
+class ReorderRecipesSerializer(serializers.Serializer):
+    recipe_ids = serializers.ListField(child=serializers.IntegerField())
+
+
 class ShoppingItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = ShoppingItem
@@ -23,8 +31,8 @@ class ShoppingListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ShoppingList
-        fields = ("id", "title", "date", "items", "created_at", "updated_at")
-        read_only_fields = ("id", "created_at", "updated_at")
+        fields = ("id", "title", "date", "position", "items", "created_at", "updated_at")
+        read_only_fields = ("id", "position", "created_at", "updated_at")
 
     def create(self, validated_data):
         return create_shopping_list(self.context["request"].user, **validated_data)
@@ -74,12 +82,13 @@ class RecipeSerializer(serializers.ModelSerializer):
             "image",
             "image_url",
             "picture_url",
+            "position",
             "ingredients",
             "steps",
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("id", "created_at", "updated_at")
+        read_only_fields = ("id", "position", "created_at", "updated_at")
 
     def get_image(self, recipe):
         if not recipe.image:

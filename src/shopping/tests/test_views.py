@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from django.test import Client
 from django.urls import reverse
@@ -269,7 +271,33 @@ def test_list_overview_offers_edit_and_modal_delete_actions(client, user, shoppi
     assert f'{reverse("shopping:update", args=[shopping_list.pk])}?return_to=overview' in content
     assert f'data-bs-target="#delete-list-modal-{shopping_list.pk}"' in content
     assert 'data-edit-toggle' in content
-    assert 'class="card-footer bg-white d-flex flex-nowrap justify-content-end gap-2 edit-only"' in content
+    assert 'data-card-reorder' in content
+    assert 'aria-label="Move"' in content
+    assert 'class="card-footer bg-white d-flex flex-nowrap align-items-center gap-2 edit-only"' in content
+
+
+@pytest.mark.django_db
+def test_list_overview_reorder_keeps_other_users_lists(client, user, other_user):
+    first = ShoppingList.objects.create(user=user, title="First")
+    second = ShoppingList.objects.create(user=user, title="Second")
+    foreign = ShoppingList.objects.create(user=other_user, title="Foreign")
+    client.force_login(user)
+
+    response = client.post(
+        reverse("shopping:list-reorder"),
+        json.dumps({"list_ids": [first.pk, second.pk, foreign.pk]}),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert list(user.shopping_lists.values_list("title", flat=True)) == ["Second", "First"]
+    kept = client.post(
+        reverse("shopping:list-reorder"),
+        json.dumps({"list_ids": [first.pk, second.pk]}),
+        content_type="application/json",
+    )
+    assert kept.status_code == 302
+    assert list(user.shopping_lists.values_list("title", flat=True)) == ["First", "Second"]
 
 
 @pytest.mark.django_db

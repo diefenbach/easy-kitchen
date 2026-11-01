@@ -27,6 +27,37 @@ def test_api_import_creates_list_and_items(client, user):
 
 
 @pytest.mark.django_db
+def test_api_can_reorder_lists_and_recipes(client, user, other_user):
+    from shopping.services import create_recipe
+
+    token = Token.objects.create(user=user)
+    first = ShoppingList.objects.create(user=user, title="First")
+    second = ShoppingList.objects.create(user=user, title="Second")
+    ShoppingList.objects.create(user=other_user, title="Foreign")
+    headers = {"HTTP_AUTHORIZATION": f"Token {token.key}"}
+
+    lists = client.post(
+        reverse("shopping-list-reorder-lists"),
+        json.dumps({"list_ids": [first.pk, second.pk]}),
+        content_type="application/json",
+        **headers,
+    )
+    assert lists.status_code == 200
+    assert [record["title"] for record in lists.json()] == ["First", "Second"]
+
+    older = create_recipe(user, title="Older")
+    newer = create_recipe(user, title="Newer")
+    recipes = client.post(
+        reverse("recipe-reorder-recipes"),
+        json.dumps({"recipe_ids": [older.pk, newer.pk]}),
+        content_type="application/json",
+        **headers,
+    )
+    assert recipes.status_code == 200
+    assert [record["title"] for record in recipes.json()] == ["Older", "Newer"]
+
+
+@pytest.mark.django_db
 def test_api_can_create_update_reorder_and_delete_a_list(client, user):
     token = Token.objects.create(user=user)
     headers = {"HTTP_AUTHORIZATION": f"Token {token.key}"}

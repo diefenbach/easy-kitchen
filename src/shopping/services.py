@@ -4,7 +4,7 @@ from decimal import Decimal
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
 from django.db import transaction
-from django.db.models import Max
+from django.db.models import F, Max
 from django.utils.translation import gettext as _
 
 _QUANTITY_AMOUNT = re.compile(r"^(\d+(?:[.,]\d+)?)\s*(.*)$")
@@ -127,17 +127,28 @@ def create_item(shopping_list, *, name, quantity="", checked=False, position=Non
     )
 
 
-def create_shopping_list(user, *, title, date, items=None):
-    shopping_list = user.shopping_lists.create(title=title, date=date)
-    for position, item_data in enumerate(items or [], start=1):
+def create_shopping_list(user, *, title, date, items=None, position=0):
+    shopping_list = user.shopping_lists.create(title=title, date=date, position=position)
+    for item_position, item_data in enumerate(items or [], start=1):
         item_data = dict(item_data)
-        create_item(shopping_list, position=item_data.pop("position", position), **item_data)
+        create_item(shopping_list, position=item_data.pop("position", item_position), **item_data)
     return shopping_list
 
 
 @transaction.atomic
 def import_shopping_lists(user, lists_data):
-    return [create_shopping_list(user, **list_data) for list_data in lists_data]
+    records = [dict(record) for record in lists_data]
+    user.shopping_lists.update(position=F("position") + len(records))
+    created = []
+    for index, record in enumerate(records, start=1):
+        record.pop("position", None)
+        created.append(create_shopping_list(user, position=index, **record))
+    return created
+
+
+@transaction.atomic
+def reorder_shopping_lists(user, list_ids):
+    _reorder_owned(user.shopping_lists, list_ids)
 
 
 @transaction.atomic
@@ -187,14 +198,14 @@ def _clean_image_url(image_url):
     return image_url
 
 
-def create_recipe(user, *, title, description="", image_url="", ingredients=None, steps=None, recipe=None):
+def create_recipe(user, *, title, description="", image_url="", ingredients=None, steps=None, recipe=None, position=0):
     title = _normalized_name(title)
     if not title:
         raise ValueError(_("Enter a title."))
     description = (description or "").strip()
     image_url = _clean_image_url(image_url)
     if recipe is None:
-        recipe = user.recipes.create(title=title, description=description, image_url=image_url)
+        recipe = user.recipes.create(title=title, description=description, image_url=image_url, position=position)
     else:
         recipe.title = title
         recipe.description = description
@@ -209,7 +220,18 @@ def create_recipe(user, *, title, description="", image_url="", ingredients=None
 
 @transaction.atomic
 def import_recipes(user, recipes_data):
-    return [create_recipe(user, **recipe_data) for recipe_data in recipes_data]
+    records = [dict(record) for record in recipes_data]
+    user.recipes.update(position=F("position") + len(records))
+    created = []
+    for index, record in enumerate(records, start=1):
+        record.pop("position", None)
+        created.append(create_recipe(user, position=index, **record))
+    return created
+
+
+@transaction.atomic
+def reorder_recipes(user, recipe_ids):
+    _reorder_owned(user.recipes, recipe_ids)
 
 
 def add_recipe_line(recipe, kind, text="", name="", quantity=""):
@@ -263,6 +285,14 @@ def _recipe_lines(recipe, kind):
     if kind == "step":
         return recipe.steps
     raise ValueError(_("Invalid order."))
+
+
+def _reorder_owned(manager, ordered_ids):
+    existing = set(manager.filter(id__in=ordered_ids).values_list("id", flat=True))
+    if existing != set(ordered_ids) or len(ordered_ids) != len(existing) or manager.count() != len(ordered_ids):
+        raise ValueError(_("Invalid order."))
+    for position, record_id in enumerate(ordered_ids, start=1):
+        manager.filter(pk=record_id).update(position=position)
 
 
 def _reorder(manager, ordered_ids, model, parent_field, parent):

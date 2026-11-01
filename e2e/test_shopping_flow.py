@@ -314,6 +314,39 @@ def test_user_can_delete_a_list_from_the_overview_modal(authenticated_page, user
 
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
+def test_user_can_reorder_lists_and_recipes_on_the_overview(authenticated_page, user):
+    from shopping.models import ShoppingList
+    from shopping.services import create_recipe
+
+    older = ShoppingList.objects.create(user=user, title="Older list")
+    newer = ShoppingList.objects.create(user=user, title="Newer list")
+    first_recipe = create_recipe(user, title="First recipe")
+    second_recipe = create_recipe(user, title="Second recipe")
+    page = authenticated_page
+    page.set_viewport_size({"width": 400, "height": 900})
+    page.reload()
+
+    newer_handle = page.locator(f'[data-list-id="{newer.pk}"]').get_by_role("button", name="Move", include_hidden=True)
+    older_handle = page.locator(f'[data-list-id="{older.pk}"]').get_by_role("button", name="Move", include_hidden=True)
+    expect(newer_handle).to_be_hidden()
+    show_edit_actions(page)
+    with page.expect_response(lambda response: response.url.endswith("/lists/reorder/") and response.request.method == "POST"):
+        newer_handle.drag_to(older_handle)
+    page.reload()
+    assert page.locator("#shopping-lists .list-card h2").all_text_contents() == ["Older list", "Newer list"]
+
+    page.get_by_role("link", name="Recipes").click()
+    show_edit_actions(page)
+    second_handle = page.locator(f'[data-list-id="{second_recipe.pk}"]').get_by_role("button", name="Move")
+    first_handle = page.locator(f'[data-list-id="{first_recipe.pk}"]').get_by_role("button", name="Move")
+    with page.expect_response(lambda response: response.url.endswith("/recipes/reorder/") and response.request.method == "POST"):
+        second_handle.drag_to(first_handle)
+    page.reload()
+    assert page.locator("#recipes .list-card h2").all_text_contents() == ["First recipe", "Second recipe"]
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
 def test_user_can_reorder_items_with_drag_and_drop(authenticated_page, user):
     from shopping.models import ShoppingItem, ShoppingList
 

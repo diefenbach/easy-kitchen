@@ -1,25 +1,39 @@
 from django.conf import settings
 from django.core.validators import URLValidator
-from django.db import models
+from django.db import models, transaction
+from django.db.models import F
 from django.db.models.functions import Lower
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+
+
+def _place_new_record_first(instance):
+    if not instance._state.adding or instance.position:
+        return
+    type(instance).objects.filter(user_id=instance.user_id).update(position=F("position") + 1)
+    instance.position = 1
 
 
 class ShoppingList(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="shopping_lists")
     title = models.CharField(_("title"), max_length=255)
     date = models.DateField(_("date"), default=timezone.localdate)
+    position = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ("-date", "-created_at")
+        ordering = ("position", "id")
         verbose_name = _("shopping list")
         verbose_name_plural = _("shopping lists")
 
     def __str__(self):
         return self.title
+
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            _place_new_record_first(self)
+            return super().save(*args, **kwargs)
 
 
 class ShoppingItem(models.Model):
@@ -69,16 +83,22 @@ class Recipe(models.Model):
         blank=True,
         validators=[URLValidator(schemes=["http", "https"])],
     )
+    position = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ("-created_at", "-id")
+        ordering = ("position", "id")
         verbose_name = _("recipe")
         verbose_name_plural = _("recipes")
 
     def __str__(self):
         return self.title
+
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            _place_new_record_first(self)
+            return super().save(*args, **kwargs)
 
     @property
     def picture_url(self):

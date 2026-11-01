@@ -4,8 +4,22 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from shopping.models import Recipe, ShoppingList
-from shopping.services import import_recipes, import_shopping_lists, reorder_items, reorder_recipe_lines
-from .serializers import RecipeSerializer, ReorderItemsSerializer, ReorderLinesSerializer, ShoppingListSerializer
+from shopping.services import (
+    import_recipes,
+    import_shopping_lists,
+    reorder_items,
+    reorder_recipe_lines,
+    reorder_recipes,
+    reorder_shopping_lists,
+)
+from .serializers import (
+    RecipeSerializer,
+    ReorderItemsSerializer,
+    ReorderLinesSerializer,
+    ReorderListsSerializer,
+    ReorderRecipesSerializer,
+    ShoppingListSerializer,
+)
 
 
 def _import_records(payload, key):
@@ -34,6 +48,15 @@ class ShoppingListViewSet(viewsets.ModelViewSet):
             return Response({"detail": _("Invalid order.")}, status=status.HTTP_400_BAD_REQUEST)
         shopping_list.refresh_from_db()
         return Response(self.get_serializer(shopping_list).data)
+
+    @extend_schema(request=ReorderListsSerializer, responses={200: ShoppingListSerializer(many=True)})
+    @action(detail=False, methods=["post"], url_path="reorder")
+    def reorder_lists(self, request):
+        try:
+            reorder_shopping_lists(request.user, [int(value) for value in request.data["list_ids"]])
+        except (ValueError, KeyError, TypeError):
+            return Response({"detail": _("Invalid order.")}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(self.get_serializer(self.get_queryset(), many=True).data)
 
     @extend_schema(
         request={
@@ -83,6 +106,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return Response({"detail": _("Invalid order.")}, status=status.HTTP_400_BAD_REQUEST)
         recipe.refresh_from_db()
         return Response(self.get_serializer(recipe).data)
+
+    @extend_schema(request=ReorderRecipesSerializer, responses={200: RecipeSerializer(many=True)})
+    @action(detail=False, methods=["post"], url_path="reorder")
+    def reorder_recipes(self, request):
+        try:
+            reorder_recipes(request.user, [int(value) for value in request.data["recipe_ids"]])
+        except (ValueError, KeyError, TypeError):
+            return Response({"detail": _("Invalid order.")}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(self.get_serializer(self.get_queryset(), many=True).data)
 
     @extend_schema(request=ReorderLinesSerializer, responses={200: RecipeSerializer})
     @action(detail=True, methods=["post"], url_path="reorder-ingredients")

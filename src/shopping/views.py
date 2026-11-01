@@ -14,7 +14,7 @@ from django.views.generic import CreateView, DeleteView, DetailView, ListView, U
 
 from .forms import ArticleForm, ShoppingItemForm, ShoppingListForm, ShoppingListImportForm
 from .models import Article, ShoppingItem, ShoppingList
-from .services import create_item, import_shopping_lists, remember_article, reorder_items
+from .services import create_item, import_shopping_lists, remember_article, reorder_items, reorder_shopping_lists
 
 
 class UserListMixin(LoginRequiredMixin):
@@ -29,6 +29,16 @@ class ShoppingListListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return ShoppingList.objects.filter(user=self.request.user).prefetch_related("items")
+
+
+class ShoppingListReorderView(LoginRequiredMixin, View):
+    def post(self, request):
+        try:
+            payload = json.loads(request.body)
+            reorder_shopping_lists(request.user, [int(value) for value in payload["list_ids"]])
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError):
+            return HttpResponseBadRequest(_("Invalid order."))
+        return HttpResponseRedirect(reverse("shopping:list"))
 
 
 class ShoppingListDetailView(UserListMixin, DetailView):

@@ -11,9 +11,9 @@
   </div>
 </div>
 {% if recipes %}
-  <div class="row g-3">
+  <div id="recipes" class="row g-3" data-card-reorder="{% url 'shopping:recipe-reorder' %}" data-id-field="recipe_ids">
     {% for recipe in recipes %}
-      <div class="col-12 col-md-6 col-lg-4">
+      <div class="col-12 col-md-6 col-lg-4" data-list-id="{{ recipe.pk }}">
         <article class="card h-100 shadow-sm list-card">
           {% if recipe.picture_url %}
             <img class="recipe-card-picture" src="{{ recipe.picture_url }}" alt="">
@@ -22,8 +22,11 @@
             <h2 class="h5"><a class="stretched-link text-decoration-none link-dark" href="{% url 'shopping:recipe-detail' recipe.pk %}">{{ recipe.title }}</a></h2>
             <span class="badge text-bg-light">{% blocktranslate count counter=recipe.ingredients.count %}{{ counter }} ingredient{% plural %}{{ counter }} ingredients{% endblocktranslate %}</span>
           </div>
-          <div class="card-footer bg-white d-flex flex-nowrap justify-content-end gap-2 edit-only">
-            <a href="{% url 'shopping:recipe-update' recipe.pk %}" class="btn btn-outline-secondary icon-action" aria-label="{% translate 'Edit' %}">
+          <div class="card-footer bg-white d-flex flex-nowrap align-items-center gap-2 edit-only">
+            <button class="drag-handle btn btn-sm text-secondary icon-action" type="button" aria-label="{% translate 'Move' %}">
+              <i class="bi bi-grip-vertical" aria-hidden="true"></i>
+            </button>
+            <a href="{% url 'shopping:recipe-update' recipe.pk %}" class="btn btn-outline-secondary icon-action ms-auto" aria-label="{% translate 'Edit' %}">
               <i class="bi bi-pencil" aria-hidden="true"></i>
             </a>
             <button type="button" class="btn btn-outline-danger icon-action" data-bs-toggle="modal" data-bs-target="#delete-recipe-modal-{{ recipe.pk }}" aria-label="{% translate 'Delete recipe' %}">
@@ -32,6 +35,9 @@
           </div>
         </article>
       </div>
+    {% endfor %}
+  </div>
+  {% for recipe in recipes %}
       <div class="modal fade" id="delete-recipe-modal-{{ recipe.pk }}" tabindex="-1" aria-labelledby="delete-recipe-title-{{ recipe.pk }}" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
@@ -51,7 +57,6 @@
         </div>
       </div>
     {% endfor %}
-  </div>
 {% else %}
   <div class="text-center py-5 bg-white rounded shadow-sm">
     <h2 class="h4">{% translate "No recipes yet" %}</h2>

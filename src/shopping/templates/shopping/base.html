@@ -57,6 +57,22 @@
         icon.classList.add(editing ? icon.dataset.iconOn : icon.dataset.iconOff);
       });
     });
+    document.querySelectorAll("[data-card-reorder]").forEach((container) => {
+      const csrf = document.querySelector("[name=csrfmiddlewaretoken]")?.value;
+      new Sortable(container, {
+        animation: 150,
+        handle: ".drag-handle",
+        draggable: "[data-list-id]",
+        onEnd() {
+          const ids = [...container.querySelectorAll("[data-list-id]")].map((card) => Number(card.dataset.listId));
+          fetch(container.dataset.cardReorder, {
+            method: "POST",
+            headers: {"Content-Type": "application/json", "X-CSRFToken": csrf},
+            body: JSON.stringify({[container.dataset.idField]: ids}),
+          });
+        },
+      });
+    });
   </script>
   {% block scripts %}{% endblock %}
 </body>

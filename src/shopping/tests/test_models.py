@@ -1,5 +1,5 @@
 import pytest
-from shopping.services import create_item, reorder_items
+from shopping.services import create_item, reorder_items, reorder_shopping_lists
 
 
 @pytest.mark.django_db
@@ -87,6 +87,30 @@ def test_adding_an_item_remembers_one_article_per_user(shopping_list, other_user
 
     assert list(Article.objects.filter(user=shopping_list.user).values_list("name", flat=True)) == ["Milch"]
     assert list(Article.objects.filter(user=other_user).values_list("name", flat=True)) == ["Milch"]
+
+
+@pytest.mark.django_db
+def test_a_new_list_is_placed_first_and_the_overview_can_be_reordered(user):
+    from shopping.models import ShoppingList
+
+    first = ShoppingList.objects.create(user=user, title="First")
+    second = ShoppingList.objects.create(user=user, title="Second")
+
+    assert list(user.shopping_lists.values_list("title", flat=True)) == ["Second", "First"]
+    reorder_shopping_lists(user, [first.id, second.id])
+    assert list(user.shopping_lists.values_list("title", flat=True)) == ["First", "Second"]
+
+
+@pytest.mark.django_db
+def test_reordering_lists_rejects_a_foreign_list(user, other_user):
+    from shopping.models import ShoppingList
+
+    own = ShoppingList.objects.create(user=user, title="Own")
+    foreign = ShoppingList.objects.create(user=other_user, title="Foreign")
+
+    with pytest.raises(ValueError):
+        reorder_shopping_lists(user, [own.id, foreign.id])
+    assert list(user.shopping_lists.values_list("title", flat=True)) == ["Own"]
 
 
 @pytest.mark.django_db

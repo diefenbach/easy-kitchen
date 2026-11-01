@@ -11,17 +11,20 @@
   </div>
 </div>
 {% if shopping_lists %}
-  <div class="row g-3">
+  <div id="shopping-lists" class="row g-3" data-card-reorder="{% url 'shopping:list-reorder' %}" data-id-field="list_ids">
     {% for list in shopping_lists %}
-      <div class="col-12 col-md-6 col-lg-4">
+      <div class="col-12 col-md-6 col-lg-4" data-list-id="{{ list.pk }}">
         <article class="card h-100 shadow-sm list-card">
           <div class="card-body position-relative">
             <h2 class="h5"><a class="stretched-link text-decoration-none link-dark" href="{% url 'shopping:detail' list.pk %}">{{ list.title }}</a></h2>
             <p class="text-secondary mb-2">{{ list.date|date:"D, d. M Y" }}</p>
             <span class="badge text-bg-light">{% blocktranslate count counter=list.items.count %}{{ counter }} item{% plural %}{{ counter }} items{% endblocktranslate %}</span>
           </div>
-          <div class="card-footer bg-white d-flex flex-nowrap justify-content-end gap-2 edit-only">
-            <a href="{% url 'shopping:update' list.pk %}?return_to=overview" class="btn btn-outline-secondary icon-action" aria-label="{% translate 'Edit' %}">
+          <div class="card-footer bg-white d-flex flex-nowrap align-items-center gap-2 edit-only">
+            <button class="drag-handle btn btn-sm text-secondary icon-action" type="button" aria-label="{% translate 'Move' %}">
+              <i class="bi bi-grip-vertical" aria-hidden="true"></i>
+            </button>
+            <a href="{% url 'shopping:update' list.pk %}?return_to=overview" class="btn btn-outline-secondary icon-action ms-auto" aria-label="{% translate 'Edit' %}">
               <i class="bi bi-pencil" aria-hidden="true"></i>
             </a>
             <button type="button" class="btn btn-outline-danger icon-action" data-bs-toggle="modal" data-bs-target="#delete-list-modal-{{ list.pk }}" aria-label="{% translate 'Delete list' %}">
@@ -30,6 +33,9 @@
           </div>
         </article>
       </div>
+    {% endfor %}
+  </div>
+  {% for list in shopping_lists %}
       <div class="modal fade" id="delete-list-modal-{{ list.pk }}" tabindex="-1" aria-labelledby="delete-list-title-{{ list.pk }}" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
@@ -49,7 +55,6 @@
         </div>
       </div>
     {% endfor %}
-  </div>
 {% else %}
   <div class="text-center py-5 bg-white rounded shadow-sm">
     <h2 class="h4">{% translate "No shopping list yet" %}</h2>

@@ -19,6 +19,7 @@ from .services import (
     create_shopping_list,
     import_recipes,
     reorder_recipe_lines,
+    reorder_recipes,
 )
 
 
@@ -31,6 +32,16 @@ class RecipeListView(LoginRequiredMixin, View):
     def get(self, request):
         recipes = Recipe.objects.filter(user=request.user).prefetch_related("ingredients")
         return render(request, "shopping/recipes.html", {"recipes": recipes})
+
+
+class RecipeReorderView(LoginRequiredMixin, View):
+    def post(self, request):
+        try:
+            payload = json.loads(request.body)
+            reorder_recipes(request.user, [int(value) for value in payload["recipe_ids"]])
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError):
+            return HttpResponseBadRequest(_("Invalid order."))
+        return HttpResponseRedirect(reverse("shopping:recipes"))
 
 
 class RecipeCreateView(LoginRequiredMixin, CreateView):

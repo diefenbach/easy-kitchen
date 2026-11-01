@@ -8,7 +8,7 @@ from django.utils import timezone
 from PIL import Image
 from rest_framework.authtoken.models import Token
 from shopping.models import Recipe, ShoppingList
-from shopping.services import add_recipe_ingredients_to_list, create_recipe
+from shopping.services import add_recipe_ingredients_to_list, create_recipe, reorder_recipes
 
 
 def png_upload():
@@ -58,6 +58,34 @@ def test_adding_a_recipe_to_a_list_puts_the_amount_in_the_quantity(user):
         ("Salt", ""),
         ("Milk", "1,5 l"),
     ]
+
+
+@pytest.mark.django_db
+def test_a_new_recipe_is_placed_first_and_the_overview_can_be_reordered(client, user, other_user):
+    first = create_recipe(user, title="First")
+    second = create_recipe(user, title="Second")
+    foreign = create_recipe(other_user, title="Foreign")
+    assert list(user.recipes.values_list("title", flat=True)) == ["Second", "First"]
+
+    client.force_login(user)
+    overview = client.get(reverse("shopping:recipes")).content.decode()
+    assert 'data-card-reorder' in overview
+    assert 'aria-label="Move"' in overview
+    rejected = client.post(
+        reverse("shopping:recipe-reorder"),
+        json.dumps({"recipe_ids": [first.pk, foreign.pk]}),
+        content_type="application/json",
+    )
+    assert rejected.status_code == 400
+    reordered = client.post(
+        reverse("shopping:recipe-reorder"),
+        json.dumps({"recipe_ids": [first.pk, second.pk]}),
+        content_type="application/json",
+    )
+    assert reordered.status_code == 302
+    assert list(user.recipes.values_list("title", flat=True)) == ["First", "Second"]
+    reorder_recipes(user, [second.pk, first.pk])
+    assert list(user.recipes.values_list("title", flat=True)) == ["Second", "First"]
 
 
 @pytest.mark.django_db
