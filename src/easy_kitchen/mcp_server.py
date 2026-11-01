@@ -21,7 +21,7 @@ from easy_kitchen.services import create_shopping_list as save_shopping_list
 
 mcp = MCPServer(
     "EasyKitchen",
-    version="0.6.0",
+    version="0.7.0",
     instructions=(
         "Create shopping lists and recipes for the user authenticated by the request token. "
         "Do not invent a user id. Confirm the title, date, and items before creating a list. "
