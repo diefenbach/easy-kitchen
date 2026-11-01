@@ -255,6 +255,53 @@ msgstr "„%(name)s“ wird dauerhaft gelöscht."
 msgid "Add"
 msgstr "Hinzufügen"
 
+#: src/shopping/models.py
+msgid "article"
+msgstr "Artikel"
+
+#: src/shopping/models.py
+msgid "articles"
+msgstr "Artikel"
+
+#: src/shopping/templates/shopping/base.html
+#: src/shopping/templates/shopping/articles.html
+msgid "Articles"
+msgstr "Artikel"
+
+#: src/shopping/forms.py
+msgid "Article"
+msgstr "Artikel"
+
+#: src/shopping/forms.py
+msgid "Enter an article name."
+msgstr "Gib einen Artikelnamen ein."
+
+#: src/shopping/forms.py
+msgid "An article with this name already exists."
+msgstr "Ein Artikel mit diesem Namen existiert bereits."
+
+#: src/shopping/templates/shopping/articles.html
+#, python-format
+msgid "Edit %(name)s"
+msgstr "%(name)s bearbeiten"
+
+#: src/shopping/templates/shopping/articles.html
+msgid "Delete article?"
+msgstr "Artikel löschen?"
+
+#: src/shopping/templates/shopping/articles.html
+#, python-format
+msgid "\"%(name)s\" will be removed from suggestions. Items already on a list stay unchanged."
+msgstr "„%(name)s“ wird aus den Vorschlägen entfernt. Artikel auf einer Liste bleiben unverändert."
+
+#: src/shopping/templates/shopping/articles.html
+msgid "No articles yet"
+msgstr "Noch keine Artikel"
+
+#: src/shopping/templates/shopping/articles.html
+msgid "Articles you add to a list are saved here."
+msgstr "Artikel, die du einer Liste hinzufügst, werden hier gespeichert."
+
 #~ msgid "Shopping list"
 #~ msgstr "Einkaufsliste"
 

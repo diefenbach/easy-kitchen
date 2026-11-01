@@ -6,6 +6,37 @@ from playwright.sync_api import expect
 
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
+def test_saved_articles_are_suggested_and_can_be_renamed(authenticated_page):
+    page = authenticated_page
+    articles = page.get_by_role("link", name="Articles")
+    logout = page.get_by_role("button", name="Log out")
+    expect(articles).to_be_visible()
+    assert articles.bounding_box()["x"] < logout.bounding_box()["x"]
+
+    page.get_by_role("link", name="New list").click()
+    page.locator("input[name=title]").fill("Vorrat")
+    page.locator("input[name=date]").fill("2026-11-01")
+    page.get_by_role("button", name="Save").click()
+    page.get_by_role("combobox", name="Item").fill("Naturtofu")
+    page.get_by_role("button", name="Add").click()
+    expect(page.locator(".shopping-item", has_text="Naturtofu")).to_be_visible()
+
+    page.get_by_role("link", name="Articles").click()
+    expect(page.get_by_role("heading", name="Articles")).to_be_visible()
+    name = page.get_by_role("textbox", name="Edit Naturtofu")
+    expect(name).to_have_value("Naturtofu")
+    name.fill("Räuchertofu")
+    name.locator("xpath=ancestor::form[1]").get_by_role("button", name="Save").click()
+    expect(page.get_by_role("textbox", name="Edit Räuchertofu")).to_have_value("Räuchertofu")
+
+    page.get_by_role("link", name="EasyList").click()
+    page.get_by_role("link", name="Vorrat").click()
+    expect(page.locator('#articles option[value="Räuchertofu"]')).to_have_count(1)
+    expect(page.locator('#articles option[value="Naturtofu"]')).to_have_count(0)
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
 def test_user_can_create_and_check_an_item(authenticated_page):
     page = authenticated_page
 
@@ -14,7 +45,7 @@ def test_user_can_create_and_check_an_item(authenticated_page):
     page.locator("input[name=date]").fill("2026-10-30")
     page.get_by_role("button", name="Save").click()
 
-    page.get_by_label("Item").fill("Naturtofu")
+    page.get_by_role("combobox", name="Item").fill("Naturtofu")
     page.get_by_label("Quantity").fill("400 g")
     page.get_by_role("button", name="Add").click()
 
@@ -34,12 +65,12 @@ def test_adding_the_same_item_again_shows_both_quantities(authenticated_page):
     page.locator("input[name=date]").fill("2026-11-01")
     page.get_by_role("button", name="Save").click()
 
-    page.get_by_role("textbox", name="Item").fill("Milch")
+    page.get_by_role("combobox", name="Item").fill("Milch")
     page.get_by_role("textbox", name="Quantity").fill("1 l")
     page.get_by_role("button", name="Add").click()
     expect(page.locator(".shopping-item", has_text="Milch")).to_contain_text("1 l")
 
-    page.get_by_role("textbox", name="Item").fill("Milch")
+    page.get_by_role("combobox", name="Item").fill("Milch")
     page.get_by_role("textbox", name="Quantity").fill("500 ml")
     page.get_by_role("button", name="Add").click()
 
@@ -48,7 +79,7 @@ def test_adding_the_same_item_again_shows_both_quantities(authenticated_page):
     expect(items).to_contain_text("1 l")
     expect(items).to_contain_text("500 ml")
 
-    page.get_by_role("textbox", name="Item").fill("Milch")
+    page.get_by_role("combobox", name="Item").fill("Milch")
     page.get_by_role("textbox", name="Quantity").fill("1 l")
     page.get_by_role("button", name="Add").click()
     expect(items).to_contain_text("2 l, 500 ml")

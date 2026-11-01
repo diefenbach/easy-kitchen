@@ -27,33 +27,36 @@ def _format_amount(number, separator):
     return text
 
 
-def _merge_quantities(*quantities):
+def _merge_quantities(quantity_entries):
     entries = []
     amounts = {}
     seen_text = set()
-    for quantity in quantities:
-        for part in _quantity_parts(quantity):
-            match = _QUANTITY_AMOUNT.match(part)
-            if match is None:
-                key = part.casefold()
-                if key in seen_text:
-                    continue
-                seen_text.add(key)
-                entries.append(("text", part))
+    for part in quantity_entries:
+        part = part.strip()
+        if not part:
+            continue
+        text_key = part.casefold()
+        match = _QUANTITY_AMOUNT.match(part)
+        if match is None:
+            if text_key in seen_text:
                 continue
-            number_text, unit = match.group(1), match.group(2).strip()
-            unit_key = unit.casefold()
-            number = Decimal(number_text.replace(",", "."))
-            existing = amounts.get(unit_key)
-            if existing is None:
-                amounts[unit_key] = {
-                    "total": number,
-                    "unit": unit,
-                    "separator": "," if "," in number_text else ".",
-                }
-                entries.append(("amount", unit_key))
-            else:
-                existing["total"] += number
+            seen_text.add(text_key)
+            entries.append(("text", part))
+            continue
+        number_text, unit = match.group(1), match.group(2).strip()
+        number = Decimal(number_text.replace(",", "."))
+        normalized_unit = unit.casefold().rstrip(".")
+        key = normalized_unit
+        existing = amounts.get(key)
+        if existing is None:
+            amounts[key] = {
+                "total": number,
+                "unit": unit,
+                "separator": "," if "," in number_text else ".",
+            }
+            entries.append(("amount", key))
+        else:
+            existing["total"] += number
     rendered = []
     for kind, value in entries:
         if kind == "text":
@@ -65,9 +68,29 @@ def _merge_quantities(*quantities):
     return ", ".join(rendered)
 
 
+def remember_article(user, name):
+    name = _normalized_name(name)
+    if not name:
+        return None
+    existing = user.articles.filter(name__iexact=name).order_by("id").first()
+    if existing is not None:
+        return existing
+    return user.articles.create(name=name)
+
+
+def save_article(user, name, article=None):
+    name = _normalized_name(name)
+    if article is None:
+        return user.articles.create(name=name)
+    article.name = name
+    article.save(update_fields=["name", "updated_at"])
+    return article
+
+
 def create_item(shopping_list, *, name, quantity="", checked=False, position=None):
     name = _normalized_name(name)
     quantity = (quantity or "").strip()
+    remember_article(shopping_list.user, name)
     existing = next(
         (
             item
@@ -77,7 +100,10 @@ def create_item(shopping_list, *, name, quantity="", checked=False, position=Non
         None,
     )
     if existing is not None:
-        existing.quantity = _merge_quantities(existing.quantity, quantity)
+        quantity_entries = _quantity_parts(existing.quantity)
+        if quantity:
+            quantity_entries.append(quantity)
+        existing.quantity = _merge_quantities(quantity_entries)
         existing.checked = False
         existing.save(update_fields=["quantity", "checked", "updated_at"])
         return existing

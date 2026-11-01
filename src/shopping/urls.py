@@ -4,6 +4,9 @@ from . import views
 app_name = "shopping"
 urlpatterns = [
     path("", views.ShoppingListListView.as_view(), name="list"),
+    path("articles/", views.ArticleListView.as_view(), name="articles"),
+    path("articles/<int:pk>/", views.ArticleUpdateView.as_view(), name="article-update"),
+    path("articles/<int:pk>/delete/", views.ArticleDeleteView.as_view(), name="article-delete"),
     path("lists/new/", views.ShoppingListCreateView.as_view(), name="create"),
     path("lists/import/", views.ShoppingListImportView.as_view(), name="import-json"),
     path("lists/<int:pk>/", views.ShoppingListDetailView.as_view(), name="detail"),

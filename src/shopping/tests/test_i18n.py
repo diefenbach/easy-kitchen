@@ -50,6 +50,21 @@ def test_german_translation_is_available(client, user, shopping_list):
 
 
 @pytest.mark.django_db
+def test_article_management_uses_the_active_language(client, user):
+    client.force_login(user)
+
+    english = client.get(reverse("shopping:articles")).content.decode()
+    assert "<h1" in english and "Articles" in english
+    assert ">Articles</a>" in client.get(reverse("shopping:list")).content.decode()
+
+    with translation.override("de"):
+        german = client.get(reverse("shopping:articles")).content.decode()
+        overview = client.get(reverse("shopping:list")).content.decode()
+    assert "Artikel" in german
+    assert ">Artikel</a>" in overview
+
+
+@pytest.mark.django_db
 def test_login_page_uses_the_active_language(client):
     english = client.get(reverse("login")).content.decode()
     assert "Sign in" in english

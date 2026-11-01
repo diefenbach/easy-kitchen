@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.db.models.functions import Lower
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -33,6 +34,24 @@ class ShoppingItem(models.Model):
         ordering = ("position", "id")
         verbose_name = _("shopping item")
         verbose_name_plural = _("shopping items")
+
+    def __str__(self):
+        return self.name
+
+
+class Article(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="articles")
+    name = models.CharField(_("article"), max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("name", "id")
+        verbose_name = _("article")
+        verbose_name_plural = _("articles")
+        constraints = [
+            models.UniqueConstraint(Lower("name"), "user", name="shopping_article_unique_name_per_user"),
+        ]
 
     def __str__(self):
         return self.name

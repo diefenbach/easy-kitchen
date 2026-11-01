@@ -18,10 +18,13 @@
     <div class="container">
       <a class="navbar-brand fw-bold" href="{% url 'shopping:list' %}">EasyList</a>
       {% if user.is_authenticated %}
-        <form method="post" action="{% url 'logout' %}" class="ms-auto">
-          {% csrf_token %}
-          <button class="btn btn-sm btn-outline-secondary">{% translate "Log out" %}</button>
-        </form>
+        <div class="ms-auto d-flex align-items-center gap-2">
+          <a class="btn btn-sm btn-outline-secondary" href="{% url 'shopping:articles' %}">{% translate "Articles" %}</a>
+          <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button class="btn btn-sm btn-outline-secondary">{% translate "Log out" %}</button>
+          </form>
+        </div>
       {% endif %}
     </div>
   </nav>

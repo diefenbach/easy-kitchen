@@ -1,0 +1,5 @@
+<datalist id="articles"{% if oob %} hx-swap-oob="outerHTML"{% endif %}>
+  {% for article in articles %}
+    <option value="{{ article.name }}"></option>
+  {% endfor %}
+</datalist>

@@ -1,0 +1,64 @@
+{% extends "shopping/base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Articles" %} · EasyList{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h2 mb-0">{% translate "Articles" %}</h1>
+</div>
+<form method="post" class="card shadow-sm mb-4">
+  <div class="card-body">
+    {% csrf_token %}
+    <label class="form-label" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+    {{ form.name }}
+    {{ form.name.errors }}
+  </div>
+  <div class="card-footer bg-white">
+    <button class="btn btn-primary">{% translate "Add" %}</button>
+  </div>
+</form>
+{% if articles %}
+  <div class="list-group shadow-sm">
+    {% for article in articles %}
+      <div class="list-group-item bg-white">
+        <div class="d-flex flex-column flex-sm-row gap-2">
+          <form method="post" action="{% url 'shopping:article-update' article.pk %}" class="article-name-form d-flex flex-grow-1 gap-2">
+            {% csrf_token %}
+            <label class="visually-hidden" for="article-{{ article.pk }}">{% blocktranslate with name=article.name %}Edit {{ name }}{% endblocktranslate %}</label>
+            {% if edit_form and edit_form.instance.pk == article.pk %}
+              <input id="article-{{ article.pk }}" name="name" value="{{ edit_form.name.value|default:'' }}" maxlength="255" required>
+              {{ edit_form.name.errors }}
+            {% else %}
+              <input id="article-{{ article.pk }}" name="name" value="{{ article.name }}" maxlength="255" required>
+            {% endif %}
+            <button class="btn btn-outline-secondary">{% translate "Save" %}</button>
+          </form>
+          <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#delete-article-modal-{{ article.pk }}">{% translate "Delete" %}</button>
+        </div>
+      </div>
+      <div class="modal fade" id="delete-article-modal-{{ article.pk }}" tabindex="-1" aria-labelledby="delete-article-title-{{ article.pk }}" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2 class="modal-title fs-5" id="delete-article-title-{{ article.pk }}">{% translate "Delete article?" %}</h2>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate 'Close' %}"></button>
+            </div>
+            <div class="modal-body">{% blocktranslate with name=article.name %}"{{ name }}" will be removed from suggestions. Items already on a list stay unchanged.{% endblocktranslate %}</div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Cancel" %}</button>
+              <form method="post" action="{% url 'shopping:article-delete' article.pk %}">
+                {% csrf_token %}
+                <button class="btn btn-danger">{% translate "Delete permanently" %}</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="text-center py-5 bg-white rounded shadow-sm">
+    <h2 class="h4">{% translate "No articles yet" %}</h2>
+    <p class="text-secondary">{% translate "Articles you add to a list are saved here." %}</p>
+  </div>
+{% endif %}
+{% endblock %}

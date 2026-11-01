@@ -25,6 +25,84 @@ def test_user_cannot_access_other_list(client, user, other_user):
 
 
 @pytest.mark.django_db
+def test_item_name_suggests_saved_articles(client, user, shopping_list):
+    from shopping.services import create_item
+
+    client.force_login(user)
+    create_item(shopping_list, name="Hafermilch")
+    detail = client.get(reverse("shopping:detail", args=[shopping_list.pk])).content.decode()
+    assert 'list="articles"' in detail
+    assert '<option value="Hafermilch"></option>' in detail
+
+    response = client.post(
+        reverse("shopping:item-create", args=[shopping_list.pk]),
+        {"name": "Brokkoli", "quantity": "1"},
+        HTTP_HX_REQUEST="true",
+    )
+    suggestions = response.content.decode()
+    assert 'id="articles"' in suggestions
+    assert 'hx-swap-oob="outerHTML"' in suggestions
+    assert '<option value="Hafermilch"></option>' in suggestions
+    assert '<option value="Brokkoli"></option>' in suggestions
+
+
+@pytest.mark.django_db
+def test_articles_can_be_managed_without_changing_list_items(client, user, other_user, shopping_list):
+    from shopping.models import Article
+    from shopping.services import create_item
+
+    client.force_login(user)
+    create_item(shopping_list, name="Milch", quantity="1 l")
+    create_item(shopping_list, name="Brot")
+    milk = Article.objects.get(user=user, name="Milch")
+    bread = Article.objects.get(user=user, name="Brot")
+
+    renamed = client.post(reverse("shopping:article-update", args=[milk.pk]), {"name": "Hafermilch"})
+    assert renamed.status_code == 302
+    milk.refresh_from_db()
+    assert milk.name == "Hafermilch"
+    assert shopping_list.items.get(quantity="1 l").name == "Milch"
+
+    duplicate = client.post(reverse("shopping:article-update", args=[milk.pk]), {"name": " brot "})
+    assert duplicate.status_code == 422
+    assert "already exists" in duplicate.content.decode()
+    milk.refresh_from_db()
+    assert milk.name == "Hafermilch"
+
+    overview = client.get(reverse("shopping:articles"))
+    assert overview.status_code == 200
+    assert ">Articles</a>" in overview.content.decode()
+    created = client.post(reverse("shopping:articles"), {"name": "Reis"})
+    assert created.status_code == 302
+    assert Article.objects.filter(user=user, name="Reis").exists()
+
+    client.post(reverse("shopping:article-delete", args=[bread.pk]))
+    assert not Article.objects.filter(pk=bread.pk).exists()
+    assert shopping_list.items.filter(name="Brot").exists()
+
+    client.force_login(other_user)
+    hidden = client.get(reverse("shopping:articles")).content.decode()
+    assert "Hafermilch" not in hidden
+    assert client.post(reverse("shopping:article-update", args=[milk.pk]), {"name": "Geheim"}).status_code == 404
+    assert client.post(reverse("shopping:article-delete", args=[milk.pk])).status_code == 404
+
+
+@pytest.mark.django_db
+def test_only_identical_counts_are_added_when_the_same_item_is_posted(client, user, shopping_list):
+    client.force_login(user)
+    url = reverse("shopping:item-create", args=[shopping_list.pk])
+    client.post(url, {"name": "Äpfel", "quantity": "2 Stück"}, HTTP_HX_REQUEST="true")
+    response = client.post(url, {"name": "Äpfel", "quantity": "2 Stück"}, HTTP_HX_REQUEST="true")
+
+    assert response.status_code == 200
+    assert "4 Stück" in response.content.decode()
+
+    response = client.post(url, {"name": "Äpfel", "quantity": "4 Teile"}, HTTP_HX_REQUEST="true")
+    assert "4 Stück, 4 Teile" in response.content.decode()
+    assert ShoppingItem.objects.get(shopping_list=shopping_list).quantity == "4 Stück, 4 Teile"
+
+
+@pytest.mark.django_db
 def test_adding_the_same_item_updates_the_existing_row(client, user, shopping_list):
     client.force_login(user)
     create_url = reverse("shopping:item-create", args=[shopping_list.pk])

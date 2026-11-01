@@ -6,6 +6,7 @@ from rest_framework.exceptions import ValidationError as DRFValidationError
 
 from .api.serializers import ShoppingListSerializer
 from .models import ShoppingItem, ShoppingList
+from .services import _normalized_name, save_article
 
 
 class ShoppingListForm(forms.ModelForm):
@@ -20,6 +21,30 @@ class ShoppingItemForm(forms.ModelForm):
     class Meta:
         model = ShoppingItem
         fields = ("name", "quantity")
+        widgets = {"name": forms.TextInput(attrs={"list": "articles"})}
+
+
+class ArticleForm(forms.Form):
+    name = forms.CharField(label=_("Article"), max_length=255)
+
+    def __init__(self, *args, user, instance=None, **kwargs):
+        self.user = user
+        self.instance = instance
+        super().__init__(*args, **kwargs)
+
+    def clean_name(self):
+        name = _normalized_name(self.cleaned_data["name"])
+        if not name:
+            raise forms.ValidationError(_("Enter an article name."))
+        queryset = self.user.articles.all()
+        if self.instance is not None:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        if queryset.filter(name__iexact=name).exists():
+            raise forms.ValidationError(_("An article with this name already exists."))
+        return name
+
+    def save(self):
+        return save_article(self.user, self.cleaned_data["name"], article=self.instance)
 
 
 class ShoppingListImportForm(forms.Form):

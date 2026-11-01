@@ -21,9 +21,12 @@ def test_adding_the_same_item_keeps_one_row_and_shows_different_quantities(shopp
     assert both.name == "Milch"
     assert both.quantity == "2 l, 500 ml"
 
+    combined = create_item(shopping_list, name="Milch", quantity="2 l")
+    assert combined.quantity == "4 l, 500 ml"
+
 
 @pytest.mark.django_db
-def test_quantities_with_the_same_unit_are_added(shopping_list):
+def test_only_quantities_with_the_same_unit_are_added(shopping_list):
     create_item(shopping_list, name="Milch", quantity="1 l")
     item = create_item(shopping_list, name="Milch", quantity="2 l")
     assert shopping_list.items.count() == 1
@@ -37,6 +40,29 @@ def test_quantities_with_the_same_unit_are_added(shopping_list):
     lemons = create_item(shopping_list, name="Zitronen", quantity="3")
     assert lemons.quantity == "5"
 
+    create_item(shopping_list, name="Äpfel", quantity="5")
+    create_item(shopping_list, name="Äpfel", quantity="4")
+    create_item(shopping_list, name="Äpfel", quantity="2 Stück")
+    apples = create_item(shopping_list, name="Äpfel", quantity="4 Teile")
+    assert apples.quantity == "9, 2 Stück, 4 Teile"
+
+    create_item(shopping_list, name="Bananen", quantity="2 Stück")
+    bananas = create_item(shopping_list, name="Bananen", quantity="2 Stück")
+    assert bananas.quantity == "4 Stück"
+
+    create_item(shopping_list, name="Orangen", quantity="6")
+    create_item(shopping_list, name="Orangen", quantity="2 Stück")
+    oranges = create_item(shopping_list, name="Orangen", quantity="2")
+    assert oranges.quantity == "8, 2 Stück"
+
+    create_item(shopping_list, name="Saft", quantity="2 l")
+    juice = create_item(shopping_list, name="Saft", quantity="2 Kartons")
+    assert juice.quantity == "2 l, 2 Kartons"
+
+    create_item(shopping_list, name="Müsli", quantity="2 Packungen")
+    cereal = create_item(shopping_list, name="Müsli", quantity="2")
+    assert cereal.quantity == "2 Packungen, 2"
+
 
 @pytest.mark.django_db
 def test_adding_a_checked_item_again_makes_it_active(shopping_list):
@@ -48,6 +74,19 @@ def test_adding_a_checked_item_again_makes_it_active(shopping_list):
 
     assert updated.id == item.id
     assert updated.checked is False
+
+
+@pytest.mark.django_db
+def test_adding_an_item_remembers_one_article_per_user(shopping_list, other_user):
+    from shopping.models import Article, ShoppingList
+
+    create_item(shopping_list, name=" Milch ")
+    create_item(shopping_list, name="milch", quantity="1 l")
+    other_list = ShoppingList.objects.create(user=other_user, title="Privat")
+    create_item(other_list, name="Milch")
+
+    assert list(Article.objects.filter(user=shopping_list.user).values_list("name", flat=True)) == ["Milch"]
+    assert list(Article.objects.filter(user=other_user).values_list("name", flat=True)) == ["Milch"]
 
 
 @pytest.mark.django_db

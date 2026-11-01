@@ -5,15 +5,16 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Prefetch
 from django.http import HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _, ngettext
 from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
-from .forms import ShoppingItemForm, ShoppingListForm, ShoppingListImportForm
-from .models import ShoppingItem, ShoppingList
-from .services import create_item, import_shopping_lists, reorder_items
+from .forms import ArticleForm, ShoppingItemForm, ShoppingListForm, ShoppingListImportForm
+from .models import Article, ShoppingItem, ShoppingList
+from .services import create_item, import_shopping_lists, remember_article, reorder_items
 
 
 class UserListMixin(LoginRequiredMixin):
@@ -38,6 +39,7 @@ class ShoppingListDetailView(UserListMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context["form"] = ShoppingItemForm()
         context["shopping_list"] = self.object
+        context["articles"] = self.request.user.articles.all()
         return context
 
 
@@ -117,13 +119,23 @@ class ItemCreateView(LoginRequiredMixin, View):
                     "shopping/partials/item.html",
                     {"item": item, "shopping_list": shopping_list, "include_modal": item.id not in existing_ids},
                 )
+                response.content += render_to_string(
+                    "shopping/partials/article_options.html",
+                    {"articles": request.user.articles.all(), "oob": True},
+                    request=request,
+                ).encode()
                 if item.id in existing_ids:
                     response["HX-Retarget"] = f'.shopping-item[data-item-id="{item.id}"]'
                     response["HX-Reswap"] = "outerHTML"
                 return response
             return redirect("shopping:detail", pk=shopping_list.pk)
         if request.headers.get("HX-Request"):
-            return render(request, "shopping/partials/item_form.html", {"form": form, "shopping_list": shopping_list}, status=422)
+            return render(
+                request,
+                "shopping/partials/item_form.html",
+                {"form": form, "shopping_list": shopping_list, "articles": request.user.articles.all()},
+                status=422,
+            )
         return redirect("shopping:detail", pk=shopping_list.pk)
 
 
@@ -140,6 +152,7 @@ class ItemUpdateView(LoginRequiredMixin, View):
         form = ShoppingItemForm(request.POST, instance=item)
         if form.is_valid():
             form.save()
+            remember_article(request.user, item.name)
             return render(request, "shopping/partials/item.html", {"item": item, "shopping_list": item.shopping_list})
         return render(request, "shopping/partials/item_edit_form.html", {"item": item, "form": form}, status=422)
 
@@ -172,6 +185,48 @@ class ItemReorderView(LoginRequiredMixin, View):
         except (ValueError, KeyError, TypeError, json.JSONDecodeError):
             return HttpResponseBadRequest(_("Invalid order."))
         return HttpResponseRedirect(reverse("shopping:detail", kwargs={"pk": list_pk}))
+
+
+class ArticleListView(LoginRequiredMixin, View):
+    template_name = "shopping/articles.html"
+
+    def get(self, request):
+        return render(request, self.template_name, self._context(request))
+
+    def post(self, request):
+        form = ArticleForm(request.POST, user=request.user)
+        if form.is_valid():
+            form.save()
+            return redirect("shopping:articles")
+        return render(request, self.template_name, self._context(request, form=form), status=422)
+
+    def _context(self, request, form=None):
+        return {
+            "articles": request.user.articles.all(),
+            "form": form or ArticleForm(user=request.user),
+        }
+
+
+class ArticleUpdateView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        article = get_object_or_404(Article, pk=pk, user=request.user)
+        form = ArticleForm(request.POST, user=request.user, instance=article)
+        if form.is_valid():
+            form.save()
+            return redirect("shopping:articles")
+        return render(
+            request,
+            "shopping/articles.html",
+            {"articles": request.user.articles.all(), "form": ArticleForm(user=request.user), "edit_form": form},
+            status=422,
+        )
+
+
+class ArticleDeleteView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        article = get_object_or_404(Article, pk=pk, user=request.user)
+        article.delete()
+        return redirect("shopping:articles")
 
 
 class ItemsResetCheckedView(LoginRequiredMixin, View):
