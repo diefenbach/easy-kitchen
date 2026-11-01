@@ -22,6 +22,7 @@ def test_user_can_create_and_check_an_item(authenticated_page):
     item.wait_for()
     item.get_by_role("button", name="Naturtofu").click()
     expect(item).to_have_class(re.compile(r".*\bchecked\b.*"))
+    expect(item.locator(".item-quantity")).to_have_css("text-decoration-line", "line-through")
 
 
 @pytest.mark.e2e
