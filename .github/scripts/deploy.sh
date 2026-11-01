@@ -12,9 +12,10 @@ else
   printf '\nEASYKITCHEN_IMAGE=%s\n' "$IMAGE" >> .env
 fi
 
-if grep -q 'image: registry.iqpp.de/iqpp/easykitchen:' docker-compose.yml; then
-  sed -i 's|image: registry.iqpp.de/iqpp/easykitchen:[^[:space:]]*|image: ${EASYKITCHEN_IMAGE:-registry.iqpp.de/iqpp/easykitchen:0.7.0}|g' docker-compose.yml
-fi
+sed -i \
+  -e 's|image: registry.iqpp.de/iqpp/easykitchen:[^[:space:]]*|image: ${EASYKITCHEN_IMAGE}|g' \
+  -e 's|image: ${EASYKITCHEN_IMAGE:-[^}]*}|image: ${EASYKITCHEN_IMAGE}|g' \
+  docker-compose.yml
 
 docker compose pull kitchen kitchen-mcp kitchen-static-init
 docker compose up --no-deps kitchen-static-init

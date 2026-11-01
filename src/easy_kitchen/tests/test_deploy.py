@@ -17,3 +17,5 @@ def test_deploy_script_waits_for_kitchen_and_mcp():
     assert "socket.create_connection(('127.0.0.1', 8000), 2)" in script
     assert "urllib.request" not in script
     assert "--retry 8" not in script
+    assert "image: ${EASYKITCHEN_IMAGE}" in script
+    assert "registry.iqpp.de/iqpp/easykitchen:0.7.0" not in script
