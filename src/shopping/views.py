@@ -109,9 +109,18 @@ class ItemCreateView(LoginRequiredMixin, View):
         shopping_list = get_object_or_404(ShoppingList, pk=list_pk, user=request.user)
         form = ShoppingItemForm(request.POST)
         if form.is_valid():
+            existing_ids = set(shopping_list.items.values_list("id", flat=True))
             item = create_item(shopping_list, name=form.cleaned_data["name"], quantity=form.cleaned_data["quantity"])
             if request.headers.get("HX-Request"):
-                return render(request, "shopping/partials/item.html", {"item": item, "shopping_list": shopping_list})
+                response = render(
+                    request,
+                    "shopping/partials/item.html",
+                    {"item": item, "shopping_list": shopping_list, "include_modal": item.id not in existing_ids},
+                )
+                if item.id in existing_ids:
+                    response["HX-Retarget"] = f'.shopping-item[data-item-id="{item.id}"]'
+                    response["HX-Reswap"] = "outerHTML"
+                return response
             return redirect("shopping:detail", pk=shopping_list.pk)
         if request.headers.get("HX-Request"):
             return render(request, "shopping/partials/item_form.html", {"form": form, "shopping_list": shopping_list}, status=422)

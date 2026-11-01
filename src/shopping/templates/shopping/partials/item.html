@@ -21,6 +21,7 @@
     </div>
   </div>
 </div>
+{% if include_modal != False %}
 <div class="modal fade" id="delete-item-modal-{{ item.id }}" tabindex="-1" aria-labelledby="delete-item-title-{{ item.id }}" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -39,3 +40,4 @@
     </div>
   </div>
 </div>
+{% endif %}

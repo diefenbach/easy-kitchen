@@ -25,6 +25,22 @@ def test_user_cannot_access_other_list(client, user, other_user):
 
 
 @pytest.mark.django_db
+def test_adding_the_same_item_updates_the_existing_row(client, user, shopping_list):
+    client.force_login(user)
+    create_url = reverse("shopping:item-create", args=[shopping_list.pk])
+    client.post(create_url, {"name": "Milch", "quantity": "1 l"}, HTTP_HX_REQUEST="true")
+    response = client.post(create_url, {"name": "Milch", "quantity": "500 ml"}, HTTP_HX_REQUEST="true")
+
+    item = ShoppingItem.objects.get(shopping_list=shopping_list)
+    assert response.status_code == 200
+    assert response["HX-Retarget"] == f'.shopping-item[data-item-id="{item.id}"]'
+    assert response["HX-Reswap"] == "outerHTML"
+    content = response.content.decode()
+    assert "1 l, 500 ml" in content
+    assert f'id="delete-item-modal-{item.id}"' not in content
+
+
+@pytest.mark.django_db
 def test_htmx_item_create_and_toggle(client, user, shopping_list):
     client.force_login(user)
     response = client.post(reverse("shopping:item-create", args=[shopping_list.pk]), {"name": "Tofu", "quantity": "400 g"}, HTTP_HX_REQUEST="true")
