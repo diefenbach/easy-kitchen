@@ -37,6 +37,30 @@ def test_saved_articles_are_suggested_and_can_be_renamed(authenticated_page):
 
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
+def test_article_actions_stay_beside_the_name_on_a_phone(authenticated_page):
+    page = authenticated_page
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.get_by_role("link", name="Articles").click()
+    page.get_by_label("Article").fill("Apfel")
+    page.get_by_role("button", name="Add").click()
+
+    row = page.locator(".article-row")
+    name = row.get_by_role("textbox", name="Edit Apfel")
+    save = row.get_by_role("button", name="Save")
+    delete = row.get_by_role("button", name="Delete")
+    expect(name).to_be_visible()
+    name_box = name.bounding_box()
+    save_box = save.bounding_box()
+    delete_box = delete.bounding_box()
+    assert abs(name_box["y"] - save_box["y"]) < 8
+    assert abs(name_box["y"] - delete_box["y"]) < 8
+    assert name_box["x"] + name_box["width"] <= save_box["x"]
+    assert save_box["x"] + save_box["width"] <= delete_box["x"]
+    assert delete_box["x"] + delete_box["width"] <= 390
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
 def test_user_can_create_and_check_an_item(authenticated_page):
     page = authenticated_page
 

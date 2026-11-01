@@ -20,8 +20,8 @@
   <div class="list-group shadow-sm">
     {% for article in articles %}
       <div class="list-group-item bg-white">
-        <div class="d-flex flex-column flex-sm-row gap-2">
-          <form method="post" action="{% url 'shopping:article-update' article.pk %}" class="article-name-form d-flex flex-grow-1 gap-2">
+        <div class="article-row d-flex align-items-center gap-2">
+          <form method="post" action="{% url 'shopping:article-update' article.pk %}" class="article-name-form d-flex flex-grow-1 align-items-center gap-2">
             {% csrf_token %}
             <label class="visually-hidden" for="article-{{ article.pk }}">{% blocktranslate with name=article.name %}Edit {{ name }}{% endblocktranslate %}</label>
             {% if edit_form and edit_form.instance.pk == article.pk %}
