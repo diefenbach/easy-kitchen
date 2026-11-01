@@ -71,7 +71,14 @@ def test_articles_can_be_managed_without_changing_list_items(client, user, other
 
     overview = client.get(reverse("shopping:articles"))
     assert overview.status_code == 200
-    assert ">Articles</a>" in overview.content.decode()
+    content = overview.content.decode()
+    assert ">Articles</a>" in content
+    assert 'aria-label="Save"' in content
+    assert 'class="bi bi-check-lg"' in content
+    assert 'aria-label="Delete"' in content
+    assert 'class="bi bi-trash"' in content
+    assert ">Save</button>" not in content
+    assert ">Delete</button>" not in content
     created = client.post(reverse("shopping:articles"), {"name": "Reis"})
     assert created.status_code == 302
     assert Article.objects.filter(user=user, name="Reis").exists()
