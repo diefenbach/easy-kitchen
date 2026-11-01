@@ -13,5 +13,5 @@
 - Every new feature and every bug fix requires appropriate automated tests written or updated in the same change. Start feature work with a failing test whenever practical, then implement the smallest change that makes it pass, then refactor.
 - Keep Django model, service, API, permission, and view tests under `src/shopping/tests/`. Put browser journeys in `e2e/`, using Playwright through pytest-playwright. Browser tests run with `uv run pytest`; install Chromium once with `uv run playwright install chromium`.
 - For HTMX state-changing requests outside a form, send Django's CSRF token explicitly. Cover the browser interaction with an E2E test when it is user-visible.
-- Run `uv run pytest` before handing off.
+- Run `uv run pytest` before handing off. pytest-xdist runs that command in parallel (`-n auto`).
 - Do not add a PWA, SPA, or dependency without a clear product need.

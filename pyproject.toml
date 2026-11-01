@@ -19,6 +19,7 @@ dev = [
   "pytest>=8.3,<9",
   "pytest-django>=4.9,<5",
   "pytest-playwright>=0.7,<1",
+  "pytest-xdist>=3.6,<4",
 ]
 
 [tool.pytest.ini_options]
@@ -26,6 +27,7 @@ DJANGO_SETTINGS_MODULE = "project.settings.test"
 pythonpath = ["src"]
 python_files = ["test_*.py", "*_tests.py"]
 testpaths = ["src", "e2e"]
+addopts = ["-n", "auto"]
 markers = [
   "e2e: browser-based end-to-end tests",
 ]

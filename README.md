@@ -241,7 +241,7 @@ It listens on `http://127.0.0.1:8001/mcp`. Create a token with `drf_create_token
 uv run pytest
 ```
 
-Browser tests are located in `e2e/` and run automatically with pytest. Install Chromium once:
+The suite runs in parallel through pytest-xdist. Browser tests are located in `e2e/` and run automatically with pytest. Install Chromium once:
 
 ```sh
 uv run playwright install chromium
