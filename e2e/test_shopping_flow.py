@@ -398,6 +398,22 @@ def test_user_can_import_a_json_shopping_list(authenticated_page):
 
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
+def test_clicking_a_recipe_picture_opens_the_recipe(authenticated_page, user):
+    from shopping.services import create_recipe
+
+    create_recipe(user, title="Pancakes")
+    page = authenticated_page
+    page.get_by_role("link", name="Recipes").click()
+    image = page.locator(".recipe-card-picture")
+    expect(image).to_have_attribute("src", re.compile(r"recipe-placeholder\.svg$"))
+    box = image.bounding_box()
+    page.mouse.click(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+    expect(page.get_by_role("heading", name="Pancakes")).to_be_visible()
+    expect(page.locator(".recipe-picture")).to_have_attribute("src", re.compile(r"recipe-placeholder\.svg$"))
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
 def test_user_can_edit_a_recipe_from_the_overview(authenticated_page, user):
     from shopping.services import create_recipe
 

@@ -94,6 +94,24 @@ def test_a_new_recipe_is_placed_first_and_the_overview_can_be_reordered(client, 
 
 
 @pytest.mark.django_db
+def test_recipe_without_a_picture_uses_the_placeholder_and_the_card_opens_from_the_image(client, user):
+    plain = create_recipe(user, title="Pancakes")
+    pictured = create_recipe(user, title="Soup", image_url="https://example.com/soup.jpg")
+    client.force_login(user)
+
+    overview = client.get(reverse("shopping:recipes")).content.decode()
+    plain_card = overview.split(f'data-list-id="{plain.pk}"', 1)[1].split("data-list-id=", 1)[0]
+    pictured_card = overview.split(f'data-list-id="{pictured.pk}"', 1)[1].split("data-list-id=", 1)[0]
+    assert 'class="card h-100 shadow-sm list-card position-relative"' in plain_card
+    assert 'src="/static/shopping/recipe-placeholder.svg"' in plain_card
+    assert 'src="https://example.com/soup.jpg"' in pictured_card
+    assert "recipe-placeholder.svg" not in pictured_card
+
+    detail = client.get(reverse("shopping:recipe-detail", args=[plain.pk])).content.decode()
+    assert 'class="recipe-picture" src="/static/shopping/recipe-placeholder.svg"' in detail
+
+
+@pytest.mark.django_db
 def test_edit_from_overview_returns_to_recipe_overview(client, user):
     recipe = create_recipe(user, title="Pancakes")
     client.force_login(user)

@@ -1,5 +1,5 @@
 {% extends "shopping/base.html" %}
-{% load i18n %}
+{% load i18n static %}
 {% block title %}{{ recipe.title }} · EasyList{% endblock %}
 {% block content %}
 <a class="btn btn-outline-secondary btn-sm list-back-button mb-3" href="{% url 'shopping:recipes' %}" aria-label="{% translate 'Recipes' %}">
@@ -24,9 +24,7 @@
       </button>
     </div>
   </div>
-  {% if recipe.picture_url %}
-    <img class="recipe-picture" src="{{ recipe.picture_url }}" alt="">
-  {% endif %}
+  <img class="recipe-picture" src="{% if recipe.picture_url %}{{ recipe.picture_url }}{% else %}{% static 'shopping/recipe-placeholder.svg' %}{% endif %}" alt="">
 </header>
 
 <section class="card shadow-sm mb-4">
