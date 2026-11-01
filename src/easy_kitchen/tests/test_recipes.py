@@ -242,6 +242,7 @@ def test_recipe_pages_are_private_and_can_send_ingredients_to_a_new_list(client,
     detail_content = detail.content.decode()
     assert "Pancakes" in detail_content
     assert "data-edit-toggle" in detail_content
+    assert 'src="/static/easy_kitchen/recipe-detail.js"' in detail_content
     assert detail_content.count('class="row g-2 align-items-end mb-3 edit-only"') == 2
 
     added = client.post(

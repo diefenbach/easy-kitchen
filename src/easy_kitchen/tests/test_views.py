@@ -247,7 +247,7 @@ def test_item_toggle_requires_and_accepts_csrf_token(client, user, shopping_list
     csrf_client = Client(enforce_csrf_checks=True)
     csrf_client.force_login(user)
     detail_response = csrf_client.get(reverse("easy_kitchen:detail", args=[shopping_list.pk]))
-    assert "htmx:configRequest" in detail_response.content.decode()
+    assert 'src="/static/easy_kitchen/easykitchen.js"' in detail_response.content.decode()
     assert csrf_client.post(
         reverse("easy_kitchen:item-toggle", args=[shopping_list.pk, item.pk]),
         HTTP_HX_REQUEST="true",
@@ -352,6 +352,7 @@ def test_list_detail_uses_a_minimal_icon_header(client, user, shopping_list):
     assert 'aria-label="Edit list"' in content
     assert 'aria-label="Delete list"' in content
     assert "data-edit-toggle" in content
+    assert 'src="/static/easy_kitchen/list-detail.js"' in content
 
 
 @pytest.mark.django_db

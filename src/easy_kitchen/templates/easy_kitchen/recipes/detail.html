@@ -118,25 +118,5 @@
 </div>
 {% endblock %}
 {% block scripts %}
-<script>
-const csrf = document.querySelector("[name=csrfmiddlewaretoken]").value;
-function bindRecipeSortable(element) {
-  if (!element) return;
-  new Sortable(element, {
-    animation: 150,
-    handle: ".drag-handle",
-    draggable: ".recipe-line",
-    onEnd() {
-      const lineIds = [...element.querySelectorAll(".recipe-line")].map((line) => Number(line.dataset.lineId));
-      fetch(element.dataset.reorderUrl, {
-        method: "POST",
-        headers: {"Content-Type": "application/json", "X-CSRFToken": csrf},
-        body: JSON.stringify({line_ids: lineIds}),
-      });
-    },
-  });
-}
-bindRecipeSortable(document.getElementById("ingredients"));
-bindRecipeSortable(document.getElementById("steps"));
-</script>
+<script type="module" src="{% static 'easy_kitchen/recipe-detail.js' %}"></script>
 {% endblock %}
