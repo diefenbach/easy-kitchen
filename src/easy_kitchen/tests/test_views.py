@@ -320,6 +320,8 @@ def test_list_icon_defaults_to_a_basket_and_can_be_changed(client, user):
     detail = client.get(reverse("easy_kitchen:detail", args=[shopping_list.pk])).content.decode()
     assert "bi-flower1" in detail
     assert "list-icon-flower" in detail
+    assert "list-accent-flower" in detail
+    assert 'class="card-footer list-card-date"' in detail
     overview = client.get(reverse("easy_kitchen:list")).content.decode()
     assert "list-accent-flower" in overview
 
@@ -340,7 +342,10 @@ def test_list_detail_uses_a_minimal_icon_header(client, user, shopping_list):
 
     content = response.content.decode()
     assert 'class="btn btn-outline-secondary btn-sm list-back-button mb-3"' in content
-    assert 'class="list-detail-header card border-0 mb-4"' in content
+    assert f'class="card list-accent list-accent-{shopping_list.icon} mb-4"' in content
+    assert 'class="card-footer list-card-date"' in content
+    assert date_format(shopping_list.date, "j. F Y") in content
+    assert "Sun," not in content
     assert "bi-arrow-left" in content
     assert "bi-calendar3" in content
     assert ">Shopping lists</span>" in content

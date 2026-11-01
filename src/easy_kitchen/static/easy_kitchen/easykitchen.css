@@ -123,8 +123,6 @@ body:not(.editing) .edit-actions > .btn { border-radius: var(--bs-border-radius)
 .list-card:hover { transform: translateY(-2px); box-shadow: 0 .6rem 1.2rem rgba(90, 62, 40, .1) !important; }
 .list-back-button { --bs-btn-padding-x: .625rem; }
 .list-detail-header { background-color: #fffdfb; border-left: .35rem solid var(--ek-blush) !important; }
-.list-detail-date { color: var(--bs-secondary-color); font-size: .875rem; }
-.list-detail-date .bi { margin-right: .35rem; }
 .shopping-item.checked { opacity: .62; }
 .shopping-item.checked .item-name,
 .shopping-item.checked .item-quantity { text-decoration: line-through; }
