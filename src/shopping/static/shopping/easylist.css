@@ -9,6 +9,36 @@
 .shopping-item.checked .item-name,
 .shopping-item.checked .item-quantity { text-decoration: line-through; }
 .item-title-toggle { background: transparent; border: 0; color: inherit; cursor: pointer; min-height: 2.75rem; padding: .25rem .5rem; text-align: start; }
+.article-field { position: relative; }
+.article-suggestions {
+  position: absolute;
+  z-index: 30;
+  inset-inline-start: 0;
+  top: calc(100% + .125rem);
+  width: max-content;
+  max-width: 100%;
+  max-height: 16rem;
+  margin: 0;
+  padding: .25rem 0;
+  overflow: auto;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: .375rem;
+  box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .12);
+}
+.article-suggestion {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: .375rem .75rem;
+  text-align: start;
+}
+.article-suggestion:hover,
+.article-suggestion:focus { background: #e9ecef; }
 .article-row,
 .article-name-form { min-width: 0; }
 .article-name-form input { flex: 1 1 auto; min-width: 0; width: auto; }

@@ -2,7 +2,12 @@
 <div class="shopping-item card mb-2" data-item-id="{{ item.id }}">
   <form class="card-body py-2 px-3 row g-2" hx-post="{% url 'shopping:item-update' item.shopping_list.pk item.pk %}" hx-target="closest .shopping-item" hx-swap="outerHTML">
     {% csrf_token %}
-    <div class="col-sm">{{ form.name }}</div>
+    <div class="col-sm">
+      <div class="article-field">
+        {{ form.name }}
+        <ul class="article-suggestions" role="listbox" hidden aria-label="{% translate 'Articles' %}"></ul>
+      </div>
+    </div>
     <div class="col-sm-3">{{ form.quantity }}</div>
     <div class="col-sm-auto"><button class="btn btn-primary btn-sm">{% translate "Save" %}</button></div>
   </form>

@@ -37,6 +37,31 @@ def test_saved_articles_are_suggested_and_can_be_renamed(authenticated_page):
 
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
+def test_article_suggestions_open_at_the_start_of_the_input(authenticated_page):
+    page = authenticated_page
+    page.get_by_role("link", name="New list").click()
+    page.locator("input[name=title]").fill("Vorrat")
+    page.locator("input[name=date]").fill("2026-11-01")
+    page.get_by_role("button", name="Save").click()
+    name = page.get_by_role("combobox", name="Item")
+    name.fill("Avocado")
+    page.get_by_role("button", name="Add").click()
+    expect(page.locator('#articles option[value="Avocado"]')).to_have_count(1)
+
+    name.click()
+    suggestions = page.get_by_role("listbox", name="Articles")
+    expect(suggestions.get_by_role("option", name="Avocado")).to_be_visible()
+    input_box = name.bounding_box()
+    suggestions_box = suggestions.bounding_box()
+    assert abs(suggestions_box["x"] - input_box["x"]) <= 1
+    assert suggestions_box["y"] >= input_box["y"] + input_box["height"] - 1
+
+    suggestions.get_by_role("option", name="Avocado").click()
+    expect(name).to_have_value("Avocado")
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
 def test_articles_return_to_the_page_they_were_opened_from(authenticated_page):
     page = authenticated_page
     page.get_by_role("link", name="New list").click()

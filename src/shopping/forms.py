@@ -21,7 +21,16 @@ class ShoppingItemForm(forms.ModelForm):
     class Meta:
         model = ShoppingItem
         fields = ("name", "quantity")
-        widgets = {"name": forms.TextInput(attrs={"list": "articles"})}
+        widgets = {
+            "name": forms.TextInput(
+                attrs={
+                    "autocomplete": "off",
+                    "role": "combobox",
+                    "aria-autocomplete": "list",
+                    "aria-expanded": "false",
+                }
+            )
+        }
 
 
 class ArticleForm(forms.Form):

@@ -31,7 +31,9 @@ def test_item_name_suggests_saved_articles(client, user, shopping_list):
     client.force_login(user)
     create_item(shopping_list, name="Hafermilch")
     detail = client.get(reverse("shopping:detail", args=[shopping_list.pk])).content.decode()
-    assert 'list="articles"' in detail
+    assert 'class="article-field"' in detail
+    assert 'class="article-suggestions"' in detail
+    assert 'list="articles"' not in detail
     assert '<option value="Hafermilch"></option>' in detail
 
     response = client.post(

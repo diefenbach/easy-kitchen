@@ -3,7 +3,10 @@
   {% csrf_token %}
   <div class="col-12 col-sm">
     <label class="form-label" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
-    {{ form.name }}
+    <div class="article-field">
+      {{ form.name }}
+      <ul class="article-suggestions" role="listbox" hidden aria-label="{% translate 'Articles' %}"></ul>
+    </div>
     {% include "shopping/partials/article_options.html" %}
   </div>
   <div class="col-7 col-sm-3">
