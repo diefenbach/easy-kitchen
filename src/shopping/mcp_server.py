@@ -167,6 +167,9 @@ def create_recipe(
 
 
 def main() -> None:
+    from shopping.startup import ensure_migrations_applied
+
+    ensure_migrations_applied()
     mcp.run(
         transport="streamable-http",
         host=os.environ.get("MCP_HOST", "0.0.0.0"),
