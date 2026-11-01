@@ -74,7 +74,7 @@ class ShoppingList(models.Model):
         return self.title
 
     @property
-    def icon_class(self):
+    def icon_class(self) -> str:
         """Bootstrap Icons class for this list, falling back to the basket."""
         return self.ICON_CLASSES.get(self.icon, self.ICON_CLASSES[self.Icon.BASKET])
 
@@ -164,7 +164,7 @@ class Recipe(models.Model):
             return super().save(*args, **kwargs)
 
     @property
-    def picture_url(self):
+    def picture_url(self) -> str:
         """Uploaded image when one is set, otherwise the image URL."""
         if self.image:
             return self.image.url
