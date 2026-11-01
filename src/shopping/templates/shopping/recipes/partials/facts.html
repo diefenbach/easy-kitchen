@@ -1,0 +1,25 @@
+{% load i18n %}
+{% if recipe.calories is not None or recipe.protein is not None or recipe.preparation_minutes is not None %}
+<div class="{{ facts_class }}">
+  <p class="recipe-facts d-flex flex-wrap gap-3 mb-0">
+    {% if recipe.calories is not None %}
+      <span>
+        <i class="bi bi-fire" aria-hidden="true"></i>
+        {% blocktranslate with calories=recipe.calories %}{{ calories }} kcal{% endblocktranslate %}
+      </span>
+    {% endif %}
+    {% if recipe.protein is not None %}
+      <span>
+        <i class="bi bi-egg" aria-hidden="true"></i>
+        {% blocktranslate with protein=recipe.protein %}{{ protein }} g protein{% endblocktranslate %}
+      </span>
+    {% endif %}
+    {% if recipe.preparation_minutes is not None %}
+      <span>
+        <i class="bi bi-clock" aria-hidden="true"></i>
+        {% blocktranslate with minutes=recipe.preparation_minutes %}{{ minutes }} min{% endblocktranslate %}
+      </span>
+    {% endif %}
+  </p>
+</div>
+{% endif %}

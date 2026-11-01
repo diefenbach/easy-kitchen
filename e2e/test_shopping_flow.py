@@ -398,6 +398,23 @@ def test_user_can_import_a_json_shopping_list(authenticated_page):
 
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
+def test_user_can_save_calories_protein_and_preparation_time(authenticated_page):
+    page = authenticated_page
+    page.get_by_role("link", name="Recipes").click()
+    page.get_by_role("link", name="New recipe").click()
+    page.get_by_label("Title").fill("Pancakes")
+    page.get_by_label("Calories (kcal)").fill("450")
+    page.get_by_label("Protein (g)").fill("12")
+    page.get_by_label("Preparation time (min)").fill("25")
+    page.get_by_role("button", name="Save").click()
+    expect(page.get_by_role("heading", name="Pancakes")).to_be_visible()
+    expect(page.get_by_text("450 kcal")).to_be_visible()
+    expect(page.get_by_text("12 g protein")).to_be_visible()
+    expect(page.get_by_text("25 min")).to_be_visible()
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
 def test_clicking_a_recipe_picture_opens_the_recipe(authenticated_page, user):
     from shopping.services import create_recipe
 

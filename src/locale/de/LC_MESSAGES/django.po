@@ -530,5 +530,36 @@ msgstr "Schritt löschen?"
 msgid "\"%(text)s\" will be permanently deleted."
 msgstr "„%(text)s“ wird dauerhaft gelöscht."
 
+#: src/shopping/forms.py
+msgid "Calories (kcal)"
+msgstr "Kalorien (kcal)"
+
+#: src/shopping/forms.py
+msgid "Protein (g)"
+msgstr "Proteine (g)"
+
+#: src/shopping/forms.py
+msgid "Preparation time (min)"
+msgstr "Zubereitungszeit (Min.)"
+
+#: src/shopping/templates/shopping/recipes/partials/facts.html
+#, python-format
+msgid "%(calories)s kcal"
+msgstr "%(calories)s kcal"
+
+#: src/shopping/templates/shopping/recipes/partials/facts.html
+#, python-format
+msgid "%(protein)s g protein"
+msgstr "%(protein)s g Proteine"
+
+#: src/shopping/templates/shopping/recipes/partials/facts.html
+#, python-format
+msgid "%(minutes)s min"
+msgstr "%(minutes)s Min."
+
+#: src/shopping/services.py
+msgid "Enter zero or a positive whole number."
+msgstr "Gib null oder eine positive ganze Zahl ein."
+
 #~ msgid "Language"
 #~ msgstr "Sprache"

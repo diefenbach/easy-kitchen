@@ -90,6 +90,9 @@ def test_mcp_creates_a_recipe_for_the_token_owner(user, other_user):
         title="Pancakes",
         description="Sunday",
         image_url="https://example.com/pancakes.jpg",
+        calories=450,
+        protein=12,
+        preparation_minutes=25,
         ingredients=[{"name": "Flour", "quantity": "200 g"}],
         steps=[{"text": "Fry"}],
         ctx=authorization_context(token),
@@ -98,6 +101,9 @@ def test_mcp_creates_a_recipe_for_the_token_owner(user, other_user):
     recipe = Recipe.objects.get(pk=result["id"])
     assert recipe.user == user
     assert result["image_url"] == "https://example.com/pancakes.jpg"
+    assert result["calories"] == 450
+    assert result["protein"] == 12
+    assert result["preparation_minutes"] == 25
     assert result["ingredients"][0]["name"] == "Flour"
     assert result["ingredients"][0]["quantity"] == "200 g"
     assert result["steps"][0]["text"] == "Fry"
@@ -106,4 +112,13 @@ def test_mcp_creates_a_recipe_for_the_token_owner(user, other_user):
 
 def test_mcp_recipe_tool_does_not_accept_a_user_argument():
     tool = next(tool for tool in mcp._tool_manager.list_tools() if tool.name == "create_recipe")
-    assert set(tool.parameters["properties"]) == {"title", "description", "image_url", "ingredients", "steps"}
+    assert set(tool.parameters["properties"]) == {
+        "title",
+        "description",
+        "image_url",
+        "calories",
+        "protein",
+        "preparation_minutes",
+        "ingredients",
+        "steps",
+    }

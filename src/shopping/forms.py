@@ -92,13 +92,21 @@ class RecipeForm(forms.ModelForm):
 
     class Meta:
         model = Recipe
-        fields = ("title", "description", "image", "image_url")
+        fields = ("title", "description", "calories", "protein", "preparation_minutes", "image", "image_url")
         labels = {
             "title": _("Title"),
             "description": _("Description"),
+            "calories": _("Calories (kcal)"),
+            "protein": _("Protein (g)"),
+            "preparation_minutes": _("Preparation time (min)"),
             "image": _("Image"),
         }
-        widgets = {"description": forms.Textarea(attrs={"rows": 4})}
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 4}),
+            "calories": forms.NumberInput(attrs={"min": 0}),
+            "protein": forms.NumberInput(attrs={"min": 0}),
+            "preparation_minutes": forms.NumberInput(attrs={"min": 0}),
+        }
 
 
 class RecipeLineForm(forms.Form):

@@ -23,7 +23,7 @@ A private, responsive shopping list application built with Django 5.2 LTS. It us
 
 ### Recipes
 
-- Each user has their own recipes. A recipe has a title, a description, one picture, ordered ingredients, and ordered cooking steps.
+- Each user has their own recipes. A recipe has a title, a description, one picture, optional calories, protein, and preparation time, ordered ingredients, and ordered cooking steps.
 - The picture is a file uploaded in the app, or an image URL supplied by the API, MCP, or JSON import. The uploaded file is shown when both are present.
 - An ingredient has a name and a quantity, in the same way a shopping-list item does. A step is one block of text. Drag the handle to reorder either list.
 - **Add to list** copies those ingredients onto a shopping list that belongs to the same user. Choose an existing list, or enter a title to create one for today. The ingredient name and quantity are copied onto the new item.
@@ -55,7 +55,7 @@ A private, responsive shopping list application built with Django 5.2 LTS. It us
 - A second process of the same image serves streamable HTTP at `/mcp` on port `8001`.
 - It authenticates the same DRF token. The tools `create_shopping_list` and `create_recipe` have no user argument; the record belongs to the token owner.
 - Confirm `title`, an ISO `date`, and `items` before creating a list.
-- Confirm `title`, `ingredients`, and `steps` before creating a recipe. `image_url` is optional.
+- Confirm `title`, `ingredients`, and `steps` before creating a recipe. `image_url`, `calories`, `protein`, and `preparation_minutes` are optional.
 - Host and origin checks use `DJANGO_ALLOWED_HOSTS` and `DJANGO_CSRF_TRUSTED_ORIGINS`. Override them with `MCP_ALLOWED_HOSTS` and `MCP_ALLOWED_ORIGINS`.
 - In production, Nginx proxies `/mcp` to the MCP container. The process does not call the HTTP API. It uses the shared database and service layer.
 
@@ -111,6 +111,9 @@ The body is either an object with a `recipes` array or the array itself. Every r
       "title": "Pancakes",
       "description": "Sunday breakfast",
       "image_url": "https://example.com/pancakes.jpg",
+      "calories": 450,
+      "protein": 12,
+      "preparation_minutes": 25,
       "ingredients": [
         {"name": "flour", "quantity": "200 g"},
         {"name": "eggs", "quantity": "2"}
@@ -129,6 +132,9 @@ The body is either an object with a `recipes` array or the array itself. Every r
 | `title` | yes | Recipe title |
 | `description` | no | Longer text. An empty string is allowed. |
 | `image_url` | no | `http` or `https` address of a picture. Shown when no file has been uploaded. |
+| `calories` | no | Whole number of kilocalories. Omit it or send `null` when unknown. |
+| `protein` | no | Whole number of grams of protein. Omit it or send `null` when unknown. |
+| `preparation_minutes` | no | Whole number of minutes. Omit it or send `null` when unknown. |
 | `ingredients` | no | Ordered ingredients. Omit it for a recipe without ingredients. |
 | `ingredients[].name` | yes | Ingredient name |
 | `ingredients[].quantity` | no | Quantity text, for example `500 g` or `2`. An empty string is allowed. |

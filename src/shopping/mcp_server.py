@@ -138,10 +138,13 @@ def create_recipe(
     ctx: Context,
     description: Annotated[str, Field(max_length=5000)] = "",
     image_url: Annotated[str, Field(max_length=500)] = "",
+    calories: Annotated[int, Field(ge=0)] | None = None,
+    protein: Annotated[int, Field(ge=0)] | None = None,
+    preparation_minutes: Annotated[int, Field(ge=0)] | None = None,
     ingredients: list[IngredientInput] | None = None,
     steps: list[StepInput] | None = None,
 ) -> dict:
-    """Create a recipe for the authenticated user. image_url is optional; upload the picture in the web app."""
+    """Create a recipe for the authenticated user. image_url, calories, protein, and preparation_minutes are optional."""
     user = user_from_authorization(_authorization(ctx))
     try:
         recipe = save_recipe(
@@ -149,6 +152,9 @@ def create_recipe(
             title=title,
             description=description,
             image_url=image_url,
+            calories=calories,
+            protein=protein,
+            preparation_minutes=preparation_minutes,
             ingredients=[IngredientInput.model_validate(item).model_dump() for item in ingredients or []],
             steps=[StepInput.model_validate(item).model_dump() for item in steps or []],
         )
@@ -159,6 +165,9 @@ def create_recipe(
         "title": recipe.title,
         "description": recipe.description,
         "image_url": recipe.image_url,
+        "calories": recipe.calories,
+        "protein": recipe.protein,
+        "preparation_minutes": recipe.preparation_minutes,
         "ingredients": [
             {"id": line.id, "name": line.name, "quantity": line.quantity} for line in recipe.ingredients.all()
         ],

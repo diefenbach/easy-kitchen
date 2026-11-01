@@ -25,6 +25,7 @@
     </div>
   </div>
   <img class="recipe-picture" src="{% if recipe.picture_url %}{{ recipe.picture_url }}{% else %}{% static 'shopping/recipe-placeholder.svg' %}{% endif %}" alt="">
+  {% include "shopping/recipes/partials/facts.html" with facts_class="card-body pt-3" %}
 </header>
 
 <section class="card shadow-sm mb-4">

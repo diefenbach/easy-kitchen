@@ -8,14 +8,16 @@
     <form method="post" enctype="multipart/form-data" class="card shadow-sm">
       <div class="card-body">
         {% csrf_token %}
+        <div class="row">
         {% for field in form %}
-          <div class="mb-3">
+          <div class="mb-3 {% if field.field.widget.input_type == 'number' %}col-md-4{% else %}col-12{% endif %}">
             <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
             {{ field }}
             {% if field.name == "image_url" %}<div class="form-text">{% translate "Used when no image file is uploaded." %}</div>{% endif %}
             {{ field.errors }}
           </div>
         {% endfor %}
+        </div>
       </div>
       <div class="card-footer bg-white d-flex gap-2">
         <button class="btn btn-primary" aria-label="{% translate 'Save' %}">

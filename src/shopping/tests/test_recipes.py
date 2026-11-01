@@ -4,7 +4,7 @@ import json
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import timezone, translation
 from PIL import Image
 from rest_framework.authtoken.models import Token
 from shopping.models import Recipe, ShoppingList
@@ -33,7 +33,65 @@ def test_recipe_belongs_to_its_user_and_keeps_line_order(user, other_user):
     assert list(recipe.ingredients.values_list("name", "quantity")) == [("Flour", "200 g"), ("Eggs", "2")]
     assert list(recipe.steps.values_list("text", flat=True)) == ["Mix", "Fry"]
     assert recipe.picture_url == "https://example.com/pancakes.jpg"
+    assert recipe.calories is None
+    assert recipe.protein is None
+    assert recipe.preparation_minutes is None
     assert Recipe.objects.filter(user=other_user).count() == 0
+
+
+@pytest.mark.django_db
+def test_recipe_stores_calories_protein_and_preparation_time(client, user):
+    client.force_login(user)
+
+    response = client.post(
+        reverse("shopping:recipe-create"),
+        {
+            "title": "Pancakes",
+            "description": "",
+            "image_url": "",
+            "calories": "450",
+            "protein": "12",
+            "preparation_minutes": "25",
+        },
+    )
+
+    recipe = Recipe.objects.get(user=user, title="Pancakes")
+    assert response.status_code == 302
+    assert recipe.calories == 450
+    assert recipe.protein == 12
+    assert recipe.preparation_minutes == 25
+    detail = client.get(reverse("shopping:recipe-detail", args=[recipe.pk])).content.decode()
+    assert "450 kcal" in detail
+    assert "12 g protein" in detail
+    assert "25 min" in detail
+    overview = client.get(reverse("shopping:recipes")).content.decode()
+    assert "450 kcal" in overview
+    assert "12 g protein" in overview
+    assert "25 min" in overview
+
+    with translation.override("de"):
+        german = client.get(reverse("shopping:recipe-detail", args=[recipe.pk])).content.decode()
+        form = client.get(reverse("shopping:recipe-update", args=[recipe.pk])).content.decode()
+    assert "12 g Proteine" in german
+    assert "25 Min." in german
+    assert "Kalorien (kcal)" in form
+    assert "Proteine (g)" in form
+    assert "Zubereitungszeit (Min.)" in form
+
+    plain = create_recipe(user, title="Soup")
+    plain_detail = client.get(reverse("shopping:recipe-detail", args=[plain.pk])).content.decode()
+    assert "recipe-facts" not in plain_detail
+    assert "kcal" not in plain_detail
+    overview = client.get(reverse("shopping:recipes")).content.decode()
+    plain_card = overview.split(f'data-list-id="{plain.pk}"', 1)[1].split("data-list-id=", 1)[0]
+    assert "recipe-facts" not in plain_card
+    assert "kcal" not in plain_card
+
+    timed = create_recipe(user, title="Salad", preparation_minutes=10)
+    timed_detail = client.get(reverse("shopping:recipe-detail", args=[timed.pk])).content.decode()
+    assert "10 min" in timed_detail
+    assert "kcal" not in timed_detail
+    assert "g protein" not in timed_detail
 
 
 @pytest.mark.django_db
@@ -211,6 +269,9 @@ def test_recipe_json_import_accepts_an_image_url(client, user):
                 "title": "Pancakes",
                 "description": "Sunday",
                 "image_url": "https://example.com/pancakes.jpg",
+                "calories": 450,
+                "protein": 12,
+                "preparation_minutes": 25,
                 "ingredients": [{"name": "Flour", "quantity": "200 g"}],
                 "steps": [{"text": "Fry"}],
             }
@@ -220,6 +281,9 @@ def test_recipe_json_import_accepts_an_image_url(client, user):
     recipe = Recipe.objects.get(user=user, title="Pancakes")
     assert response.status_code == 302
     assert recipe.image_url == "https://example.com/pancakes.jpg"
+    assert recipe.calories == 450
+    assert recipe.protein == 12
+    assert recipe.preparation_minutes == 25
     ingredient = recipe.ingredients.get()
     assert ingredient.name == "Flour"
     assert ingredient.quantity == "200 g"
@@ -235,6 +299,9 @@ def test_api_recipes_stay_with_the_token_owner(client, user, other_user):
         json.dumps({
             "title": "Pancakes",
             "image_url": "https://example.com/pancakes.jpg",
+            "calories": 450,
+            "protein": 12,
+            "preparation_minutes": 25,
             "ingredients": [{"name": "Flour", "quantity": "200 g"}, {"name": "Eggs", "quantity": "2"}],
             "steps": [{"text": "Mix"}],
         }),
@@ -244,6 +311,9 @@ def test_api_recipes_stay_with_the_token_owner(client, user, other_user):
     assert created.status_code == 201
     body = created.json()
     assert body["picture_url"] == "https://example.com/pancakes.jpg"
+    assert body["calories"] == 450
+    assert body["protein"] == 12
+    assert body["preparation_minutes"] == 25
     assert [(line["name"], line["quantity"]) for line in body["ingredients"]] == [("Flour", "200 g"), ("Eggs", "2")]
     assert Recipe.objects.get(pk=body["id"]).user == user
 

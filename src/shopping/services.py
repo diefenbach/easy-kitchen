@@ -198,19 +198,70 @@ def _clean_image_url(image_url):
     return image_url
 
 
-def create_recipe(user, *, title, description="", image_url="", ingredients=None, steps=None, recipe=None, position=0):
+def _optional_count(value):
+    if value is None or value == "":
+        return None
+    if isinstance(value, bool):
+        raise ValueError(_("Enter zero or a positive whole number."))
+    try:
+        amount = int(value)
+    except (TypeError, ValueError) as error:
+        raise ValueError(_("Enter zero or a positive whole number.")) from error
+    if amount < 0:
+        raise ValueError(_("Enter zero or a positive whole number."))
+    return amount
+
+
+def create_recipe(
+    user,
+    *,
+    title,
+    description="",
+    image_url="",
+    calories=None,
+    protein=None,
+    preparation_minutes=None,
+    ingredients=None,
+    steps=None,
+    recipe=None,
+    position=0,
+):
     title = _normalized_name(title)
     if not title:
         raise ValueError(_("Enter a title."))
     description = (description or "").strip()
     image_url = _clean_image_url(image_url)
+    calories = _optional_count(calories)
+    protein = _optional_count(protein)
+    preparation_minutes = _optional_count(preparation_minutes)
     if recipe is None:
-        recipe = user.recipes.create(title=title, description=description, image_url=image_url, position=position)
+        recipe = user.recipes.create(
+            title=title,
+            description=description,
+            image_url=image_url,
+            calories=calories,
+            protein=protein,
+            preparation_minutes=preparation_minutes,
+            position=position,
+        )
     else:
         recipe.title = title
         recipe.description = description
         recipe.image_url = image_url
-        recipe.save(update_fields=["title", "description", "image_url", "updated_at"])
+        recipe.calories = calories
+        recipe.protein = protein
+        recipe.preparation_minutes = preparation_minutes
+        recipe.save(
+            update_fields=[
+                "title",
+                "description",
+                "image_url",
+                "calories",
+                "protein",
+                "preparation_minutes",
+                "updated_at",
+            ]
+        )
     if ingredients is not None:
         _write_ingredients(recipe.ingredients, ingredients)
     if steps is not None:

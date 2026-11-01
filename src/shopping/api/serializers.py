@@ -82,6 +82,9 @@ class RecipeSerializer(serializers.ModelSerializer):
             "image",
             "image_url",
             "picture_url",
+            "calories",
+            "protein",
+            "preparation_minutes",
             "position",
             "ingredients",
             "steps",
@@ -89,6 +92,11 @@ class RecipeSerializer(serializers.ModelSerializer):
             "updated_at",
         )
         read_only_fields = ("id", "position", "created_at", "updated_at")
+        extra_kwargs = {
+            "calories": {"required": False, "allow_null": True},
+            "protein": {"required": False, "allow_null": True},
+            "preparation_minutes": {"required": False, "allow_null": True},
+        }
 
     def get_image(self, recipe):
         if not recipe.image:
@@ -118,6 +126,11 @@ class RecipeSerializer(serializers.ModelSerializer):
             "title": validated_data.get("title", instance.title if instance else ""),
             "description": validated_data.get("description", instance.description if instance else ""),
             "image_url": validated_data.get("image_url", instance.image_url if instance else ""),
+            "calories": validated_data.get("calories", instance.calories if instance else None),
+            "protein": validated_data.get("protein", instance.protein if instance else None),
+            "preparation_minutes": validated_data.get(
+                "preparation_minutes", instance.preparation_minutes if instance else None
+            ),
         }
         if "ingredients" in validated_data:
             data["ingredients"] = validated_data["ingredients"]

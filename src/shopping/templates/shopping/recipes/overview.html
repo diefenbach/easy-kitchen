@@ -24,6 +24,7 @@
           <img class="card-img-top recipe-card-picture" src="{% if recipe.picture_url %}{{ recipe.picture_url }}{% else %}{% static 'shopping/recipe-placeholder.svg' %}{% endif %}" alt="">
           <div class="card-body">
             <h2 class="h5"><a class="stretched-link text-decoration-none link-dark" href="{% url 'shopping:recipe-detail' recipe.pk %}">{{ recipe.title }}</a></h2>
+            {% include "shopping/recipes/partials/facts.html" with facts_class="mb-2" %}
             <span class="badge text-bg-light">{% blocktranslate count counter=recipe.ingredients.count %}{{ counter }} ingredient{% plural %}{{ counter }} ingredients{% endblocktranslate %}</span>
           </div>
           <div class="card-footer bg-white d-flex flex-nowrap align-items-center gap-2 edit-only position-relative z-2">
