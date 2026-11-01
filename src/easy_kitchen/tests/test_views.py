@@ -51,7 +51,9 @@ def test_home_shows_the_three_newest_lists_and_recipes(client, user, other_user)
     assert date_format(newest_list.date, "j. F Y") in content
     assert "Sun," not in content
     assert 'class="btn btn-sm btn-outline-secondary is-active" href="/" aria-label="Overview"' in content
-    assert 'aria-label="Account"' in content
+    assert 'class="btn btn-sm btn-outline-secondary dropdown-toggle"' in content
+    assert 'aria-label="kai"' in content
+    assert 'class="d-none d-md-inline">kai</span>' in content
     assert 'class="dropdown-item"' in content
     assert 'class="btn btn-sm btn-outline-secondary" href="/lists/" aria-label="Shopping lists"' in content
     assert "See all lists" in content
@@ -146,7 +148,7 @@ def test_articles_can_be_managed_without_changing_list_items(client, user, other
     overview = client.get(reverse("easy_kitchen:articles"))
     assert overview.status_code == 200
     content = overview.content.decode()
-    assert ">Articles</span>" in content
+    assert ">Edit articles</span>" in content
     assert 'aria-label="Save"' in content
     assert 'class="bi bi-check-lg"' in content
     assert 'aria-label="Delete"' in content

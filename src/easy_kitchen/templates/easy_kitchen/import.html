@@ -7,7 +7,31 @@
     <div class="card shadow-sm">
       <div class="card-body p-4">
         <h1 class="h2 mb-3">{% translate "Import JSON" %}</h1>
-        <p class="text-secondary">{% translate "Paste JSON. Shopping lists and recipes are recognized automatically." %}</p>
+        <p>{% translate "Paste one shopping list, one recipe, or several of either." %}</p>
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <div class="import-hint h-100">
+              <div class="fw-bold">{% translate "Shopping list" %}</div>
+              <p class="small text-secondary mb-2">{% translate "A title, a date, and items. Each item has a name and a quantity." %}</p>
+              <pre class="import-example mb-0">{
+  "title": "Week",
+  "date": "2026-11-01",
+  "items": [{"name": "Milk", "quantity": "1 l"}]
+}</pre>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="import-hint h-100">
+              <div class="fw-bold">{% translate "Recipe" %}</div>
+              <p class="small text-secondary mb-2">{% translate "A title. Add ingredients, steps, or nutrition when you have them." %}</p>
+              <pre class="import-example mb-0">{
+  "title": "Soup",
+  "ingredients": [{"name": "Onion", "quantity": "1"}]
+}</pre>
+            </div>
+          </div>
+        </div>
+        <p class="text-secondary small">{% translate "One entry is enough. Several entries go in a list, or grouped under lists and recipes." %}</p>
         <form method="post" novalidate>
           {% csrf_token %}
           <div class="mb-3">

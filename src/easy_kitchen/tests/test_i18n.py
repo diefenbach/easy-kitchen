@@ -18,7 +18,7 @@ def test_interface_is_english_by_default(client, user):
     assert "See all lists" in content
     assert "See all recipes" in content
     assert "Overview" in content
-    assert "Account" in content
+    assert 'aria-label="kai"' in content
     assert "New list" in content
     assert "New recipe" in content
     assert "Einkaufslisten" not in content
@@ -43,7 +43,7 @@ def test_german_translation_is_available(client, user, shopping_list):
     assert "Neue Liste" in home_content
     assert "Neues Rezept" in home_content
     assert "Übersicht" in home_content
-    assert "Konto" in home_content
+    assert 'aria-label="kai"' in home_content
     assert "Einkaufslisten" in overview_content
     assert "Neue Liste" in overview_content
     assert "Bearbeiten" in overview_content
@@ -73,13 +73,15 @@ def test_article_management_uses_the_active_language(client, user):
 
     english = client.get(reverse("easy_kitchen:articles")).content.decode()
     assert "<h1" in english and "Articles" in english
-    assert ">Articles</span>" in client.get(reverse("easy_kitchen:list")).content.decode()
+    assert "These articles are offered in the dropdown when you add an item to a shopping list." in english
+    assert ">Edit articles</span>" in client.get(reverse("easy_kitchen:list")).content.decode()
 
     with translation.override("de"):
         german = client.get(reverse("easy_kitchen:articles")).content.decode()
         overview = client.get(reverse("easy_kitchen:list")).content.decode()
     assert "Artikel" in german
-    assert ">Artikel</span>" in overview
+    assert "Diese Artikel werden im Dropdown angeboten, wenn du einer Einkaufsliste einen Eintrag hinzufügst." in german
+    assert ">Artikel bearbeiten</span>" in overview
 
 
 @pytest.mark.django_db
@@ -121,12 +123,16 @@ def test_import_page_uses_the_active_language(client, user):
 
     english = client.get(reverse("easy_kitchen:import-json")).content.decode()
     assert "Import JSON" in english
-    assert "Shopping lists and recipes are recognized automatically." in english
+    assert "Paste one shopping list, one recipe, or several of either." in english
+    assert "A title, a date, and items. Each item has a name and a quantity." in english
+    assert "A title. Add ingredients, steps, or nutrition when you have them." in english
 
     with translation.override("de"):
         german = client.get(reverse("easy_kitchen:import-json")).content.decode()
     assert "JSON importieren" in german
-    assert "Einkaufslisten und Rezepte werden automatisch erkannt." in german
+    assert "Füge eine Einkaufsliste, ein Rezept oder mehrere davon ein." in german
+    assert "Ein Titel, ein Datum und Artikel." in german
+    assert "Zutaten, Schritte oder Nährwerte kannst du ergänzen." in german
 
 
 @pytest.mark.django_db

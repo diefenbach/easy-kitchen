@@ -14,7 +14,7 @@ def open_shopping_lists(page):
 
 
 def open_account_menu(page):
-    page.get_by_role("button", name="Account", exact=True).click()
+    page.get_by_role("button", name="e2e-user", exact=True).click()
 
 
 @pytest.mark.e2e
@@ -23,7 +23,7 @@ def test_saved_articles_are_suggested_and_can_be_renamed(authenticated_page):
     page = authenticated_page
     overview = page.get_by_role("link", name="Overview", exact=True)
     lists = page.get_by_role("link", name="Shopping lists", exact=True)
-    account = page.get_by_role("button", name="Account", exact=True)
+    account = page.get_by_role("button", name="e2e-user", exact=True)
     expect(overview).to_be_visible()
     assert overview.bounding_box()["x"] < lists.bounding_box()["x"] < account.bounding_box()["x"]
 
@@ -36,7 +36,7 @@ def test_saved_articles_are_suggested_and_can_be_renamed(authenticated_page):
     expect(page.locator(".shopping-item", has_text="Naturtofu")).to_be_visible()
 
     open_account_menu(page)
-    page.get_by_role("link", name="Articles", exact=True).click()
+    page.get_by_role("link", name="Edit articles", exact=True).click()
     expect(page.get_by_role("heading", name="Articles")).to_be_visible()
     name = page.get_by_role("textbox", name="Edit Naturtofu")
     expect(name).to_have_value("Naturtofu")
@@ -84,13 +84,13 @@ def test_articles_return_to_the_page_they_were_opened_from(authenticated_page):
     page.locator("input[name=date]").fill("2026-11-01")
     page.get_by_role("button", name="Save").click()
     open_account_menu(page)
-    page.get_by_role("link", name="Articles", exact=True).click()
+    page.get_by_role("link", name="Edit articles", exact=True).click()
     page.get_by_role("link", name="Vorrat").click()
     expect(page.get_by_role("heading", name="Vorrat")).to_be_visible()
 
     page.get_by_role("link", name="EasyKitchen").click()
     open_account_menu(page)
-    page.get_by_role("link", name="Articles", exact=True).click()
+    page.get_by_role("link", name="Edit articles", exact=True).click()
     page.locator("main").get_by_role("link", name="Shopping lists").click()
     expect(page.get_by_role("heading", name="Shopping lists")).to_be_visible()
 
@@ -101,7 +101,7 @@ def test_article_actions_stay_beside_the_name_on_a_phone(authenticated_page):
     page = authenticated_page
     page.set_viewport_size({"width": 390, "height": 844})
     open_account_menu(page)
-    page.get_by_role("link", name="Articles", exact=True).click()
+    page.get_by_role("link", name="Edit articles", exact=True).click()
     page.get_by_label("Article", exact=True).fill("Apfel")
     page.get_by_role("button", name="Add").click()
 

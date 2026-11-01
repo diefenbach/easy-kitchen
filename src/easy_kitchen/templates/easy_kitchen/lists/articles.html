@@ -6,8 +6,9 @@
   <i class="bi bi-arrow-left" aria-hidden="true"></i>
   <span class="d-none d-md-inline">{% if return_list %}{{ return_list.title }}{% else %}{% translate "Shopping lists" %}{% endif %}</span>
 </a>
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="h2 mb-0">{% translate "Articles" %}</h1>
+<div class="mb-4">
+  <h1 class="h2 mb-2">{% translate "Articles" %}</h1>
+  <p class="text-secondary mb-0">{% translate "These articles are offered in the dropdown when you add an item to a shopping list." %}</p>
 </div>
 <form method="post" class="card shadow-sm mb-4">
   <div class="card-body">

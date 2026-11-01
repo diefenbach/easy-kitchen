@@ -42,7 +42,23 @@ h1, h2, .navbar-brand { color: var(--ek-sage-dark); font-family: Fraunces, Georg
   border-color: var(--ek-line);
   color: var(--ek-ink);
 }
-.navbar .btn.is-active { background: var(--ek-blush); border-color: transparent; color: #8a4d55; }
+.navbar .btn.is-active,
+.navbar .dropdown-toggle.show { background: var(--ek-blush); border-color: transparent; color: #8a4d55; }
+.navbar .dropdown-toggle::after { margin-left: .45rem; vertical-align: .2em; }
+.import-hint {
+  background: var(--ek-cream);
+  border: 1px solid var(--ek-line);
+  border-radius: 1rem;
+  padding: 1rem;
+}
+.import-example {
+  background: #fffdfb;
+  border-radius: .7rem;
+  color: var(--ek-ink);
+  font-size: .8rem;
+  padding: .75rem;
+  white-space: pre-wrap;
+}
 .navbar .dropdown-menu {
   background: #fffdfb;
   border: 1px solid var(--ek-line);

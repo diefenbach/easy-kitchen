@@ -204,8 +204,20 @@ msgstr "JSON importieren"
 msgid "JSON"
 msgstr "JSON"
 
-msgid "Paste JSON. Shopping lists and recipes are recognized automatically."
-msgstr "Füge JSON ein. Einkaufslisten und Rezepte werden automatisch erkannt."
+msgid "Paste one shopping list, one recipe, or several of either."
+msgstr "Füge eine Einkaufsliste, ein Rezept oder mehrere davon ein."
+
+msgid "A title, a date, and items. Each item has a name and a quantity."
+msgstr "Ein Titel, ein Datum und Artikel. Jeder Artikel hat einen Namen und eine Menge."
+
+msgid "Recipe"
+msgstr "Rezept"
+
+msgid "A title. Add ingredients, steps, or nutrition when you have them."
+msgstr "Ein Titel. Zutaten, Schritte oder Nährwerte kannst du ergänzen."
+
+msgid "One entry is enough. Several entries go in a list, or grouped under lists and recipes."
+msgstr "Ein Eintrag genügt. Mehrere Einträge kommen in eine Liste oder gruppiert unter lists und recipes."
 
 msgid "Could not tell whether this is a shopping list or a recipe."
 msgstr "Es ist nicht erkennbar, ob das eine Einkaufsliste oder ein Rezept ist."
@@ -286,10 +298,13 @@ msgstr "Artikel"
 msgid "articles"
 msgstr "Artikel"
 
-#: src/easy_kitchen/templates/easy_kitchen/base.html
 #: src/easy_kitchen/templates/easy_kitchen/lists/articles.html
 msgid "Articles"
 msgstr "Artikel"
+
+#: src/easy_kitchen/templates/easy_kitchen/base.html
+msgid "Edit articles"
+msgstr "Artikel bearbeiten"
 
 #: src/easy_kitchen/forms.py
 msgid "Article"
@@ -324,6 +339,9 @@ msgstr "Noch keine Artikel"
 #: src/easy_kitchen/templates/easy_kitchen/lists/articles.html
 msgid "Articles you add to a list are saved here."
 msgstr "Artikel, die du einer Liste hinzufügst, werden hier gespeichert."
+
+msgid "These articles are offered in the dropdown when you add an item to a shopping list."
+msgstr "Diese Artikel werden im Dropdown angeboten, wenn du einer Einkaufsliste einen Eintrag hinzufügst."
 
 #: src/easy_kitchen/models.py
 msgid "description"
