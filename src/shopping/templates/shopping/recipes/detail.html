@@ -30,7 +30,7 @@
 <section class="card shadow-sm mb-4">
   <div class="card-body">
     <h2 class="h4">{% translate "Ingredients" %}</h2>
-    {% include "shopping/partials/recipe_line_form.html" with form=ingredient_form kind="ingredient" recipe=recipe %}
+    {% include "shopping/recipes/partials/line_form.html" with form=ingredient_form kind="ingredient" recipe=recipe %}
     {% if not recipe.ingredients.all %}
       <p id="empty-ingredients" class="text-secondary">{% translate "No ingredients yet." %}</p>
     {% endif %}
@@ -38,7 +38,7 @@
       {% for line in recipe.ingredients.all %}
         {% url 'shopping:recipe-ingredient-update' recipe.pk line.pk as update_url %}
         {% url 'shopping:recipe-ingredient-delete' recipe.pk line.pk as delete_url %}
-        {% include "shopping/partials/recipe_line.html" with kind="ingredient" %}
+        {% include "shopping/recipes/partials/line.html" with kind="ingredient" %}
       {% endfor %}
     </div>
   </div>
@@ -47,7 +47,7 @@
 <section class="card shadow-sm mb-4">
   <div class="card-body">
     <h2 class="h4">{% translate "Steps" %}</h2>
-    {% include "shopping/partials/recipe_line_form.html" with form=step_form kind="step" recipe=recipe %}
+    {% include "shopping/recipes/partials/line_form.html" with form=step_form kind="step" recipe=recipe %}
     {% if not recipe.steps.all %}
       <p id="empty-steps" class="text-secondary">{% translate "No steps yet." %}</p>
     {% endif %}
@@ -55,7 +55,7 @@
       {% for line in recipe.steps.all %}
         {% url 'shopping:recipe-step-update' recipe.pk line.pk as update_url %}
         {% url 'shopping:recipe-step-delete' recipe.pk line.pk as delete_url %}
-        {% include "shopping/partials/recipe_line.html" with kind="step" %}
+        {% include "shopping/recipes/partials/line.html" with kind="step" %}
       {% endfor %}
     </div>
   </div>

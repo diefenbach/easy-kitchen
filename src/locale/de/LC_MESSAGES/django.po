@@ -71,81 +71,81 @@ msgstr "Anmelden"
 msgid "Log out"
 msgstr "Abmelden"
 
-#: src/shopping/templates/shopping/detail.html:7
+#: src/shopping/templates/shopping/lists/detail.html:7
 msgid "Shopping lists"
 msgstr "Einkaufslisten"
 
-#: src/shopping/templates/shopping/detail.html:18
+#: src/shopping/templates/shopping/lists/detail.html:18
 msgid "List actions"
 msgstr "Listenaktionen"
 
-#: src/shopping/templates/shopping/detail.html:19
-#: src/shopping/templates/shopping/list_form.html:6
+#: src/shopping/templates/shopping/lists/detail.html:19
+#: src/shopping/templates/shopping/lists/form.html:6
 msgid "Edit list"
 msgstr "Liste bearbeiten"
 
-#: src/shopping/templates/shopping/detail.html:22
-#: src/shopping/templates/shopping/list.html:21
+#: src/shopping/templates/shopping/lists/detail.html:22
+#: src/shopping/templates/shopping/lists/overview.html:21
 msgid "Delete list"
 msgstr "Liste löschen"
 
-#: src/shopping/templates/shopping/detail.html:32
+#: src/shopping/templates/shopping/lists/detail.html:32
 msgid "Hide completed"
 msgstr "Erledigte ausblenden"
 
-#: src/shopping/templates/shopping/detail.html:32
+#: src/shopping/templates/shopping/lists/detail.html:32
 msgid "Show completed"
 msgstr "Erledigte anzeigen"
 
-#: src/shopping/templates/shopping/detail.html:35
+#: src/shopping/templates/shopping/lists/detail.html:35
 msgid "Mark all as not completed"
 msgstr "Alle als nicht erledigt markieren"
 
-#: src/shopping/templates/shopping/detail.html:42
+#: src/shopping/templates/shopping/lists/detail.html:42
 msgid "No items yet."
 msgstr "Noch keine Artikel."
 
-#: src/shopping/templates/shopping/detail.html:49
-#: src/shopping/templates/shopping/list.html:29
-#: src/shopping/templates/shopping/list_confirm_delete.html:8
+#: src/shopping/templates/shopping/lists/detail.html:49
+#: src/shopping/templates/shopping/lists/overview.html:29
+#: src/shopping/templates/shopping/lists/confirm_delete.html:8
 msgid "Delete list?"
 msgstr "Liste löschen?"
 
-#: src/shopping/templates/shopping/detail.html:50
-#: src/shopping/templates/shopping/list.html:30
-#: src/shopping/templates/shopping/partials/item.html:29
+#: src/shopping/templates/shopping/lists/detail.html:50
+#: src/shopping/templates/shopping/lists/overview.html:30
+#: src/shopping/templates/shopping/lists/partials/item.html:29
 msgid "Close"
 msgstr "Schließen"
 
-#: src/shopping/templates/shopping/detail.html:52
-#: src/shopping/templates/shopping/list.html:32
-#: src/shopping/templates/shopping/list_confirm_delete.html:9
+#: src/shopping/templates/shopping/lists/detail.html:52
+#: src/shopping/templates/shopping/lists/overview.html:32
+#: src/shopping/templates/shopping/lists/confirm_delete.html:9
 #, python-format
 msgid "\"%(title)s\" and all items will be permanently deleted."
 msgstr "„%(title)s“ und alle Artikel werden dauerhaft gelöscht."
 
-#: src/shopping/templates/shopping/detail.html:54
-#: src/shopping/templates/shopping/list.html:34
-#: src/shopping/templates/shopping/list_confirm_delete.html:13
-#: src/shopping/templates/shopping/list_form.html:20
-#: src/shopping/templates/shopping/partials/item.html:33
+#: src/shopping/templates/shopping/lists/detail.html:54
+#: src/shopping/templates/shopping/lists/overview.html:34
+#: src/shopping/templates/shopping/lists/confirm_delete.html:13
+#: src/shopping/templates/shopping/lists/form.html:20
+#: src/shopping/templates/shopping/lists/partials/item.html:33
 msgid "Cancel"
 msgstr "Abbrechen"
 
-#: src/shopping/templates/shopping/detail.html:57
-#: src/shopping/templates/shopping/list.html:37
-#: src/shopping/templates/shopping/list_confirm_delete.html:12
-#: src/shopping/templates/shopping/partials/item.html:36
+#: src/shopping/templates/shopping/lists/detail.html:57
+#: src/shopping/templates/shopping/lists/overview.html:37
+#: src/shopping/templates/shopping/lists/confirm_delete.html:12
+#: src/shopping/templates/shopping/lists/partials/item.html:36
 msgid "Delete permanently"
 msgstr "Endgültig löschen"
 
-#: src/shopping/templates/shopping/list.html:7
-#: src/shopping/templates/shopping/list_form.html:6
+#: src/shopping/templates/shopping/lists/overview.html:7
+#: src/shopping/templates/shopping/lists/form.html:6
 msgid "New list"
 msgstr "Neue Liste"
 
 #: src/shopping/forms.py:27
-#: src/shopping/templates/shopping/import.html:14
+#: src/shopping/templates/shopping/lists/import.html:14
 msgid "Shopping-list JSON"
 msgstr "Einkaufslisten-JSON"
 
@@ -168,88 +168,88 @@ msgid_plural "Imported %(count)d shopping lists."
 msgstr[0] "%(count)d Einkaufsliste wurde importiert."
 msgstr[1] "%(count)d Einkaufslisten wurden importiert."
 
-#: src/shopping/templates/shopping/import.html:3
-#: src/shopping/templates/shopping/import.html:9
+#: src/shopping/templates/shopping/lists/import.html:3
+#: src/shopping/templates/shopping/lists/import.html:9
 msgid "Import shopping lists"
 msgstr "Einkaufslisten importieren"
 
-#: src/shopping/templates/shopping/import.html:10
+#: src/shopping/templates/shopping/lists/import.html:10
 msgid "Paste JSON generated by ChatGPT. All valid lists and items are imported together."
 msgstr "Füge von ChatGPT erzeugtes JSON ein. Alle gültigen Listen und Artikel werden zusammen importiert."
 
-#: src/shopping/templates/shopping/import.html:21
+#: src/shopping/templates/shopping/lists/import.html:21
 msgid "Import"
 msgstr "Importieren"
 
-#: src/shopping/templates/shopping/list.html:8
+#: src/shopping/templates/shopping/lists/overview.html:8
 msgid "Import JSON"
 msgstr "JSON importieren"
 
-#: src/shopping/templates/shopping/list.html:17
+#: src/shopping/templates/shopping/lists/overview.html:17
 #, python-format
 msgid "%(counter)s item"
 msgid_plural "%(counter)s items"
 msgstr[0] "%(counter)s Artikel"
 msgstr[1] "%(counter)s Artikel"
 
-#: src/shopping/templates/shopping/list.html:20
+#: src/shopping/templates/shopping/lists/overview.html:20
 msgid "Edit"
 msgstr "Bearbeiten"
 
 msgid "Done"
 msgstr "Fertig"
 
-#: src/shopping/templates/shopping/list.html:21
+#: src/shopping/templates/shopping/lists/overview.html:21
 msgid "Delete"
 msgstr "Löschen"
 
-#: src/shopping/templates/shopping/list.html:47
+#: src/shopping/templates/shopping/lists/overview.html:47
 msgid "No shopping list yet"
 msgstr "Noch keine Einkaufsliste"
 
-#: src/shopping/templates/shopping/list.html:48
+#: src/shopping/templates/shopping/lists/overview.html:48
 msgid "Create your first list."
 msgstr "Erstelle deine erste Liste."
 
-#: src/shopping/templates/shopping/list.html:49
+#: src/shopping/templates/shopping/lists/overview.html:49
 msgid "Create list"
 msgstr "Liste erstellen"
 
-#: src/shopping/templates/shopping/list_form.html:19
-#: src/shopping/templates/shopping/partials/item_edit_form.html:7
+#: src/shopping/templates/shopping/lists/form.html:19
+#: src/shopping/templates/shopping/lists/partials/item_edit_form.html:7
 msgid "Save"
 msgstr "Speichern"
 
-#: src/shopping/templates/shopping/partials/item.html:4
+#: src/shopping/templates/shopping/lists/partials/item.html:4
 msgid "Move"
 msgstr "Verschieben"
 
-#: src/shopping/templates/shopping/partials/item.html:7
+#: src/shopping/templates/shopping/lists/partials/item.html:7
 msgid "Toggle completed"
 msgstr "Erledigt umschalten"
 
-#: src/shopping/templates/shopping/partials/item.html:14
+#: src/shopping/templates/shopping/lists/partials/item.html:14
 msgid "Item actions"
 msgstr "Artikelaktionen"
 
-#: src/shopping/templates/shopping/partials/item.html:15
+#: src/shopping/templates/shopping/lists/partials/item.html:15
 msgid "Edit item"
 msgstr "Artikel bearbeiten"
 
-#: src/shopping/templates/shopping/partials/item.html:18
+#: src/shopping/templates/shopping/lists/partials/item.html:18
 msgid "Delete item"
 msgstr "Artikel löschen"
 
-#: src/shopping/templates/shopping/partials/item.html:28
+#: src/shopping/templates/shopping/lists/partials/item.html:28
 msgid "Delete item?"
 msgstr "Artikel löschen?"
 
-#: src/shopping/templates/shopping/partials/item.html:31
+#: src/shopping/templates/shopping/lists/partials/item.html:31
 #, python-format
 msgid "\"%(name)s\" will be permanently deleted."
 msgstr "„%(name)s“ wird dauerhaft gelöscht."
 
-#: src/shopping/templates/shopping/partials/item_form.html:13
+#: src/shopping/templates/shopping/lists/partials/item_form.html:13
 msgid "Add"
 msgstr "Hinzufügen"
 
@@ -262,7 +262,7 @@ msgid "articles"
 msgstr "Artikel"
 
 #: src/shopping/templates/shopping/base.html
-#: src/shopping/templates/shopping/articles.html
+#: src/shopping/templates/shopping/lists/articles.html
 msgid "Articles"
 msgstr "Artikel"
 
@@ -278,25 +278,25 @@ msgstr "Gib einen Artikelnamen ein."
 msgid "An article with this name already exists."
 msgstr "Ein Artikel mit diesem Namen existiert bereits."
 
-#: src/shopping/templates/shopping/articles.html
+#: src/shopping/templates/shopping/lists/articles.html
 #, python-format
 msgid "Edit %(name)s"
 msgstr "%(name)s bearbeiten"
 
-#: src/shopping/templates/shopping/articles.html
+#: src/shopping/templates/shopping/lists/articles.html
 msgid "Delete article?"
 msgstr "Artikel löschen?"
 
-#: src/shopping/templates/shopping/articles.html
+#: src/shopping/templates/shopping/lists/articles.html
 #, python-format
 msgid "\"%(name)s\" will be removed from suggestions. Items already on a list stay unchanged."
 msgstr "„%(name)s“ wird aus den Vorschlägen entfernt. Artikel auf einer Liste bleiben unverändert."
 
-#: src/shopping/templates/shopping/articles.html
+#: src/shopping/templates/shopping/lists/articles.html
 msgid "No articles yet"
 msgstr "Noch keine Artikel"
 
-#: src/shopping/templates/shopping/articles.html
+#: src/shopping/templates/shopping/lists/articles.html
 msgid "Articles you add to a list are saved here."
 msgstr "Artikel, die du einer Liste hinzufügst, werden hier gespeichert."
 
@@ -417,115 +417,115 @@ msgstr "Erwartet wird eine Liste oder {'recipes': [...]}."
 msgid "Recipes"
 msgstr "Rezepte"
 
-#: src/shopping/templates/shopping/recipes.html
+#: src/shopping/templates/shopping/recipes/overview.html
 msgid "New recipe"
 msgstr "Neues Rezept"
 
-#: src/shopping/templates/shopping/recipes.html
+#: src/shopping/templates/shopping/recipes/overview.html
 msgid "Create recipe"
 msgstr "Rezept erstellen"
 
-#: src/shopping/templates/shopping/recipes.html
+#: src/shopping/templates/shopping/recipes/overview.html
 msgid "Delete recipe?"
 msgstr "Rezept löschen?"
 
-#: src/shopping/templates/shopping/recipes.html
+#: src/shopping/templates/shopping/recipes/overview.html
 #, python-format
 msgid "\"%(title)s\" and its ingredients and steps will be permanently deleted."
 msgstr "„%(title)s“ wird mit Zutaten und Schritten dauerhaft gelöscht."
 
-#: src/shopping/templates/shopping/recipes.html
+#: src/shopping/templates/shopping/recipes/overview.html
 msgid "No recipes yet"
 msgstr "Noch keine Rezepte"
 
-#: src/shopping/templates/shopping/recipes.html
+#: src/shopping/templates/shopping/recipes/overview.html
 msgid "Save a recipe with ingredients and steps."
 msgstr "Speichere ein Rezept mit Zutaten und Schritten."
 
-#: src/shopping/templates/shopping/recipes.html
+#: src/shopping/templates/shopping/recipes/overview.html
 #, python-format
 msgid "%(counter)s ingredient"
 msgid_plural "%(counter)s ingredients"
 msgstr[0] "%(counter)s Zutat"
 msgstr[1] "%(counter)s Zutaten"
 
-#: src/shopping/templates/shopping/recipe_form.html
+#: src/shopping/templates/shopping/recipes/form.html
 msgid "Edit recipe"
 msgstr "Rezept bearbeiten"
 
-#: src/shopping/templates/shopping/recipe_form.html
+#: src/shopping/templates/shopping/recipes/form.html
 msgid "Used when no image file is uploaded."
 msgstr "Wird verwendet, wenn keine Bilddatei hochgeladen ist."
 
-#: src/shopping/templates/shopping/recipe_import.html
+#: src/shopping/templates/shopping/recipes/import.html
 msgid "Import recipes"
 msgstr "Rezepte importieren"
 
-#: src/shopping/templates/shopping/recipe_import.html
+#: src/shopping/templates/shopping/recipes/import.html
 msgid "Paste JSON. Every recipe is created for the signed-in user."
 msgstr "Füge JSON ein. Jedes Rezept wird für den angemeldeten Benutzer angelegt."
 
-#: src/shopping/templates/shopping/recipe_detail.html
+#: src/shopping/templates/shopping/recipes/detail.html
 msgid "Recipe actions"
 msgstr "Rezeptaktionen"
 
-#: src/shopping/templates/shopping/recipe_detail.html
+#: src/shopping/templates/shopping/recipes/detail.html
 msgid "Ingredients"
 msgstr "Zutaten"
 
-#: src/shopping/templates/shopping/recipe_detail.html
+#: src/shopping/templates/shopping/recipes/detail.html
 msgid "No ingredients yet."
 msgstr "Noch keine Zutaten."
 
-#: src/shopping/templates/shopping/recipe_detail.html
+#: src/shopping/templates/shopping/recipes/detail.html
 msgid "Steps"
 msgstr "Schritte"
 
-#: src/shopping/templates/shopping/recipe_detail.html
+#: src/shopping/templates/shopping/recipes/detail.html
 msgid "No steps yet."
 msgstr "Noch keine Schritte."
 
-#: src/shopping/templates/shopping/recipe_detail.html
+#: src/shopping/templates/shopping/recipes/detail.html
 msgid "Add to a shopping list"
 msgstr "Auf eine Einkaufsliste setzen"
 
-#: src/shopping/templates/shopping/recipe_detail.html
+#: src/shopping/templates/shopping/recipes/detail.html
 msgid "Add to list"
 msgstr "Zur Liste hinzufügen"
 
-#: src/shopping/templates/shopping/partials/recipe_line.html
+#: src/shopping/templates/shopping/recipes/partials/line.html
 msgid "Ingredient actions"
 msgstr "Zutatenaktionen"
 
-#: src/shopping/templates/shopping/partials/recipe_line.html
+#: src/shopping/templates/shopping/recipes/partials/line.html
 msgid "Step actions"
 msgstr "Schrittaktionen"
 
-#: src/shopping/templates/shopping/partials/recipe_line.html
+#: src/shopping/templates/shopping/recipes/partials/line.html
 msgid "Edit ingredient"
 msgstr "Zutat bearbeiten"
 
-#: src/shopping/templates/shopping/partials/recipe_line.html
+#: src/shopping/templates/shopping/recipes/partials/line.html
 msgid "Edit step"
 msgstr "Schritt bearbeiten"
 
-#: src/shopping/templates/shopping/partials/recipe_line.html
+#: src/shopping/templates/shopping/recipes/partials/line.html
 msgid "Delete ingredient"
 msgstr "Zutat löschen"
 
-#: src/shopping/templates/shopping/partials/recipe_line.html
+#: src/shopping/templates/shopping/recipes/partials/line.html
 msgid "Delete step"
 msgstr "Schritt löschen"
 
-#: src/shopping/templates/shopping/partials/recipe_line.html
+#: src/shopping/templates/shopping/recipes/partials/line.html
 msgid "Delete ingredient?"
 msgstr "Zutat löschen?"
 
-#: src/shopping/templates/shopping/partials/recipe_line.html
+#: src/shopping/templates/shopping/recipes/partials/line.html
 msgid "Delete step?"
 msgstr "Schritt löschen?"
 
-#: src/shopping/templates/shopping/partials/recipe_line.html
+#: src/shopping/templates/shopping/recipes/partials/line.html
 #, python-format
 msgid "\"%(text)s\" will be permanently deleted."
 msgstr "„%(text)s“ wird dauerhaft gelöscht."

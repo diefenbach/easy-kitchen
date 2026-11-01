@@ -31,7 +31,7 @@ class UserRecipeMixin(LoginRequiredMixin):
 class RecipeListView(LoginRequiredMixin, View):
     def get(self, request):
         recipes = Recipe.objects.filter(user=request.user).prefetch_related("ingredients")
-        return render(request, "shopping/recipes.html", {"recipes": recipes})
+        return render(request, "shopping/recipes/overview.html", {"recipes": recipes})
 
 
 class RecipeReorderView(LoginRequiredMixin, View):
@@ -47,7 +47,7 @@ class RecipeReorderView(LoginRequiredMixin, View):
 class RecipeCreateView(LoginRequiredMixin, CreateView):
     model = Recipe
     form_class = RecipeForm
-    template_name = "shopping/recipe_form.html"
+    template_name = "shopping/recipes/form.html"
 
     def form_valid(self, form):
         form.instance.user = self.request.user
@@ -65,7 +65,7 @@ class RecipeCreateView(LoginRequiredMixin, CreateView):
 class RecipeUpdateView(UserRecipeMixin, UpdateView):
     model = Recipe
     form_class = RecipeForm
-    template_name = "shopping/recipe_form.html"
+    template_name = "shopping/recipes/form.html"
 
     def get_success_url(self):
         if self.request.GET.get("return_to") == "overview":
@@ -80,14 +80,14 @@ class RecipeUpdateView(UserRecipeMixin, UpdateView):
 
 class RecipeDeleteView(UserRecipeMixin, DeleteView):
     model = Recipe
-    template_name = "shopping/recipe_confirm_delete.html"
+    template_name = "shopping/recipes/confirm_delete.html"
 
     def get_success_url(self):
         return reverse("shopping:recipes")
 
 
 class RecipeImportView(LoginRequiredMixin, View):
-    template_name = "shopping/recipe_import.html"
+    template_name = "shopping/recipes/import.html"
 
     def get(self, request):
         return render(request, self.template_name, {"form": RecipeImportForm()})
@@ -112,7 +112,7 @@ class RecipeImportView(LoginRequiredMixin, View):
 class RecipeDetailView(UserRecipeMixin, View):
     def get(self, request, pk):
         recipe = get_object_or_404(self.get_queryset().prefetch_related("ingredients", "steps"), pk=pk)
-        return render(request, "shopping/recipe_detail.html", self._context(request, recipe))
+        return render(request, "shopping/recipes/detail.html", self._context(request, recipe))
 
     def _context(self, request, recipe, add_to_list_form=None):
         return {
@@ -171,7 +171,7 @@ class RecipeLineCreateView(RecipeLineView):
             if request.headers.get("HX-Request"):
                 response = render(
                     request,
-                    "shopping/partials/recipe_line.html",
+                    "shopping/recipes/partials/line.html",
                     self.line_context(recipe, line),
                 )
                 empty_id = "empty-ingredients" if self.kind == "ingredient" else "empty-steps"
@@ -181,7 +181,7 @@ class RecipeLineCreateView(RecipeLineView):
         if request.headers.get("HX-Request"):
             response = render(
                 request,
-                "shopping/partials/recipe_line_form.html",
+                "shopping/recipes/partials/line_form.html",
                 {"form": form, "recipe": recipe, "kind": self.kind},
                 status=422,
             )
@@ -197,7 +197,7 @@ class RecipeLineUpdateView(RecipeLineView):
         form = RecipeLineForm(kind=self.kind, auto_id=f"edit_{line.pk}_%s", initial=self.line_initial(line))
         return render(
             request,
-            "shopping/partials/recipe_line_edit_form.html",
+            "shopping/recipes/partials/line_edit_form.html",
             self.line_context(recipe, line, form=form),
         )
 
@@ -214,12 +214,12 @@ class RecipeLineUpdateView(RecipeLineView):
                 line.save(update_fields=["text"])
             return render(
                 request,
-                "shopping/partials/recipe_line.html",
+                "shopping/recipes/partials/line.html",
                 self.line_context(recipe, line, include_modal=False),
             )
         return render(
             request,
-            "shopping/partials/recipe_line_edit_form.html",
+            "shopping/recipes/partials/line_edit_form.html",
             self.line_context(recipe, line, form=form),
             status=422,
         )
@@ -297,7 +297,7 @@ class RecipeAddToListView(LoginRequiredMixin, View):
         if not form.is_valid():
             return render(
                 request,
-                "shopping/recipe_detail.html",
+                "shopping/recipes/detail.html",
                 RecipeDetailView()._context(request, recipe, add_to_list_form=form),
                 status=422,
             )

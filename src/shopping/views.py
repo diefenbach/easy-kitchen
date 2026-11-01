@@ -24,7 +24,7 @@ class UserListMixin(LoginRequiredMixin):
 
 class ShoppingListListView(LoginRequiredMixin, ListView):
     model = ShoppingList
-    template_name = "shopping/list.html"
+    template_name = "shopping/lists/overview.html"
     context_object_name = "shopping_lists"
 
     def get_queryset(self):
@@ -43,7 +43,7 @@ class ShoppingListReorderView(LoginRequiredMixin, View):
 
 class ShoppingListDetailView(UserListMixin, DetailView):
     model = ShoppingList
-    template_name = "shopping/detail.html"
+    template_name = "shopping/lists/detail.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -56,7 +56,7 @@ class ShoppingListDetailView(UserListMixin, DetailView):
 class ShoppingListCreateView(LoginRequiredMixin, CreateView):
     model = ShoppingList
     form_class = ShoppingListForm
-    template_name = "shopping/list_form.html"
+    template_name = "shopping/lists/form.html"
 
     def form_valid(self, form):
         form.instance.user = self.request.user
@@ -72,7 +72,7 @@ class ShoppingListCreateView(LoginRequiredMixin, CreateView):
 
 
 class ShoppingListImportView(LoginRequiredMixin, View):
-    template_name = "shopping/import.html"
+    template_name = "shopping/lists/import.html"
 
     def get(self, request):
         return render(request, self.template_name, {"form": ShoppingListImportForm()})
@@ -97,7 +97,7 @@ class ShoppingListImportView(LoginRequiredMixin, View):
 class ShoppingListUpdateView(UserListMixin, UpdateView):
     model = ShoppingList
     form_class = ShoppingListForm
-    template_name = "shopping/list_form.html"
+    template_name = "shopping/lists/form.html"
 
     def get_success_url(self):
         if self.request.GET.get("return_to") == "overview":
@@ -112,7 +112,7 @@ class ShoppingListUpdateView(UserListMixin, UpdateView):
 
 class ShoppingListDeleteView(UserListMixin, DeleteView):
     model = ShoppingList
-    template_name = "shopping/list_confirm_delete.html"
+    template_name = "shopping/lists/confirm_delete.html"
     success_url = "/"
 
 
@@ -126,11 +126,11 @@ class ItemCreateView(LoginRequiredMixin, View):
             if request.headers.get("HX-Request"):
                 response = render(
                     request,
-                    "shopping/partials/item.html",
+                    "shopping/lists/partials/item.html",
                     {"item": item, "shopping_list": shopping_list, "include_modal": item.id not in existing_ids},
                 )
                 response.content += render_to_string(
-                    "shopping/partials/article_options.html",
+                    "shopping/lists/partials/article_options.html",
                     {"articles": request.user.articles.all(), "oob": True},
                     request=request,
                 ).encode()
@@ -142,7 +142,7 @@ class ItemCreateView(LoginRequiredMixin, View):
         if request.headers.get("HX-Request"):
             return render(
                 request,
-                "shopping/partials/item_form.html",
+                "shopping/lists/partials/item_form.html",
                 {"form": form, "shopping_list": shopping_list, "articles": request.user.articles.all()},
                 status=422,
             )
@@ -155,7 +155,7 @@ class ItemUpdateView(LoginRequiredMixin, View):
 
     def get(self, request, list_pk, pk):
         item = self.get_item(request, list_pk, pk)
-        return render(request, "shopping/partials/item_edit_form.html", {"item": item, "form": ShoppingItemForm(instance=item)})
+        return render(request, "shopping/lists/partials/item_edit_form.html", {"item": item, "form": ShoppingItemForm(instance=item)})
 
     def post(self, request, list_pk, pk):
         item = self.get_item(request, list_pk, pk)
@@ -163,8 +163,8 @@ class ItemUpdateView(LoginRequiredMixin, View):
         if form.is_valid():
             form.save()
             remember_article(request.user, item.name)
-            return render(request, "shopping/partials/item.html", {"item": item, "shopping_list": item.shopping_list})
-        return render(request, "shopping/partials/item_edit_form.html", {"item": item, "form": form}, status=422)
+            return render(request, "shopping/lists/partials/item.html", {"item": item, "shopping_list": item.shopping_list})
+        return render(request, "shopping/lists/partials/item_edit_form.html", {"item": item, "form": form}, status=422)
 
 
 class ItemToggleView(LoginRequiredMixin, View):
@@ -173,7 +173,7 @@ class ItemToggleView(LoginRequiredMixin, View):
         item.checked = not item.checked
         item.save(update_fields=["checked", "updated_at"])
         if request.headers.get("HX-Request"):
-            return render(request, "shopping/partials/item.html", {"item": item, "shopping_list": item.shopping_list})
+            return render(request, "shopping/lists/partials/item.html", {"item": item, "shopping_list": item.shopping_list})
         return redirect("shopping:detail", pk=list_pk)
 
 
@@ -213,7 +213,7 @@ def redirect_to_articles(request):
 
 
 class ArticleListView(LoginRequiredMixin, View):
-    template_name = "shopping/articles.html"
+    template_name = "shopping/lists/articles.html"
 
     def get(self, request):
         return render(request, self.template_name, self._context(request))
@@ -241,7 +241,7 @@ class ArticleUpdateView(LoginRequiredMixin, View):
         if form.is_valid():
             form.save()
             return redirect_to_articles(request)
-        return render(request, "shopping/articles.html", ArticleListView()._context(request, edit_form=form), status=422)
+        return render(request, "shopping/lists/articles.html", ArticleListView()._context(request, edit_form=form), status=422)
 
 
 class ArticleDeleteView(LoginRequiredMixin, View):

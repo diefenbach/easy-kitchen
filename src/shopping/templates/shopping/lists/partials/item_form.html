@@ -7,7 +7,7 @@
       {{ form.name }}
       <ul class="article-suggestions" role="listbox" hidden aria-label="{% translate 'Articles' %}"></ul>
     </div>
-    {% include "shopping/partials/article_options.html" %}
+    {% include "shopping/lists/partials/article_options.html" %}
   </div>
   <div class="col-7 col-sm-3">
     <label class="form-label" for="{{ form.quantity.id_for_label }}">{{ form.quantity.label }}</label>

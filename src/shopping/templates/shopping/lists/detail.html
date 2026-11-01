@@ -27,7 +27,7 @@
   </div>
 </header>
 <section class="card shadow-sm mb-3">
-  <div class="card-body" id="item-form">{% include "shopping/partials/item_form.html" %}</div>
+  <div class="card-body" id="item-form">{% include "shopping/lists/partials/item_form.html" %}</div>
 </section>
 <div class="d-flex flex-wrap gap-2 mb-3">
   <button id="toggle-checked-items" type="button" class="btn btn-outline-secondary btn-sm" aria-pressed="false" data-label-hide="{% translate 'Hide completed' %}" data-label-show="{% translate 'Show completed' %}">{% translate "Hide completed" %}</button>
@@ -38,7 +38,7 @@
 </div>
 <div id="items" data-reorder-url="{% url 'shopping:item-reorder' object.pk %}">
   {% for item in object.items.all %}
-    {% include "shopping/partials/item.html" %}
+    {% include "shopping/lists/partials/item.html" %}
   {% empty %}
     <p id="empty-message" class="text-center text-secondary py-4 mb-0">{% translate "No items yet." %}</p>
   {% endfor %}
