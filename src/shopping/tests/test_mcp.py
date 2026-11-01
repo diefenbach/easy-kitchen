@@ -6,8 +6,8 @@ from mcp.server.context import ServerRequestContext
 from mcp.server.mcpserver import Context
 from mcp.server.mcpserver.exceptions import ToolError
 from rest_framework.authtoken.models import Token
-from shopping.mcp_server import create_shopping_list, mcp
-from shopping.models import ShoppingList
+from shopping.mcp_server import create_recipe, create_shopping_list, mcp
+from shopping.models import Recipe, ShoppingList
 
 
 def authorization_context(token):
@@ -80,3 +80,30 @@ def test_mcp_rejects_a_missing_or_unknown_token(user):
 def test_mcp_create_tool_does_not_accept_a_user_argument():
     tool = next(tool for tool in mcp._tool_manager.list_tools() if tool.name == "create_shopping_list")
     assert set(tool.parameters["properties"]) == {"title", "date", "items"}
+
+
+@pytest.mark.django_db
+def test_mcp_creates_a_recipe_for_the_token_owner(user, other_user):
+    token = Token.objects.create(user=user)
+
+    result = create_recipe(
+        title="Pancakes",
+        description="Sunday",
+        image_url="https://example.com/pancakes.jpg",
+        ingredients=[{"name": "Flour", "quantity": "200 g"}],
+        steps=[{"text": "Fry"}],
+        ctx=authorization_context(token),
+    )
+
+    recipe = Recipe.objects.get(pk=result["id"])
+    assert recipe.user == user
+    assert result["image_url"] == "https://example.com/pancakes.jpg"
+    assert result["ingredients"][0]["name"] == "Flour"
+    assert result["ingredients"][0]["quantity"] == "200 g"
+    assert result["steps"][0]["text"] == "Fry"
+    assert Recipe.objects.filter(user=other_user).count() == 0
+
+
+def test_mcp_recipe_tool_does_not_accept_a_user_argument():
+    tool = next(tool for tool in mcp._tool_manager.list_tools() if tool.name == "create_recipe")
+    assert set(tool.parameters["properties"]) == {"title", "description", "image_url", "ingredients", "steps"}

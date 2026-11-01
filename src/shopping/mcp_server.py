@@ -16,14 +16,16 @@ from mcp.types import ToolAnnotations
 from pydantic import BaseModel, Field
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import AuthenticationFailed
+from shopping.services import create_recipe as save_recipe
 from shopping.services import create_shopping_list as save_shopping_list
 
 mcp = MCPServer(
     "EasyList",
     version="0.4.0",
     instructions=(
-        "Create a shopping list for the user authenticated by the request token. "
-        "Do not invent a user id. Confirm the title, ISO date, and items before creating the list."
+        "Create shopping lists and recipes for the user authenticated by the request token. "
+        "Do not invent a user id. Confirm the title, date, and items before creating a list. "
+        "Confirm the title, ingredients, and steps before creating a recipe."
     ),
 )
 
@@ -31,6 +33,15 @@ mcp = MCPServer(
 class ShoppingItemInput(BaseModel):
     name: Annotated[str, Field(min_length=1, max_length=255)]
     quantity: Annotated[str, Field(max_length=100)] = ""
+
+
+class IngredientInput(BaseModel):
+    name: Annotated[str, Field(min_length=1, max_length=255)]
+    quantity: Annotated[str, Field(max_length=100)] = ""
+
+
+class StepInput(BaseModel):
+    text: Annotated[str, Field(min_length=1, max_length=2000)]
 
 
 def _allowed_hosts() -> list[str]:
@@ -111,6 +122,47 @@ def create_shopping_list(
             {"id": item.id, "name": item.name, "quantity": item.quantity}
             for item in shopping_list.items.all()
         ],
+    }
+
+
+@mcp.tool(
+    annotations=ToolAnnotations(
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=False,
+    )
+)
+def create_recipe(
+    title: Annotated[str, Field(min_length=1, max_length=255)],
+    ctx: Context,
+    description: Annotated[str, Field(max_length=5000)] = "",
+    image_url: Annotated[str, Field(max_length=500)] = "",
+    ingredients: list[IngredientInput] | None = None,
+    steps: list[StepInput] | None = None,
+) -> dict:
+    """Create a recipe for the authenticated user. image_url is optional; upload the picture in the web app."""
+    user = user_from_authorization(_authorization(ctx))
+    try:
+        recipe = save_recipe(
+            user,
+            title=title,
+            description=description,
+            image_url=image_url,
+            ingredients=[IngredientInput.model_validate(item).model_dump() for item in ingredients or []],
+            steps=[StepInput.model_validate(item).model_dump() for item in steps or []],
+        )
+    except ValueError as error:
+        raise ToolError(str(error)) from None
+    return {
+        "id": recipe.id,
+        "title": recipe.title,
+        "description": recipe.description,
+        "image_url": recipe.image_url,
+        "ingredients": [
+            {"id": line.id, "name": line.name, "quantity": line.quantity} for line in recipe.ingredients.all()
+        ],
+        "steps": [{"id": line.id, "text": line.text} for line in recipe.steps.all()],
     }
 
 

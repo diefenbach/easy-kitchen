@@ -1,9 +1,56 @@
 from django.urls import path
-from . import views
+from . import recipe_views, views
 
 app_name = "shopping"
 urlpatterns = [
     path("", views.ShoppingListListView.as_view(), name="list"),
+    path("recipes/", recipe_views.RecipeListView.as_view(), name="recipes"),
+    path("recipes/new/", recipe_views.RecipeCreateView.as_view(), name="recipe-create"),
+    path("recipes/import/", recipe_views.RecipeImportView.as_view(), name="recipe-import"),
+    path("recipes/<int:pk>/", recipe_views.RecipeDetailView.as_view(), name="recipe-detail"),
+    path("recipes/<int:pk>/edit/", recipe_views.RecipeUpdateView.as_view(), name="recipe-update"),
+    path("recipes/<int:pk>/delete/", recipe_views.RecipeDeleteView.as_view(), name="recipe-delete"),
+    path("recipes/<int:pk>/add-to-list/", recipe_views.RecipeAddToListView.as_view(), name="recipe-add-to-list"),
+    path(
+        "recipes/<int:recipe_pk>/ingredients/",
+        recipe_views.IngredientCreateView.as_view(),
+        name="recipe-ingredient-create",
+    ),
+    path(
+        "recipes/<int:recipe_pk>/ingredients/reorder/",
+        recipe_views.IngredientReorderView.as_view(),
+        name="recipe-ingredient-reorder",
+    ),
+    path(
+        "recipes/<int:recipe_pk>/ingredients/<int:pk>/",
+        recipe_views.IngredientUpdateView.as_view(),
+        name="recipe-ingredient-update",
+    ),
+    path(
+        "recipes/<int:recipe_pk>/ingredients/<int:pk>/delete/",
+        recipe_views.IngredientDeleteView.as_view(),
+        name="recipe-ingredient-delete",
+    ),
+    path(
+        "recipes/<int:recipe_pk>/steps/",
+        recipe_views.StepCreateView.as_view(),
+        name="recipe-step-create",
+    ),
+    path(
+        "recipes/<int:recipe_pk>/steps/reorder/",
+        recipe_views.StepReorderView.as_view(),
+        name="recipe-step-reorder",
+    ),
+    path(
+        "recipes/<int:recipe_pk>/steps/<int:pk>/",
+        recipe_views.StepUpdateView.as_view(),
+        name="recipe-step-update",
+    ),
+    path(
+        "recipes/<int:recipe_pk>/steps/<int:pk>/delete/",
+        recipe_views.StepDeleteView.as_view(),
+        name="recipe-step-delete",
+    ),
     path("articles/", views.ArticleListView.as_view(), name="articles"),
     path("articles/<int:pk>/", views.ArticleUpdateView.as_view(), name="article-update"),
     path("articles/<int:pk>/delete/", views.ArticleDeleteView.as_view(), name="article-delete"),

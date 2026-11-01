@@ -1,11 +1,12 @@
 import json
 
 from django import forms
+from django.core.validators import URLValidator
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError as DRFValidationError
 
 from .api.serializers import ShoppingListSerializer
-from .models import ShoppingItem, ShoppingList
+from .models import Recipe, ShoppingItem, ShoppingList
 from .services import _normalized_name, save_article
 
 
@@ -73,6 +74,88 @@ class ShoppingListImportForm(forms.Form):
             raise forms.ValidationError(_("Expected a list or an object with a 'lists' array."))
 
         serializer = ShoppingListSerializer(data=records, many=True)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except DRFValidationError as error:
+            raise forms.ValidationError(_("The JSON does not match the EasyList format.")) from error
+        return serializer.validated_data
+
+
+class RecipeForm(forms.ModelForm):
+    image_url = forms.URLField(
+        label=_("Image URL"),
+        assume_scheme="https",
+        required=False,
+        max_length=500,
+        validators=[URLValidator(schemes=["http", "https"])],
+    )
+
+    class Meta:
+        model = Recipe
+        fields = ("title", "description", "image", "image_url")
+        labels = {
+            "title": _("Title"),
+            "description": _("Description"),
+            "image": _("Image"),
+        }
+        widgets = {"description": forms.Textarea(attrs={"rows": 4})}
+
+
+class RecipeLineForm(forms.Form):
+    def __init__(self, *args, kind="ingredient", **kwargs):
+        super().__init__(*args, **kwargs)
+        if kind == "ingredient":
+            self.fields["name"] = forms.CharField(label=_("Ingredient"), max_length=255)
+            self.fields["quantity"] = forms.CharField(label=_("quantity"), max_length=100, required=False)
+        else:
+            self.fields["text"] = forms.CharField(
+                label=_("Step"),
+                max_length=2000,
+                widget=forms.Textarea(attrs={"rows": 3}),
+            )
+
+
+class AddRecipeToListForm(forms.Form):
+    shopping_list = forms.ModelChoiceField(
+        label=_("Shopping list"),
+        queryset=ShoppingList.objects.none(),
+        required=False,
+        empty_label=_("Choose a list"),
+    )
+    title = forms.CharField(label=_("New list"), max_length=255, required=False)
+
+    def __init__(self, *args, user, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["shopping_list"].queryset = ShoppingList.objects.filter(user=user)
+
+    def clean(self):
+        cleaned = super().clean()
+        title = _normalized_name(cleaned.get("title") or "")
+        cleaned["title"] = title
+        if not title and not cleaned.get("shopping_list"):
+            raise forms.ValidationError(_("Choose a list or enter a title for a new one."))
+        return cleaned
+
+
+class RecipeImportForm(forms.Form):
+    json_data = forms.CharField(
+        label=_("Recipe JSON"),
+        widget=forms.Textarea(attrs={"class": "form-control font-monospace", "rows": 16}),
+    )
+
+    def clean_json_data(self):
+        from .api.serializers import RecipeSerializer
+
+        try:
+            payload = json.loads(self.cleaned_data["json_data"])
+        except json.JSONDecodeError as error:
+            raise forms.ValidationError(_("Enter valid JSON.")) from error
+
+        records = payload.get("recipes") if isinstance(payload, dict) else payload
+        if not isinstance(records, list):
+            raise forms.ValidationError(_("Expected a list or an object with a 'recipes' array."))
+
+        serializer = RecipeSerializer(data=records, many=True)
         try:
             serializer.is_valid(raise_exception=True)
         except DRFValidationError as error:

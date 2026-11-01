@@ -72,8 +72,8 @@ msgid "Log out"
 msgstr "Abmelden"
 
 #: src/shopping/templates/shopping/detail.html:7
-msgid "All lists"
-msgstr "Alle Listen"
+msgid "Shopping lists"
+msgstr "Einkaufslisten"
 
 #: src/shopping/templates/shopping/detail.html:18
 msgid "List actions"
@@ -138,11 +138,6 @@ msgstr "Abbrechen"
 #: src/shopping/templates/shopping/partials/item.html:36
 msgid "Delete permanently"
 msgstr "Endgültig löschen"
-
-#: src/shopping/templates/shopping/list.html:3
-#: src/shopping/templates/shopping/list.html:6
-msgid "My lists"
-msgstr "Meine Listen"
 
 #: src/shopping/templates/shopping/list.html:7
 #: src/shopping/templates/shopping/list_form.html:6
@@ -302,8 +297,235 @@ msgstr "Noch keine Artikel"
 msgid "Articles you add to a list are saved here."
 msgstr "Artikel, die du einer Liste hinzufügst, werden hier gespeichert."
 
-#~ msgid "Shopping list"
-#~ msgstr "Einkaufsliste"
+#: src/shopping/models.py
+msgid "description"
+msgstr "Beschreibung"
+
+#: src/shopping/models.py
+msgid "image"
+msgstr "Bild"
+
+#: src/shopping/models.py
+msgid "image URL"
+msgstr "Bild-URL"
+
+#: src/shopping/models.py
+msgid "recipe"
+msgstr "Rezept"
+
+#: src/shopping/models.py
+msgid "recipes"
+msgstr "Rezepte"
+
+#: src/shopping/models.py
+msgid "ingredient"
+msgstr "Zutat"
+
+#: src/shopping/models.py
+msgid "ingredients"
+msgstr "Zutaten"
+
+#: src/shopping/models.py
+msgid "step"
+msgstr "Schritt"
+
+#: src/shopping/models.py
+msgid "steps"
+msgstr "Schritte"
+
+#: src/shopping/forms.py
+msgid "Title"
+msgstr "Titel"
+
+#: src/shopping/forms.py
+msgid "Description"
+msgstr "Beschreibung"
+
+#: src/shopping/forms.py
+msgid "Image"
+msgstr "Bild"
+
+#: src/shopping/forms.py
+msgid "Image URL"
+msgstr "Bild-URL"
+
+#: src/shopping/forms.py
+msgid "Ingredient"
+msgstr "Zutat"
+
+#: src/shopping/forms.py
+msgid "Step"
+msgstr "Schritt"
+
+#: src/shopping/forms.py
+msgid "Shopping list"
+msgstr "Einkaufsliste"
+
+#: src/shopping/forms.py
+msgid "Choose a list"
+msgstr "Liste auswählen"
+
+#: src/shopping/forms.py
+msgid "Choose a list or enter a title for a new one."
+msgstr "Wähle eine Liste oder gib einen Titel für eine neue ein."
+
+#: src/shopping/forms.py
+msgid "Recipe JSON"
+msgstr "Rezept-JSON"
+
+#: src/shopping/forms.py
+msgid "Expected a list or an object with a 'recipes' array."
+msgstr "Erwartet wird eine Liste oder ein Objekt mit einem 'recipes'-Array."
+
+#: src/shopping/services.py
+msgid "Enter a valid image URL."
+msgstr "Gib eine gültige Bild-URL ein."
+
+#: src/shopping/services.py
+msgid "Enter a title."
+msgstr "Gib einen Titel ein."
+
+#: src/shopping/services.py
+msgid "Invalid shopping list."
+msgstr "Ungültige Einkaufsliste."
+
+#: src/shopping/recipe_views.py
+msgid "Imported %(count)d recipe."
+msgid_plural "Imported %(count)d recipes."
+msgstr[0] "%(count)d Rezept importiert."
+msgstr[1] "%(count)d Rezepte importiert."
+
+#: src/shopping/recipe_views.py
+msgid "This recipe has no ingredients."
+msgstr "Dieses Rezept hat keine Zutaten."
+
+#: src/shopping/recipe_views.py
+#, python-format
+msgid "Added %(count)d ingredient to \"%(title)s\"."
+msgid_plural "Added %(count)d ingredients to \"%(title)s\"."
+msgstr[0] "%(count)d Zutat zu „%(title)s“ hinzugefügt."
+msgstr[1] "%(count)d Zutaten zu „%(title)s“ hinzugefügt."
+
+#: src/shopping/api/views.py
+msgid "Expected a list or {'recipes': [...]}."
+msgstr "Erwartet wird eine Liste oder {'recipes': [...]}."
+
+#: src/shopping/templates/shopping/base.html
+msgid "Recipes"
+msgstr "Rezepte"
+
+#: src/shopping/templates/shopping/recipes.html
+msgid "New recipe"
+msgstr "Neues Rezept"
+
+#: src/shopping/templates/shopping/recipes.html
+msgid "Create recipe"
+msgstr "Rezept erstellen"
+
+#: src/shopping/templates/shopping/recipes.html
+msgid "Delete recipe?"
+msgstr "Rezept löschen?"
+
+#: src/shopping/templates/shopping/recipes.html
+#, python-format
+msgid "\"%(title)s\" and its ingredients and steps will be permanently deleted."
+msgstr "„%(title)s“ wird mit Zutaten und Schritten dauerhaft gelöscht."
+
+#: src/shopping/templates/shopping/recipes.html
+msgid "No recipes yet"
+msgstr "Noch keine Rezepte"
+
+#: src/shopping/templates/shopping/recipes.html
+msgid "Save a recipe with ingredients and steps."
+msgstr "Speichere ein Rezept mit Zutaten und Schritten."
+
+#: src/shopping/templates/shopping/recipes.html
+#, python-format
+msgid "%(counter)s ingredient"
+msgid_plural "%(counter)s ingredients"
+msgstr[0] "%(counter)s Zutat"
+msgstr[1] "%(counter)s Zutaten"
+
+#: src/shopping/templates/shopping/recipe_form.html
+msgid "Edit recipe"
+msgstr "Rezept bearbeiten"
+
+#: src/shopping/templates/shopping/recipe_form.html
+msgid "Used when no image file is uploaded."
+msgstr "Wird verwendet, wenn keine Bilddatei hochgeladen ist."
+
+#: src/shopping/templates/shopping/recipe_import.html
+msgid "Import recipes"
+msgstr "Rezepte importieren"
+
+#: src/shopping/templates/shopping/recipe_import.html
+msgid "Paste JSON. Every recipe is created for the signed-in user."
+msgstr "Füge JSON ein. Jedes Rezept wird für den angemeldeten Benutzer angelegt."
+
+#: src/shopping/templates/shopping/recipe_detail.html
+msgid "Recipe actions"
+msgstr "Rezeptaktionen"
+
+#: src/shopping/templates/shopping/recipe_detail.html
+msgid "Ingredients"
+msgstr "Zutaten"
+
+#: src/shopping/templates/shopping/recipe_detail.html
+msgid "No ingredients yet."
+msgstr "Noch keine Zutaten."
+
+#: src/shopping/templates/shopping/recipe_detail.html
+msgid "Steps"
+msgstr "Schritte"
+
+#: src/shopping/templates/shopping/recipe_detail.html
+msgid "No steps yet."
+msgstr "Noch keine Schritte."
+
+#: src/shopping/templates/shopping/recipe_detail.html
+msgid "Add to a shopping list"
+msgstr "Auf eine Einkaufsliste setzen"
+
+#: src/shopping/templates/shopping/recipe_detail.html
+msgid "Add to list"
+msgstr "Zur Liste hinzufügen"
+
+#: src/shopping/templates/shopping/partials/recipe_line.html
+msgid "Ingredient actions"
+msgstr "Zutatenaktionen"
+
+#: src/shopping/templates/shopping/partials/recipe_line.html
+msgid "Step actions"
+msgstr "Schrittaktionen"
+
+#: src/shopping/templates/shopping/partials/recipe_line.html
+msgid "Edit ingredient"
+msgstr "Zutat bearbeiten"
+
+#: src/shopping/templates/shopping/partials/recipe_line.html
+msgid "Edit step"
+msgstr "Schritt bearbeiten"
+
+#: src/shopping/templates/shopping/partials/recipe_line.html
+msgid "Delete ingredient"
+msgstr "Zutat löschen"
+
+#: src/shopping/templates/shopping/partials/recipe_line.html
+msgid "Delete step"
+msgstr "Schritt löschen"
+
+#: src/shopping/templates/shopping/partials/recipe_line.html
+msgid "Delete ingredient?"
+msgstr "Zutat löschen?"
+
+#: src/shopping/templates/shopping/partials/recipe_line.html
+msgid "Delete step?"
+msgstr "Schritt löschen?"
+
+#: src/shopping/templates/shopping/partials/recipe_line.html
+#, python-format
+msgid "\"%(text)s\" will be permanently deleted."
+msgstr "„%(text)s“ wird dauerhaft gelöscht."
 
 #~ msgid "Language"
 #~ msgstr "Sprache"

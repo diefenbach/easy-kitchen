@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.validators import URLValidator
 from django.db import models
 from django.db.models.functions import Lower
 from django.utils import timezone
@@ -55,3 +56,61 @@ class Article(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Recipe(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="recipes")
+    title = models.CharField(_("title"), max_length=255)
+    description = models.TextField(_("description"), blank=True)
+    image = models.ImageField(_("image"), upload_to="recipes/", blank=True)
+    image_url = models.URLField(
+        _("image URL"),
+        max_length=500,
+        blank=True,
+        validators=[URLValidator(schemes=["http", "https"])],
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-created_at", "-id")
+        verbose_name = _("recipe")
+        verbose_name_plural = _("recipes")
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def picture_url(self):
+        if self.image:
+            return self.image.url
+        return self.image_url
+
+
+class RecipeIngredient(models.Model):
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name="ingredients")
+    name = models.CharField(_("ingredient"), max_length=255)
+    quantity = models.CharField(_("quantity"), max_length=100, blank=True)
+    position = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ("position", "id")
+        verbose_name = _("ingredient")
+        verbose_name_plural = _("ingredients")
+
+    def __str__(self):
+        return self.name
+
+
+class RecipeStep(models.Model):
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name="steps")
+    text = models.TextField(_("step"))
+    position = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ("position", "id")
+        verbose_name = _("step")
+        verbose_name_plural = _("steps")
+
+    def __str__(self):
+        return self.text

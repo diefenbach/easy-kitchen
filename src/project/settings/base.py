@@ -57,6 +57,8 @@ TIME_ZONE = "Europe/Berlin"
 USE_I18N = True
 USE_TZ = True
 STATIC_URL = "/static/"
+MEDIA_URL = "/media/"
+MEDIA_ROOT = SRC_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "shopping:list"
@@ -71,7 +73,7 @@ REST_FRAMEWORK = {
 }
 SPECTACULAR_SETTINGS = {
     "TITLE": "EasyList API",
-    "DESCRIPTION": "Private shopping lists for the authenticated user.",
+    "DESCRIPTION": "Private shopping lists and recipes for the authenticated user.",
     "VERSION": "0.4.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAuthenticated"],

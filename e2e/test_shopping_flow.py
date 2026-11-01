@@ -74,8 +74,8 @@ def test_articles_return_to_the_page_they_were_opened_from(authenticated_page):
 
     page.get_by_role("link", name="EasyList").click()
     page.get_by_role("link", name="Articles").click()
-    page.get_by_role("link", name="My lists").click()
-    expect(page.get_by_role("heading", name="My lists")).to_be_visible()
+    page.locator("main").get_by_role("link", name="Shopping lists").click()
+    expect(page.get_by_role("heading", name="Shopping lists")).to_be_visible()
 
 
 @pytest.mark.e2e
@@ -196,7 +196,7 @@ def test_user_can_edit_a_list_from_the_overview(authenticated_page, user):
     card.get_by_role("link", name="Edit").click()
     page.locator("input[name=title]").fill("Neuer Titel")
     page.get_by_role("button", name="Save").click()
-    expect(page.get_by_role("heading", name="My lists")).to_be_visible()
+    expect(page.get_by_role("heading", name="Shopping lists")).to_be_visible()
 
 
 @pytest.mark.e2e
@@ -259,7 +259,7 @@ def test_interface_uses_the_test_settings_language(authenticated_page):
     page = authenticated_page
     page.set_extra_http_headers({"Accept-Language": "de"})
     page.reload()
-    expect(page.get_by_role("heading", name="My lists")).to_be_visible()
+    expect(page.get_by_role("heading", name="Shopping lists")).to_be_visible()
 
 
 @pytest.mark.e2e
@@ -284,6 +284,33 @@ def test_user_can_import_a_json_shopping_list(authenticated_page):
 
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
+def test_recipe_ingredients_can_be_added_to_a_new_list(authenticated_page):
+    page = authenticated_page
+    page.get_by_role("link", name="Recipes").click()
+    page.get_by_role("link", name="New recipe").click()
+    page.get_by_label("Title").fill("Pancakes")
+    page.get_by_label("Description").fill("Sunday breakfast")
+    page.get_by_role("button", name="Save").click()
+    expect(page.get_by_role("heading", name="Pancakes")).to_be_visible()
+
+    page.get_by_label("Ingredient").fill("Flour")
+    page.get_by_label("quantity").fill("200 g")
+    page.locator("#ingredient-form").get_by_role("button", name="Add").click()
+    expect(page.locator("#ingredients")).to_contain_text("Flour")
+    page.get_by_label("Step").fill("Mix the batter")
+    page.locator("#step-form").get_by_role("button", name="Add").click()
+    expect(page.locator("#steps")).to_contain_text("Mix the batter")
+
+    page.get_by_label("New list").fill("Weekend")
+    page.get_by_role("button", name="Add to list").click()
+    expect(page.get_by_role("heading", name="Weekend")).to_be_visible()
+    item = page.locator(".shopping-item", has_text="Flour")
+    expect(item).to_be_visible()
+    expect(item.locator(".item-quantity")).to_have_text("200 g")
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
 def test_logged_in_user_sees_swagger_ui(page, live_server, user):
     from django.contrib.staticfiles.views import serve
     from django.urls import clear_url_caches, re_path
@@ -300,7 +327,7 @@ def test_logged_in_user_sees_swagger_ui(page, live_server, user):
         page.get_by_label("Username").fill(user.username)
         page.get_by_label("Password").fill("test-password")
         page.get_by_role("button", name="Sign in").click()
-        page.get_by_role("heading", name="My lists").wait_for()
+        page.get_by_role("heading", name="Shopping lists").wait_for()
 
         page.goto(f"{live_server.url}/api/v1/")
 

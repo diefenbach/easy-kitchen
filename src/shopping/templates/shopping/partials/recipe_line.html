@@ -1,0 +1,51 @@
+{% load i18n %}
+<div class="recipe-line card mb-2" data-line-id="{{ line.id }}">
+  <div class="card-body py-2 px-3 d-flex align-items-center gap-2">
+    <button class="drag-handle btn btn-sm text-secondary icon-action" type="button" aria-label="{% translate 'Move' %}">
+      <i class="bi bi-grip-vertical" aria-hidden="true"></i>
+    </button>
+    {% if kind == "step" %}<span class="step-number text-secondary"></span>{% endif %}
+    <div class="recipe-line-text flex-grow-1">
+      {% if kind == "ingredient" %}
+        <span class="item-name">{{ line.name }}</span>
+        {% if line.quantity %}<small class="item-quantity text-secondary ms-2">{{ line.quantity }}</small>{% endif %}
+      {% else %}
+        {{ line.text }}
+      {% endif %}
+    </div>
+    <div class="btn-group" role="group" aria-label="{% if kind == 'ingredient' %}{% translate 'Ingredient actions' %}{% else %}{% translate 'Step actions' %}{% endif %}">
+      <button class="btn btn-outline-secondary icon-action" hx-get="{{ update_url }}" hx-target="closest .recipe-line" hx-swap="outerHTML" aria-label="{% if kind == 'ingredient' %}{% translate 'Edit ingredient' %}{% else %}{% translate 'Edit step' %}{% endif %}">
+        <i class="bi bi-pencil" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="btn btn-outline-danger icon-action" data-bs-toggle="modal" data-bs-target="#delete-line-modal-{{ kind }}-{{ line.id }}" aria-label="{% if kind == 'ingredient' %}{% translate 'Delete ingredient' %}{% else %}{% translate 'Delete step' %}{% endif %}">
+        <i class="bi bi-trash" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+</div>
+{% if include_modal != False %}
+<div class="modal fade" id="delete-line-modal-{{ kind }}-{{ line.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title fs-5">{% if kind == "ingredient" %}{% translate "Delete ingredient?" %}{% else %}{% translate "Delete step?" %}{% endif %}</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate 'Close' %}"></button>
+      </div>
+      <div class="modal-body">
+        {% if kind == "ingredient" %}
+          {% blocktranslate with name=line.name %}"{{ name }}" will be permanently deleted.{% endblocktranslate %}
+        {% else %}
+          {% blocktranslate with text=line.text %}"{{ text }}" will be permanently deleted.{% endblocktranslate %}
+        {% endif %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Cancel" %}</button>
+        <form method="post" action="{{ delete_url }}">
+          {% csrf_token %}
+          <button class="btn btn-danger">{% translate "Delete permanently" %}</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}

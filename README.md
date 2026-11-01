@@ -1,6 +1,6 @@
 # EasyList
 
-A private, responsive shopping list application built with Django 5.2 LTS. It uses server-rendered Django templates, HTMX for small partial updates, Bootstrap 5.3, and SortableJS exclusively for item ordering.
+A private, responsive shopping list application built with Django 5.2 LTS. It uses server-rendered Django templates, HTMX for small partial updates, Bootstrap 5.3, and SortableJS for ordering.
 
 ## Features
 
@@ -21,6 +21,13 @@ A private, responsive shopping list application built with Django 5.2 LTS. It us
 - The item field suggests those saved articles while typing.
 - The Articles page, next to Log out, lists them. Rename or delete an article there. Deleting it removes the suggestion and leaves items already on a list unchanged.
 
+### Recipes
+
+- Each user has their own recipes. A recipe has a title, a description, one picture, ordered ingredients, and ordered cooking steps.
+- The picture is a file uploaded in the app, or an image URL supplied by the API, MCP, or JSON import. The uploaded file is shown when both are present.
+- An ingredient has a name and a quantity, in the same way a shopping-list item does. A step is one block of text. Drag the handle to reorder either list.
+- **Add to list** copies those ingredients onto a shopping list that belongs to the same user. Choose an existing list, or enter a title to create one for today. The ingredient name and quantity are copied onto the new item.
+
 ### Web application
 
 - Django 5.2 templates and class-based views. HTMX updates items in place. SortableJS is used only for reordering.
@@ -28,6 +35,7 @@ A private, responsive shopping list application built with Django 5.2 LTS. It us
 - English source strings. German is the default interface language.
 - Django accounts, login, logout, and the Django admin.
 - A JSON import page at `/lists/import/` accepts the same document as the API. The format is described under [JSON import](#json-import).
+- Recipes have the same shape at `/recipes/`, including `/recipes/import/`. The format is described under [Recipe JSON](#recipe-json).
 
 ### REST API
 
@@ -36,14 +44,18 @@ A private, responsive shopping list application built with Django 5.2 LTS. It us
 - The view set creates, reads, updates, and deletes lists with nested items.
 - `POST /api/v1/shopping-lists/{id}/reorder/` accepts `{"item_ids": [3, 1, 2]}`.
 - `POST /api/v1/shopping-lists/import_json/` accepts `{"lists": [...]}` or a bare list. Each list needs `title`, `date` (`YYYY-MM-DD`), and `items` with `name` and optional `quantity`.
-- Swagger UI at `/api/v1/` and the OpenAPI schema at `/api/v1/schema/` are public. Shopping-list operations stay authenticated.
+- Recipes live at `/api/v1/recipes/` with the same token and the same user scope.
+- `POST /api/v1/recipes/{id}/reorder-ingredients/` and `POST /api/v1/recipes/{id}/reorder-steps/` accept `{"line_ids": [3, 1, 2]}`.
+- `POST /api/v1/recipes/import_json/` accepts `{"recipes": [...]}` or a bare list. The fields are described under [Recipe JSON](#recipe-json). An image file is not part of the JSON; send `image_url` or upload the file in the app.
+- Swagger UI at `/api/v1/` and the OpenAPI schema at `/api/v1/schema/` are public. List and recipe operations stay authenticated.
 - The web UI, the API, and MCP call the same operations in `shopping/services.py`.
 
 ### MCP server
 
 - A second process of the same image serves streamable HTTP at `/mcp` on port `8001`.
-- It authenticates the same DRF token. The tool `create_shopping_list` has no user argument; the list belongs to the token owner.
+- It authenticates the same DRF token. The tools `create_shopping_list` and `create_recipe` have no user argument; the record belongs to the token owner.
 - Confirm `title`, an ISO `date`, and `items` before creating a list.
+- Confirm `title`, `ingredients`, and `steps` before creating a recipe. `image_url` is optional.
 - Host and origin checks use `DJANGO_ALLOWED_HOSTS` and `DJANGO_CSRF_TRUSTED_ORIGINS`. Override them with `MCP_ALLOWED_HOSTS` and `MCP_ALLOWED_ORIGINS`.
 - In production, Nginx proxies `/mcp` to the MCP container. The process does not call the HTTP API. It uses the shared database and service layer.
 
@@ -85,6 +97,47 @@ The body is either an object with a `lists` array or the array itself. Every lis
 | `items[].position` | no | Order on the list, starting at `1`. Items keep the array order when this is omitted. |
 
 `id`, `created_at`, and `updated_at` are returned by the API and ignored on import.
+
+## Recipe JSON
+
+Open **Import JSON** on the recipe overview, or `POST` the same document to `/api/v1/recipes/import_json/` with `Authorization: Token <token>`.
+
+The body is either an object with a `recipes` array or the array itself. Every recipe in the document is created for the signed-in user.
+
+```json
+{
+  "recipes": [
+    {
+      "title": "Pancakes",
+      "description": "Sunday breakfast",
+      "image_url": "https://example.com/pancakes.jpg",
+      "ingredients": [
+        {"name": "flour", "quantity": "200 g"},
+        {"name": "eggs", "quantity": "2"}
+      ],
+      "steps": [
+        {"text": "Mix the batter."},
+        {"text": "Fry until golden."}
+      ]
+    }
+  ]
+}
+```
+
+| Field | Required | Meaning |
+| --- | --- | --- |
+| `title` | yes | Recipe title |
+| `description` | no | Longer text. An empty string is allowed. |
+| `image_url` | no | `http` or `https` address of a picture. Shown when no file has been uploaded. |
+| `ingredients` | no | Ordered ingredients. Omit it for a recipe without ingredients. |
+| `ingredients[].name` | yes | Ingredient name |
+| `ingredients[].quantity` | no | Quantity text, for example `500 g` or `2`. An empty string is allowed. |
+| `ingredients[].position` | no | Order, starting at `1`. Ingredients keep the array order when this is omitted. |
+| `steps` | no | Ordered cooking steps |
+| `steps[].text` | yes | One step |
+| `steps[].position` | no | Order, starting at `1`. Steps keep the array order when this is omitted. |
+
+`id`, `image`, `picture_url`, `created_at`, and `updated_at` are returned by the API. `image` is the uploaded file address. `picture_url` is the file when one exists, otherwise `image_url`. Import ignores those read-only fields.
 
 ## Local development
 
@@ -134,7 +187,7 @@ POSTGRES_HOST=postgres
 POSTGRES_PORT=5432
 ```
 
-The container runs migrations and `collectstatic` when it starts. The output is placed in a shared `easylist_static` volume that Nginx serves at `/static/`. Do not commit the generated `src/staticfiles/` directory. A separate media volume can be added later for uploads.
+The container runs migrations and `collectstatic` when it starts. The output is placed in a shared `easylist_static` volume that Nginx serves at `/static/`. Uploaded recipe pictures are stored in `easylist_media` and served at `/media/`. Do not commit `src/staticfiles/` or `src/media/`.
 
 The MCP server is a second process from the same image. It listens on port `8001` at `/mcp` and creates lists for whichever user owns the DRF token on that request. Publish it only through Nginx, on the internal Docker network:
 
@@ -200,4 +253,4 @@ To run browser tests only:
 uv run pytest e2e
 ```
 
-The data model is intentionally small. A future recipe feature can be added as a separate model related to `ShoppingList`.
+The web UI, the API, and MCP call the same operations in `shopping/services.py`.

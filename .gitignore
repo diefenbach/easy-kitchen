@@ -6,4 +6,5 @@ __pycache__/
 .coverage
 htmlcov/
 staticfiles/
+media/
 db.sqlite3

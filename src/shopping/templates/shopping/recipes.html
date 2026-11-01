@@ -1,0 +1,57 @@
+{% extends "shopping/base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Recipes" %} · EasyList{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h2 mb-0">{% translate "Recipes" %}</h1>
+  <div class="d-flex gap-2">
+    <a href="{% url 'shopping:recipe-import' %}" class="btn btn-outline-secondary">{% translate "Import JSON" %}</a>
+    <a href="{% url 'shopping:recipe-create' %}" class="btn btn-primary">{% translate "New recipe" %}</a>
+  </div>
+</div>
+{% if recipes %}
+  <div class="row g-3">
+    {% for recipe in recipes %}
+      <div class="col-12 col-md-6 col-lg-4">
+        <article class="card h-100 shadow-sm list-card">
+          {% if recipe.picture_url %}
+            <img class="recipe-card-picture" src="{{ recipe.picture_url }}" alt="">
+          {% endif %}
+          <div class="card-body position-relative">
+            <h2 class="h5"><a class="stretched-link text-decoration-none link-dark" href="{% url 'shopping:recipe-detail' recipe.pk %}">{{ recipe.title }}</a></h2>
+            <span class="badge text-bg-light">{% blocktranslate count counter=recipe.ingredients.count %}{{ counter }} ingredient{% plural %}{{ counter }} ingredients{% endblocktranslate %}</span>
+          </div>
+          <div class="card-footer bg-white d-flex justify-content-end gap-2">
+            <a href="{% url 'shopping:recipe-update' recipe.pk %}" class="btn btn-sm btn-outline-secondary">{% translate "Edit" %}</a>
+            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#delete-recipe-modal-{{ recipe.pk }}">{% translate "Delete" %}</button>
+          </div>
+        </article>
+      </div>
+      <div class="modal fade" id="delete-recipe-modal-{{ recipe.pk }}" tabindex="-1" aria-labelledby="delete-recipe-title-{{ recipe.pk }}" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h2 class="modal-title fs-5" id="delete-recipe-title-{{ recipe.pk }}">{% translate "Delete recipe?" %}</h2>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate 'Close' %}"></button>
+            </div>
+            <div class="modal-body">{% blocktranslate with title=recipe.title %}"{{ title }}" and its ingredients and steps will be permanently deleted.{% endblocktranslate %}</div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Cancel" %}</button>
+              <form method="post" action="{% url 'shopping:recipe-delete' recipe.pk %}">
+                {% csrf_token %}
+                <button class="btn btn-danger">{% translate "Delete permanently" %}</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="text-center py-5 bg-white rounded shadow-sm">
+    <h2 class="h4">{% translate "No recipes yet" %}</h2>
+    <p class="text-secondary">{% translate "Save a recipe with ingredients and steps." %}</p>
+    <a href="{% url 'shopping:recipe-create' %}" class="btn btn-primary">{% translate "Create recipe" %}</a>
+  </div>
+{% endif %}
+{% endblock %}

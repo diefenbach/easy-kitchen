@@ -1,0 +1,19 @@
+{% extends "shopping/base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h1 class="h3">{% translate "Delete recipe?" %}</h1>
+        <p>{% blocktranslate with title=object.title %}"{{ title }}" and its ingredients and steps will be permanently deleted.{% endblocktranslate %}</p>
+        <form method="post">
+          {% csrf_token %}
+          <button class="btn btn-danger">{% translate "Delete permanently" %}</button>
+          <a class="btn btn-outline-secondary" href="{% url 'shopping:recipe-detail' object.pk %}">{% translate "Cancel" %}</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

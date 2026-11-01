@@ -1,9 +1,9 @@
 {% extends "shopping/base.html" %}
 {% load i18n %}
-{% block title %}{% translate "My lists" %} · EasyList{% endblock %}
+{% block title %}{% translate "Shopping lists" %} · EasyList{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="h2 mb-0">{% translate "My lists" %}</h1>
+  <h1 class="h2 mb-0">{% translate "Shopping lists" %}</h1>
   <div class="d-flex gap-2">
     <a href="{% url 'shopping:import-json' %}" class="btn btn-outline-secondary">{% translate "Import JSON" %}</a>
     <a href="{% url 'shopping:create' %}" class="btn btn-primary">{% translate "New list" %}</a>

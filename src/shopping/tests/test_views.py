@@ -107,7 +107,7 @@ def test_articles_return_to_the_page_they_were_opened_from(client, user, other_u
     assert f"{articles_url}?list=" not in overview
     opened_from_overview = client.get(articles_url).content.decode()
     assert f'href="{reverse("shopping:list")}"' in opened_from_overview
-    assert "My lists" in opened_from_overview
+    assert "Shopping lists" in opened_from_overview
 
     detail = client.get(detail_url).content.decode()
     assert f'href="{articles_url}?list={shopping_list.pk}"' in detail
@@ -222,7 +222,7 @@ def test_list_detail_uses_a_minimal_icon_header(client, user, shopping_list):
     assert 'class="list-detail-header card border-0 mb-4"' in content
     assert "bi-arrow-left" in content
     assert "bi-calendar3" in content
-    assert "Shopping list" not in content
+    assert ">Shopping lists</a>" in content
     assert 'aria-label="Edit list"' in content
     assert 'aria-label="Delete list"' in content
 

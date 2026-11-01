@@ -14,9 +14,9 @@ def test_interface_is_english_by_default(client, user):
     content = response.content.decode()
     assert response.status_code == 200
     assert 'lang="en"' in content
-    assert "My lists" in content
+    assert "Shopping lists" in content
     assert "New list" in content
-    assert "Meine Listen" not in content
+    assert "Einkaufslisten" not in content
     assert reverse("shopping:create") == "/lists/new/"
 
 
@@ -28,13 +28,13 @@ def test_german_translation_is_available(client, user, shopping_list):
         overview = client.get(reverse("shopping:list"))
     overview_content = overview.content.decode()
     assert 'lang="de"' in overview_content
-    assert "Meine Listen" in overview_content
+    assert "Einkaufslisten" in overview_content
     assert "Neue Liste" in overview_content
 
     with translation.override("de"):
         detail = client.get(reverse("shopping:detail", args=[shopping_list.pk]))
     detail_content = detail.content.decode()
-    assert "Alle Listen" in detail_content
+    assert "Einkaufslisten" in detail_content
     assert "Artikel" in detail_content
     assert "Menge" in detail_content
     assert "Hinzufügen" in detail_content
@@ -74,6 +74,26 @@ def test_login_page_uses_the_active_language(client):
         german = client.get(reverse("login")).content.decode()
     assert "Anmelden" in german
     assert "Benutzername" in german
+
+
+@pytest.mark.django_db
+def test_recipe_pages_use_the_active_language(client, user):
+    client.force_login(user)
+
+    english = client.get(reverse("shopping:recipes")).content.decode()
+    assert "Recipes" in english
+    assert "New recipe" in english
+    overview = client.get(reverse("shopping:list")).content.decode()
+    assert ">Recipes</a>" in overview
+    assert f'href="{reverse("shopping:list")}">Shopping lists</a>' in overview
+
+    with translation.override("de"):
+        german = client.get(reverse("shopping:recipes")).content.decode()
+        overview = client.get(reverse("shopping:list")).content.decode()
+    assert "Rezepte" in german
+    assert "Neues Rezept" in german
+    assert ">Rezepte</a>" in overview
+    assert ">Einkaufslisten</a>" in overview
 
 
 @pytest.mark.django_db

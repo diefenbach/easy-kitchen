@@ -10,6 +10,7 @@ dependencies = [
   "drf-spectacular[sidecar]>=0.30,<0.31",
   "gunicorn>=23,<24",
   "mcp>=2.3,<2.4",
+  "pillow>=11,<12",
   "psycopg[binary]>=3.2,<4",
 ]
 

@@ -1,0 +1,25 @@
+{% load i18n %}
+<form id="{{ kind }}-form" method="post" action="{% if kind == 'ingredient' %}{% url 'shopping:recipe-ingredient-create' recipe.pk %}{% else %}{% url 'shopping:recipe-step-create' recipe.pk %}{% endif %}" hx-post="{% if kind == 'ingredient' %}{% url 'shopping:recipe-ingredient-create' recipe.pk %}{% else %}{% url 'shopping:recipe-step-create' recipe.pk %}{% endif %}" hx-target="{% if kind == 'ingredient' %}#ingredients{% else %}#steps{% endif %}" hx-swap="beforeend" hx-on::after-request="if(event.detail.successful) this.reset()" class="row g-2 align-items-end mb-3">
+  {% csrf_token %}
+  {% if kind == "ingredient" %}
+    <div class="col-12 col-sm">
+      <label class="form-label" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+      {{ form.name }}
+      {{ form.name.errors }}
+    </div>
+    <div class="col-7 col-sm-3">
+      <label class="form-label" for="{{ form.quantity.id_for_label }}">{{ form.quantity.label }}</label>
+      {{ form.quantity }}
+      {{ form.quantity.errors }}
+    </div>
+  {% else %}
+    <div class="col">
+      <label class="form-label" for="{{ form.text.id_for_label }}">{{ form.text.label }}</label>
+      {{ form.text }}
+      {{ form.text.errors }}
+    </div>
+  {% endif %}
+  <div class="col-5 col-sm-auto">
+    <button class="btn btn-primary w-100">{% translate "Add" %}</button>
+  </div>
+</form>

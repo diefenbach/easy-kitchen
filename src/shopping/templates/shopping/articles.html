@@ -4,7 +4,7 @@
 {% block content %}
 <a class="btn btn-outline-secondary btn-sm list-back-button mb-3" href="{% if return_list %}{% url 'shopping:detail' return_list.pk %}{% else %}{% url 'shopping:list' %}{% endif %}">
   <i class="bi bi-arrow-left" aria-hidden="true"></i>
-  {% if return_list %}{{ return_list.title }}{% else %}{% translate "My lists" %}{% endif %}
+  {% if return_list %}{{ return_list.title }}{% else %}{% translate "Shopping lists" %}{% endif %}
 </a>
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h1 class="h2 mb-0">{% translate "Articles" %}</h1>
