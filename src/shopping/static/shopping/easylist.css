@@ -1,3 +1,5 @@
+body:not(.editing) .edit-only { display: none !important; }
+body:not(.editing) .edit-actions > .btn { border-radius: var(--bs-border-radius) !important; }
 .list-card { transition: transform .15s ease, box-shadow .15s ease; }
 .list-card:hover { transform: translateY(-2px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.12) !important; }
 .list-back-button { --bs-btn-padding-x: .625rem; }

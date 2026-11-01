@@ -78,6 +78,7 @@ def test_articles_can_be_managed_without_changing_list_items(client, user, other
     assert 'aria-label="Save"' in content
     assert 'class="bi bi-check-lg"' in content
     assert 'aria-label="Delete"' in content
+    assert 'data-edit-toggle aria-pressed' not in content
     assert 'class="bi bi-trash"' in content
     assert ">Save</button>" not in content
     assert ">Delete</button>" not in content
@@ -208,6 +209,8 @@ def test_list_detail_uses_modal_delete_confirmations(client, user, shopping_list
     assert 'data-bs-target="#delete-list-modal"' in content
     assert 'data-bs-target="#delete-item-modal-' in content
     assert 'role="group" aria-label="Item actions"' in content
+    assert 'class="drag-handle edit-only' in content
+    assert 'class="btn-group edit-only" role="group" aria-label="Item actions"' in content
     assert "hx-confirm" not in content
 
 
@@ -225,6 +228,7 @@ def test_list_detail_uses_a_minimal_icon_header(client, user, shopping_list):
     assert ">Shopping lists</a>" in content
     assert 'aria-label="Edit list"' in content
     assert 'aria-label="Delete list"' in content
+    assert "data-edit-toggle" in content
 
 
 @pytest.mark.django_db
@@ -264,6 +268,8 @@ def test_list_overview_offers_edit_and_modal_delete_actions(client, user, shoppi
     assert 'stretched-link text-decoration-none link-dark' in content
     assert f'{reverse("shopping:update", args=[shopping_list.pk])}?return_to=overview' in content
     assert f'data-bs-target="#delete-list-modal-{shopping_list.pk}"' in content
+    assert 'data-edit-toggle' in content
+    assert 'class="card-footer bg-white d-flex flex-nowrap justify-content-end gap-2 edit-only"' in content
 
 
 @pytest.mark.django_db

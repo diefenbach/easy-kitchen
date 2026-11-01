@@ -2,9 +2,10 @@
 {% load i18n %}
 {% block title %}{% translate "Shopping lists" %} · EasyList{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
   <h1 class="h2 mb-0">{% translate "Shopping lists" %}</h1>
-  <div class="d-flex gap-2">
+  <div class="d-flex flex-wrap gap-2">
+    {% if shopping_lists %}{% include "shopping/partials/edit_mode_button.html" %}{% endif %}
     <a href="{% url 'shopping:import-json' %}" class="btn btn-outline-secondary">{% translate "Import JSON" %}</a>
     <a href="{% url 'shopping:create' %}" class="btn btn-primary">{% translate "New list" %}</a>
   </div>
@@ -19,9 +20,13 @@
             <p class="text-secondary mb-2">{{ list.date|date:"D, d. M Y" }}</p>
             <span class="badge text-bg-light">{% blocktranslate count counter=list.items.count %}{{ counter }} item{% plural %}{{ counter }} items{% endblocktranslate %}</span>
           </div>
-          <div class="card-footer bg-white d-flex justify-content-end gap-2">
-            <a href="{% url 'shopping:update' list.pk %}?return_to=overview" class="btn btn-sm btn-outline-secondary">{% translate "Edit" %}</a>
-            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#delete-list-modal-{{ list.pk }}" aria-label="{% translate 'Delete list' %}">{% translate "Delete" %}</button>
+          <div class="card-footer bg-white d-flex flex-nowrap justify-content-end gap-2 edit-only">
+            <a href="{% url 'shopping:update' list.pk %}?return_to=overview" class="btn btn-outline-secondary icon-action" aria-label="{% translate 'Edit' %}">
+              <i class="bi bi-pencil" aria-hidden="true"></i>
+            </a>
+            <button type="button" class="btn btn-outline-danger icon-action" data-bs-toggle="modal" data-bs-target="#delete-list-modal-{{ list.pk }}" aria-label="{% translate 'Delete list' %}">
+              <i class="bi bi-trash" aria-hidden="true"></i>
+            </button>
           </div>
         </article>
       </div>

@@ -30,6 +30,8 @@ def test_german_translation_is_available(client, user, shopping_list):
     assert 'lang="de"' in overview_content
     assert "Einkaufslisten" in overview_content
     assert "Neue Liste" in overview_content
+    assert "Bearbeiten" in overview_content
+    assert "Fertig" in overview_content
 
     with translation.override("de"):
         detail = client.get(reverse("shopping:detail", args=[shopping_list.pk]))

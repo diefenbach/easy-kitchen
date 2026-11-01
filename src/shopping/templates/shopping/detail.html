@@ -8,18 +8,19 @@
 </a>
 <header class="list-detail-header card border-0 mb-4">
   <div class="card-body p-4 d-flex flex-column flex-sm-row gap-3 align-items-sm-start justify-content-between">
-    <div>
+    <div class="flex-grow-1 min-w-0">
       <h1 class="h2 mb-2">{{ object.title }}</h1>
       <p class="list-detail-date mb-0">
         <i class="bi bi-calendar3" aria-hidden="true"></i>
         {{ object.date|date:"D, d. M Y" }}
       </p>
     </div>
-    <div class="btn-group" role="group" aria-label="{% translate 'List actions' %}">
-      <a href="{% url 'shopping:update' object.pk %}" class="btn btn-outline-secondary icon-action" aria-label="{% translate 'Edit list' %}">
+    <div class="btn-group edit-actions flex-shrink-0 align-self-start" role="group" aria-label="{% translate 'List actions' %}">
+      {% include "shopping/partials/edit_mode_button.html" %}
+      <a href="{% url 'shopping:update' object.pk %}" class="btn btn-outline-secondary icon-action edit-only" aria-label="{% translate 'Edit list' %}">
         <i class="bi bi-pencil" aria-hidden="true"></i>
       </a>
-      <button type="button" class="btn btn-outline-danger icon-action" data-bs-toggle="modal" data-bs-target="#delete-list-modal" aria-label="{% translate 'Delete list' %}">
+      <button type="button" class="btn btn-outline-danger icon-action edit-only" data-bs-toggle="modal" data-bs-target="#delete-list-modal" aria-label="{% translate 'Delete list' %}">
         <i class="bi bi-trash" aria-hidden="true"></i>
       </button>
     </div>

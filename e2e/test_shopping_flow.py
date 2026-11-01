@@ -4,6 +4,10 @@ import pytest
 from playwright.sync_api import expect
 
 
+def show_edit_actions(page):
+    page.get_by_role("button", name="Edit", exact=True).click()
+
+
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
 def test_saved_articles_are_suggested_and_can_be_renamed(authenticated_page):
@@ -185,6 +189,79 @@ def test_user_can_hide_and_reset_completed_items(authenticated_page, user):
 
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
+def test_edit_mode_starts_off_and_resets_when_the_page_reloads(authenticated_page, user):
+    from shopping.models import ShoppingItem, ShoppingList
+    from shopping.services import create_recipe
+
+    shopping_list = ShoppingList.objects.create(user=user, title="Wocheneinkauf")
+    ShoppingItem.objects.create(shopping_list=shopping_list, name="Tofu", position=1)
+    recipe_title = "Asiatische Erdnuss-Ingwer-Pfanne mit knusprigem Tofu"
+    create_recipe(
+        user,
+        title=recipe_title,
+        description="Eine würzige, vegane Gemüsepfanne mit knusprigem Tofu, Edamame und cremiger Sauce.",
+        ingredients=[{"name": "Flour", "quantity": "200 g"}],
+    )
+    page = authenticated_page
+    page.reload()
+
+    card = page.locator(".list-card", has_text="Wocheneinkauf")
+    overview_edit = card.get_by_role("link", name="Edit", exact=True, include_hidden=True)
+    expect(overview_edit).to_be_hidden()
+    show_edit_actions(page)
+    expect(overview_edit).to_be_visible()
+    page.get_by_role("button", name="Done", exact=True).click()
+    expect(overview_edit).to_be_hidden()
+
+    page.get_by_role("link", name="Wocheneinkauf").click()
+    item = page.locator(".shopping-item", has_text="Tofu")
+    move = item.get_by_role("button", name="Move", include_hidden=True)
+    edit_item = item.get_by_role("button", name="Edit item", include_hidden=True)
+    expect(move).to_be_hidden()
+    expect(edit_item).to_be_hidden()
+    expect(item.get_by_role("button", name="Toggle completed")).to_be_visible()
+    expect(page.get_by_role("button", name="Add")).to_be_visible()
+    show_edit_actions(page)
+    expect(move).to_be_visible()
+    expect(edit_item).to_be_visible()
+    expect(page.get_by_role("link", name="Edit list")).to_be_visible()
+    page.reload()
+    expect(move).to_be_hidden()
+
+    page.get_by_role("link", name="Recipes").click()
+    recipe_card = page.locator(".list-card", has_text=recipe_title)
+    recipe_edit = recipe_card.get_by_role("link", name="Edit", exact=True, include_hidden=True)
+    expect(recipe_edit).to_be_hidden()
+    show_edit_actions(page)
+    expect(recipe_edit).to_be_visible()
+
+    page.get_by_role("link", name=recipe_title).click()
+    line = page.locator(".recipe-line", has_text="Flour")
+    expect(line.get_by_role("button", name="Move", include_hidden=True)).to_be_hidden()
+    expect(line.get_by_role("button", name="Edit ingredient", include_hidden=True)).to_be_hidden()
+    ingredient_add = page.locator("#ingredient-form").get_by_role("button", name="Add", include_hidden=True)
+    step_add = page.locator("#step-form").get_by_role("button", name="Add", include_hidden=True)
+    expect(ingredient_add).to_be_hidden()
+    expect(step_add).to_be_hidden()
+    expect(page.get_by_role("button", name="Add to list")).to_be_visible()
+    page.set_viewport_size({"width": 768, "height": 900})
+    show_edit_actions(page)
+    expect(line.get_by_role("button", name="Move")).to_be_visible()
+    expect(ingredient_add).to_be_visible()
+    expect(step_add).to_be_visible()
+    done = page.get_by_role("button", name="Done", exact=True)
+    edit_recipe = page.get_by_role("link", name="Edit recipe")
+    delete_recipe = page.get_by_role("button", name="Delete recipe")
+    done_box = done.bounding_box()
+    edit_box = edit_recipe.bounding_box()
+    delete_box = delete_recipe.bounding_box()
+    assert abs(done_box["y"] - edit_box["y"]) < 8
+    assert abs(edit_box["y"] - delete_box["y"]) < 8
+    assert done_box["x"] < edit_box["x"] < delete_box["x"]
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
 def test_user_can_edit_a_list_from_the_overview(authenticated_page, user):
     from shopping.models import ShoppingList
 
@@ -193,7 +270,8 @@ def test_user_can_edit_a_list_from_the_overview(authenticated_page, user):
     page.reload()
     card = page.locator(".list-card", has_text="Alter Titel")
 
-    card.get_by_role("link", name="Edit").click()
+    show_edit_actions(page)
+    card.get_by_role("link", name="Edit", exact=True).click()
     page.locator("input[name=title]").fill("Neuer Titel")
     page.get_by_role("button", name="Save").click()
     expect(page.get_by_role("heading", name="Shopping lists")).to_be_visible()
@@ -208,6 +286,7 @@ def test_user_can_edit_a_list_from_its_detail_page(authenticated_page, user):
     page = authenticated_page
     page.goto(f"{page.url.rstrip('/')}/lists/{shopping_list.pk}/")
 
+    show_edit_actions(page)
     page.get_by_role("link", name="Edit list").click()
     page.locator("input[name=title]").fill("Neuer Titel")
     page.get_by_role("button", name="Save").click()
@@ -225,6 +304,7 @@ def test_user_can_delete_a_list_from_the_overview_modal(authenticated_page, user
     page.reload()
 
     card = page.locator(".list-card", has_text="Zu löschen")
+    show_edit_actions(page)
     card.get_by_role("button", name="Delete list").click()
     dialog = page.get_by_role("dialog")
     expect(dialog).to_be_visible()
@@ -243,6 +323,7 @@ def test_user_can_reorder_items_with_drag_and_drop(authenticated_page, user):
     page = authenticated_page
     page.goto(f"{page.url.rstrip('/')}/lists/{shopping_list.pk}/")
 
+    show_edit_actions(page)
     tofu_handle = page.locator(f'.shopping-item[data-item-id="{tofu.pk}"]').get_by_role("button", name="Move")
     rice_handle = page.locator(f'.shopping-item[data-item-id="{rice.pk}"]').get_by_role("button", name="Move")
     with page.expect_response(lambda response: "/reorder/" in response.url and response.request.method == "POST"):
@@ -293,6 +374,7 @@ def test_recipe_ingredients_can_be_added_to_a_new_list(authenticated_page):
     page.get_by_role("button", name="Save").click()
     expect(page.get_by_role("heading", name="Pancakes")).to_be_visible()
 
+    show_edit_actions(page)
     page.get_by_label("Ingredient").fill("Flour")
     page.get_by_label("quantity").fill("200 g")
     page.locator("#ingredient-form").get_by_role("button", name="Add").click()

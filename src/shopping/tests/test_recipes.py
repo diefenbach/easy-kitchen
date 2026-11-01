@@ -74,7 +74,10 @@ def test_recipe_pages_are_private_and_can_send_ingredients_to_a_new_list(client,
 
     detail = client.get(reverse("shopping:recipe-detail", args=[recipe.pk]))
     assert detail.status_code == 200
-    assert "Pancakes" in detail.content.decode()
+    detail_content = detail.content.decode()
+    assert "Pancakes" in detail_content
+    assert "data-edit-toggle" in detail_content
+    assert detail_content.count('class="row g-2 align-items-end mb-3 edit-only"') == 2
 
     added = client.post(
         reverse("shopping:recipe-ingredient-create", args=[recipe.pk]),
@@ -82,7 +85,9 @@ def test_recipe_pages_are_private_and_can_send_ingredients_to_a_new_list(client,
         HTTP_HX_REQUEST="true",
     )
     assert added.status_code == 200
-    assert "Flour" in added.content.decode()
+    added_content = added.content.decode()
+    assert "Flour" in added_content
+    assert 'class="btn-group edit-only" role="group" aria-label="Ingredient actions"' in added_content
     client.post(reverse("shopping:recipe-step-create", args=[recipe.pk]), {"text": "Mix"})
 
     sent = client.post(reverse("shopping:recipe-add-to-list", args=[recipe.pk]), {"title": "Weekend"})

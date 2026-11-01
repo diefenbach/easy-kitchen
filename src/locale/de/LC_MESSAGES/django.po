@@ -196,6 +196,9 @@ msgstr[1] "%(counter)s Artikel"
 msgid "Edit"
 msgstr "Bearbeiten"
 
+msgid "Done"
+msgstr "Fertig"
+
 #: src/shopping/templates/shopping/list.html:21
 msgid "Delete"
 msgstr "Löschen"

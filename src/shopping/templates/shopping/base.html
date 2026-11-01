@@ -47,6 +47,16 @@
       const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]")?.value;
       if (csrfToken) event.detail.headers["X-CSRFToken"] = csrfToken;
     });
+    document.querySelectorAll("[data-edit-toggle]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const editing = document.body.classList.toggle("editing");
+        const icon = button.querySelector("i");
+        button.setAttribute("aria-pressed", editing ? "true" : "false");
+        button.setAttribute("aria-label", editing ? button.dataset.labelOn : button.dataset.labelOff);
+        icon.classList.remove(editing ? icon.dataset.iconOff : icon.dataset.iconOn);
+        icon.classList.add(editing ? icon.dataset.iconOn : icon.dataset.iconOff);
+      });
+    });
   </script>
   {% block scripts %}{% endblock %}
 </body>

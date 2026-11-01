@@ -1,5 +1,5 @@
 {% load i18n %}
-<form id="{{ kind }}-form" method="post" action="{% if kind == 'ingredient' %}{% url 'shopping:recipe-ingredient-create' recipe.pk %}{% else %}{% url 'shopping:recipe-step-create' recipe.pk %}{% endif %}" hx-post="{% if kind == 'ingredient' %}{% url 'shopping:recipe-ingredient-create' recipe.pk %}{% else %}{% url 'shopping:recipe-step-create' recipe.pk %}{% endif %}" hx-target="{% if kind == 'ingredient' %}#ingredients{% else %}#steps{% endif %}" hx-swap="beforeend" hx-on::after-request="if(event.detail.successful) this.reset()" class="row g-2 align-items-end mb-3">
+<form id="{{ kind }}-form" method="post" action="{% if kind == 'ingredient' %}{% url 'shopping:recipe-ingredient-create' recipe.pk %}{% else %}{% url 'shopping:recipe-step-create' recipe.pk %}{% endif %}" hx-post="{% if kind == 'ingredient' %}{% url 'shopping:recipe-ingredient-create' recipe.pk %}{% else %}{% url 'shopping:recipe-step-create' recipe.pk %}{% endif %}" hx-target="{% if kind == 'ingredient' %}#ingredients{% else %}#steps{% endif %}" hx-swap="beforeend" hx-on::after-request="if(event.detail.successful) this.reset()" class="row g-2 align-items-end mb-3 edit-only">
   {% csrf_token %}
   {% if kind == "ingredient" %}
     <div class="col-12 col-sm">
