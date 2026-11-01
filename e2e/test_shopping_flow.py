@@ -398,6 +398,42 @@ def test_user_can_import_a_json_shopping_list(authenticated_page):
 
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
+def test_user_can_edit_a_recipe_from_the_overview(authenticated_page, user):
+    from shopping.services import create_recipe
+
+    create_recipe(user, title="Alter Titel")
+    page = authenticated_page
+    page.get_by_role("link", name="Recipes").click()
+    card = page.locator(".list-card", has_text="Alter Titel")
+
+    show_edit_actions(page)
+    card.get_by_role("link", name="Edit", exact=True).click()
+    page.get_by_label("Title").fill("Neuer Titel")
+    page.get_by_role("button", name="Save").click()
+
+    expect(page.get_by_role("heading", name="Recipes")).to_be_visible()
+    expect(page.get_by_role("link", name="Neuer Titel")).to_be_visible()
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
+def test_user_can_edit_a_recipe_from_its_detail_page(authenticated_page, user):
+    from shopping.services import create_recipe
+
+    recipe = create_recipe(user, title="Alter Titel")
+    page = authenticated_page
+    page.goto(f"{page.url.rstrip('/')}/recipes/{recipe.pk}/")
+
+    show_edit_actions(page)
+    page.get_by_role("link", name="Edit recipe").click()
+    page.get_by_label("Title").fill("Neuer Titel")
+    page.get_by_role("button", name="Save").click()
+
+    expect(page.get_by_role("heading", name="Neuer Titel")).to_be_visible()
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
 def test_recipe_ingredients_can_be_added_to_a_new_list(authenticated_page):
     page = authenticated_page
     page.get_by_role("link", name="Recipes").click()

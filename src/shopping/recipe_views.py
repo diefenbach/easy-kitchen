@@ -68,6 +68,8 @@ class RecipeUpdateView(UserRecipeMixin, UpdateView):
     template_name = "shopping/recipe_form.html"
 
     def get_success_url(self):
+        if self.request.GET.get("return_to") == "overview":
+            return reverse("shopping:recipes")
         return reverse("shopping:recipe-detail", kwargs={"pk": self.object.pk})
 
     def get_context_data(self, **kwargs):

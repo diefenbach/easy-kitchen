@@ -71,6 +71,7 @@ def test_a_new_recipe_is_placed_first_and_the_overview_can_be_reordered(client, 
     overview = client.get(reverse("shopping:recipes")).content.decode()
     assert 'data-card-reorder' in overview
     assert 'aria-label="Move"' in overview
+    assert f'{reverse("shopping:recipe-update", args=[second.pk])}?return_to=overview' in overview
     rejected = client.post(
         reverse("shopping:recipe-reorder"),
         json.dumps({"recipe_ids": [first.pk, foreign.pk]}),
@@ -86,6 +87,55 @@ def test_a_new_recipe_is_placed_first_and_the_overview_can_be_reordered(client, 
     assert list(user.recipes.values_list("title", flat=True)) == ["First", "Second"]
     reorder_recipes(user, [second.pk, first.pk])
     assert list(user.recipes.values_list("title", flat=True)) == ["Second", "First"]
+
+
+@pytest.mark.django_db
+def test_edit_from_overview_returns_to_recipe_overview(client, user):
+    recipe = create_recipe(user, title="Pancakes")
+    client.force_login(user)
+
+    response = client.post(
+        f'{reverse("shopping:recipe-update", args=[recipe.pk])}?return_to=overview',
+        {"title": "Pfannkuchen", "description": "", "image_url": ""},
+    )
+
+    assert response.url == reverse("shopping:recipes")
+
+
+@pytest.mark.django_db
+def test_edit_from_detail_returns_to_recipe_detail(client, user):
+    recipe = create_recipe(user, title="Pancakes")
+    client.force_login(user)
+
+    response = client.post(
+        reverse("shopping:recipe-update", args=[recipe.pk]),
+        {"title": "Pfannkuchen", "description": "", "image_url": ""},
+    )
+
+    assert response.url == reverse("shopping:recipe-detail", args=[recipe.pk])
+
+
+@pytest.mark.django_db
+def test_edit_from_overview_cancels_to_recipe_overview(client, user):
+    recipe = create_recipe(user, title="Pancakes")
+    client.force_login(user)
+
+    response = client.get(f'{reverse("shopping:recipe-update", args=[recipe.pk])}?return_to=overview')
+
+    assert f'<a class="btn btn-outline-secondary" href="{reverse("shopping:recipes")}">Cancel</a>' in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_edit_from_detail_cancels_to_recipe_detail(client, user):
+    recipe = create_recipe(user, title="Pancakes")
+    client.force_login(user)
+
+    response = client.get(reverse("shopping:recipe-update", args=[recipe.pk]))
+
+    assert (
+        f'<a class="btn btn-outline-secondary" href="{reverse("shopping:recipe-detail", args=[recipe.pk])}">Cancel</a>'
+        in response.content.decode()
+    )
 
 
 @pytest.mark.django_db

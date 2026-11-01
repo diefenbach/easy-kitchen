@@ -26,7 +26,7 @@
             <button class="drag-handle btn btn-sm text-secondary icon-action" type="button" aria-label="{% translate 'Move' %}">
               <i class="bi bi-grip-vertical" aria-hidden="true"></i>
             </button>
-            <a href="{% url 'shopping:recipe-update' recipe.pk %}" class="btn btn-outline-secondary icon-action ms-auto" aria-label="{% translate 'Edit' %}">
+            <a href="{% url 'shopping:recipe-update' recipe.pk %}?return_to=overview" class="btn btn-outline-secondary icon-action ms-auto" aria-label="{% translate 'Edit' %}">
               <i class="bi bi-pencil" aria-hidden="true"></i>
             </a>
             <button type="button" class="btn btn-outline-danger icon-action" data-bs-toggle="modal" data-bs-target="#delete-recipe-modal-{{ recipe.pk }}" aria-label="{% translate 'Delete recipe' %}">
