@@ -35,7 +35,7 @@
         <form method="post" novalidate>
           {% csrf_token %}
           <div class="mb-3">
-            {{ form.json_data.label_tag }}
+            <label class="form-label" for="{{ form.json_data.id_for_label }}">{{ form.json_data.label }}</label>
             {{ form.json_data }}
             {% for error in form.json_data.errors %}
               <div class="invalid-feedback d-block">{{ error }}</div>
