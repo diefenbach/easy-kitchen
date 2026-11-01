@@ -273,6 +273,7 @@ def test_list_overview_offers_edit_and_modal_delete_actions(client, user, shoppi
     assert 'data-edit-toggle' in content
     assert 'data-card-reorder' in content
     assert 'aria-label="Move"' in content
+    assert ">Move</span>" not in content
     assert 'class="card-footer bg-white d-flex flex-nowrap align-items-center gap-2 edit-only"' in content
     assert 'bi-upload' in content
     assert 'bi-plus-lg' in content

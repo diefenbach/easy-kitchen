@@ -3,7 +3,6 @@
   <div class="card-body py-2 px-3 d-flex align-items-center gap-2">
     <button class="drag-handle edit-only btn btn-sm text-secondary" type="button" aria-label="{% translate 'Move' %}">
       <i class="bi bi-grip-vertical" aria-hidden="true"></i>
-      <span class="d-none d-md-inline">{% translate "Move" %}</span>
     </button>
     <button class="btn btn-sm p-0 border-0 bg-transparent" hx-post="{% url 'shopping:item-toggle' shopping_list.pk item.pk %}" hx-target="closest .shopping-item" hx-swap="outerHTML" aria-label="{% translate 'Toggle completed' %}">
       <span class="checkmark">{% if item.checked %}☑{% else %}☐{% endif %}</span>

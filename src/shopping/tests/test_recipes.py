@@ -129,6 +129,7 @@ def test_a_new_recipe_is_placed_first_and_the_overview_can_be_reordered(client, 
     overview = client.get(reverse("shopping:recipes")).content.decode()
     assert 'data-card-reorder' in overview
     assert 'aria-label="Move"' in overview
+    assert ">Move</span>" not in overview
     assert f'{reverse("shopping:recipe-update", args=[second.pk])}?return_to=overview' in overview
     assert "bi-upload" in overview
     assert "bi-plus-lg" in overview

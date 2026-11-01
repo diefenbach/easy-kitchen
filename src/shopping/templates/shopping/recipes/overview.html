@@ -30,7 +30,6 @@
           <div class="card-footer bg-white d-flex flex-nowrap align-items-center gap-2 edit-only position-relative z-2">
             <button class="drag-handle btn btn-sm text-secondary" type="button" aria-label="{% translate 'Move' %}">
               <i class="bi bi-grip-vertical" aria-hidden="true"></i>
-              <span class="d-none d-md-inline">{% translate "Move" %}</span>
             </button>
             <a href="{% url 'shopping:recipe-update' recipe.pk %}?return_to=overview" class="btn btn-outline-secondary ms-auto" aria-label="{% translate 'Edit' %}">
               <i class="bi bi-pencil" aria-hidden="true"></i>
