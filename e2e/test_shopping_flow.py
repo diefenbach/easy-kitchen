@@ -20,7 +20,7 @@ def test_user_can_create_and_check_an_item(authenticated_page):
 
     item = page.locator(".shopping-item", has_text="Naturtofu")
     item.wait_for()
-    item.get_by_role("button", name="Toggle completed").click()
+    item.get_by_role("button", name="Naturtofu").click()
     expect(item).to_have_class(re.compile(r".*\bchecked\b.*"))
 
 
