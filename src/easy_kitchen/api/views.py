@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import extend_schema
 from rest_framework import status, viewsets
@@ -22,7 +24,7 @@ from .serializers import (
 )
 
 
-def _import_records(payload, key):
+def _import_records(payload: Any, key: str) -> list[Any] | None:
     """Accept a bare list or an object whose key holds the records."""
     if isinstance(payload, list):
         return payload

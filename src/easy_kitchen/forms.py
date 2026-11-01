@@ -1,4 +1,5 @@
 import json
+from typing import Any, Literal
 
 from django import forms
 from django.core.validators import URLValidator
@@ -92,7 +93,7 @@ _RECIPE_KEYS = {
 _LIST_KEYS = {"items", "date", "icon"}
 
 
-def _import_kind(record):
+def _import_kind(record: object) -> Literal["list", "recipe"] | None:
     """Classify one record as a list or a recipe. Mixed signals and unknown records return None."""
     if not isinstance(record, dict):
         return None
@@ -107,7 +108,7 @@ def _import_kind(record):
     return None
 
 
-def _split_import_payload(payload):
+def _split_import_payload(payload: object) -> tuple[list[Any] | None, list[Any] | None] | None:
     """Split wrapped or bare JSON into list and recipe records. A title alone is a recipe."""
     if isinstance(payload, dict) and {"lists", "recipes"} & payload.keys():
         lists = payload["lists"] if "lists" in payload else None
@@ -141,7 +142,7 @@ class ImportForm(forms.Form):
         widget=forms.Textarea(attrs={"class": "form-control font-monospace", "rows": 16}),
     )
 
-    def clean_json_data(self):
+    def clean_json_data(self) -> dict[str, Any]:
         """Parse the JSON and validate each side with the API serializers."""
         try:
             payload = json.loads(self.cleaned_data["json_data"])
@@ -159,7 +160,7 @@ class ImportForm(forms.Form):
             "recipes": self._validate(RecipeSerializer, recipes),
         }
 
-    def _validate(self, serializer_class, records):
+    def _validate(self, serializer_class: type[Any], records: list[Any] | None) -> list[Any] | None:
         """Return validated records, or None when that side of the import was omitted."""
         if records is None:
             return None

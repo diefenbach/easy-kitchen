@@ -4,6 +4,7 @@ from typing import Annotated
 
 import django
 from django.conf import settings
+from django.contrib.auth.models import AbstractBaseUser
 
 if not settings.configured:
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings.production")
@@ -86,7 +87,7 @@ def _authorization(ctx: Context) -> str | None:
     return request.headers.get("authorization")
 
 
-def user_from_authorization(authorization: str | None):
+def user_from_authorization(authorization: str | None) -> AbstractBaseUser:
     """Resolve the EasyKitchen user from an Authorization: Token header."""
     message = "Send the user's EasyKitchen token in the Authorization header: Token <token>."
     if not authorization or not authorization.lower().startswith("token "):
