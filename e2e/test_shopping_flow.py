@@ -251,7 +251,7 @@ def test_edit_mode_starts_off_and_resets_when_the_page_reloads(authenticated_pag
     expect(step_add).to_be_visible()
     done = page.get_by_role("button", name="Done", exact=True)
     edit_recipe = page.get_by_role("link", name="Edit recipe")
-    delete_recipe = page.get_by_role("button", name="Delete recipe")
+    delete_recipe = page.get_by_role("button", name="Delete", exact=True)
     done_box = done.bounding_box()
     edit_box = edit_recipe.bounding_box()
     delete_box = delete_recipe.bounding_box()
