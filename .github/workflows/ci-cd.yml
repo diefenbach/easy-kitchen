@@ -68,10 +68,13 @@ jobs:
       - uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
-      - run: |
+      - name: Deploy over SSH
+        run: |
+          set -eux
           mkdir -p ~/.ssh
           printf '%s\n' "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
           scp .github/scripts/deploy.sh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/easykitchen-deploy.sh"
-          ssh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+          ssh -o ServerAliveInterval=15 \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             "chmod +x /tmp/easykitchen-deploy.sh && DEPLOY_PATH='${{ secrets.DEPLOY_PATH }}' /tmp/easykitchen-deploy.sh '${{ needs.build.outputs.image }}'"
