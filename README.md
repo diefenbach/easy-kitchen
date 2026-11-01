@@ -4,13 +4,87 @@ A private, responsive shopping list application built with Django 5.2 LTS. It us
 
 ## Features
 
-- Multiple lists per user: title, date, items, quantity, completion state, and drag-and-drop ordering
-- English-first source strings with German as the default interface language
-- Built-in Django authentication and Django admin
-- REST API at `/api/v1/` using token authentication and strictly user-scoped queries
-- JSON import: `POST /api/v1/shopping-lists/import_json/`
-- Gunicorn container for a reverse-proxying Nginx; PostgreSQL configured through `POSTGRES_*` variables
-- pytest coverage for models, web UI, API, and permissions
+### Shopping lists
+
+- Each user has their own lists. A list has a title, a date, and ordered items.
+- An item has a name, a quantity, and a completed state. Drag the handle to reorder it.
+- Check an item off with the checkbox or by tapping its name. The name and the quantity are then struck through.
+- Hide completed items, or mark every completed item as open again.
+- Adding an item whose name already exists updates that row. Matching ignores case and extra spaces.
+- Quantities with the same unit are added. `1 l` plus `2 l` becomes `3 l`, and `6` plus `2` becomes `8`. A decimal comma is accepted, so `1,5 kg` plus `0,5 kg` becomes `2 kg`.
+- A different unit stays beside the others. `1 l` plus `500 ml` stays `1 l, 500 ml`, and `2 packs` plus `2` stays `2 packs, 2`.
+- Adding the item again clears its completed state, so it returns to the open list.
+
+### Articles
+
+- Every item name is saved once per user as an article.
+- The item field suggests those saved articles while typing.
+- The Articles page, next to Log out, lists them. Rename or delete an article there. Deleting it removes the suggestion and leaves items already on a list unchanged.
+
+### Web application
+
+- Django 5.2 templates and class-based views. HTMX updates items in place. SortableJS is used only for reordering.
+- Bootstrap 5.3, with touch targets large enough for a phone.
+- English source strings. German is the default interface language.
+- Django accounts, login, logout, and the Django admin.
+- A JSON import page at `/lists/import/` accepts the same document as the API. The format is described under [JSON import](#json-import).
+
+### REST API
+
+- Base path: `/api/v1/shopping-lists/`.
+- Authentication is `Authorization: Token <token>`, not Bearer. Every query is limited to the token owner.
+- The view set creates, reads, updates, and deletes lists with nested items.
+- `POST /api/v1/shopping-lists/{id}/reorder/` accepts `{"item_ids": [3, 1, 2]}`.
+- `POST /api/v1/shopping-lists/import_json/` accepts `{"lists": [...]}` or a bare list. Each list needs `title`, `date` (`YYYY-MM-DD`), and `items` with `name` and optional `quantity`.
+- Swagger UI at `/api/v1/` and the OpenAPI schema at `/api/v1/schema/` are public. Shopping-list operations stay authenticated.
+- The web UI, the API, and MCP call the same operations in `shopping/services.py`.
+
+### MCP server
+
+- A second process of the same image serves streamable HTTP at `/mcp` on port `8001`.
+- It authenticates the same DRF token. The tool `create_shopping_list` has no user argument; the list belongs to the token owner.
+- Confirm `title`, an ISO `date`, and `items` before creating a list.
+- Host and origin checks use `DJANGO_ALLOWED_HOSTS` and `DJANGO_CSRF_TRUSTED_ORIGINS`. Override them with `MCP_ALLOWED_HOSTS` and `MCP_ALLOWED_ORIGINS`.
+- In production, Nginx proxies `/mcp` to the MCP container. The process does not call the HTTP API. It uses the shared database and service layer.
+
+### Runtime
+
+- PostgreSQL is configured with `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, and `POSTGRES_PORT`.
+- The container runs Gunicorn on port `8000`, applies migrations, and collects static files into the shared Nginx volume.
+- pytest covers models, services, views, API, permissions, translations, and browser flows.
+
+## JSON import
+
+Open **Import JSON** on the list overview, or `POST` the same document to `/api/v1/shopping-lists/import_json/` with `Authorization: Token <token>`.
+
+The body is either an object with a `lists` array or the array itself. Every list in the document is created for the signed-in user.
+
+```json
+{
+  "lists": [
+    {
+      "title": "Weekend shop",
+      "date": "2026-11-01",
+      "items": [
+        {"name": "Oat milk", "quantity": "2 l"},
+        {"name": "Apples", "quantity": "1 kg", "checked": false}
+      ]
+    }
+  ]
+}
+```
+
+| Field | Required | Meaning |
+| --- | --- | --- |
+| `title` | yes | List title |
+| `date` | yes | Shopping date, `YYYY-MM-DD` |
+| `items` | no | Items on that list. Omit it for an empty list. |
+| `items[].name` | yes | Item name |
+| `items[].quantity` | no | Quantity text, for example `500 g` or `2 pieces`. An empty string is allowed. |
+| `items[].checked` | no | `true` when the item is already completed. Defaults to `false`. |
+| `items[].position` | no | Order on the list, starting at `1`. Items keep the array order when this is omitted. |
+
+`id`, `created_at`, and `updated_at` are returned by the API and ignored on import.
 
 ## Local development
 
@@ -97,7 +171,7 @@ curl -X POST -H "Authorization: Token <token>" -H "Content-Type: application/jso
   http://localhost:8000/api/v1/shopping-lists/import_json/
 ```
 
-The API accepts and returns lists with nested items. Shopping-list endpoints are restricted to the authenticated user. Open `http://localhost:8000/api/v1/` in a browser for Swagger UI. The OpenAPI document is at `http://localhost:8000/api/v1/schema/`.
+The API accepts and returns lists with nested items. The import document is the [JSON import](#json-import) format. Shopping-list endpoints are restricted to the authenticated user. Open `http://localhost:8000/api/v1/` in a browser for Swagger UI. The OpenAPI document is at `http://localhost:8000/api/v1/schema/`.
 
 Run the MCP server locally with the development settings:
 
