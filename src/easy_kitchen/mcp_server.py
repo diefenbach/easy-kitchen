@@ -1,10 +1,14 @@
+from __future__ import annotations
+
 import os
 from datetime import date as Date
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 import django
 from django.conf import settings
-from django.contrib.auth.models import AbstractBaseUser
+
+if TYPE_CHECKING:
+    from django.contrib.auth.models import AbstractBaseUser
 
 if not settings.configured:
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings.production")
