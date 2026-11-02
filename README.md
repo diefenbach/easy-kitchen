@@ -53,7 +53,10 @@ A private, responsive shopping list application built with Django 5.2 LTS. It us
 ### MCP server
 
 - A second process of the same image serves streamable HTTP at `/mcp` on port `8001`.
-- It authenticates the same DRF token. The tools `create_shopping_list` and `create_recipe` have no user argument; the record belongs to the token owner.
+- It authenticates the same DRF token. The tools have no user argument; records belong to the token owner.
+- `list_shopping_lists` and `list_recipes` read the token owner's lists and recipes.
+- `set_item_checked` marks an item completed. Pass `list_id` when the name is on more than one list. `checked` defaults to `true`.
+- `add_recipe_to_list` copies a recipe's ingredients onto a list. Omit the list to use today's list, or create one titled Today.
 - Confirm `title`, an ISO `date`, and `items` before creating a list.
 - Confirm `title`, `ingredients`, and `steps` before creating a recipe. `image_url`, `calories`, `protein`, and `preparation_minutes` are optional.
 - Host and origin checks use `DJANGO_ALLOWED_HOSTS` and `DJANGO_CSRF_TRUSTED_ORIGINS`. Override them with `MCP_ALLOWED_HOSTS` and `MCP_ALLOWED_ORIGINS`.

@@ -21,16 +21,21 @@ from mcp.types import ToolAnnotations
 from pydantic import BaseModel, Field
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import AuthenticationFailed
+from easy_kitchen.models import Recipe, ShoppingList
+from easy_kitchen.services import add_recipe_to_owned_list
 from easy_kitchen.services import create_recipe as save_recipe
 from easy_kitchen.services import create_shopping_list as save_shopping_list
+from easy_kitchen.services import set_item_checked as mark_item_checked
 
 mcp = MCPServer(
     "EasyKitchen",
     version="0.7.0",
     instructions=(
-        "Create shopping lists and recipes for the user authenticated by the request token. "
+        "Read and change shopping lists and recipes for the user authenticated by the request token. "
         "Do not invent a user id. Confirm the title, date, and items before creating a list. "
-        "Confirm the title, ingredients, and steps before creating a recipe."
+        "Confirm the title, ingredients, and steps before creating a recipe. "
+        "When checking an item off, use the list the user named, or today's list. "
+        "When adding a recipe to a list, use the named list or today's list; create today's list if none exists."
     ),
 )
 
@@ -91,6 +96,42 @@ def _authorization(ctx: Context) -> str | None:
     return request.headers.get("authorization")
 
 
+def _shopping_list_payload(shopping_list: ShoppingList) -> dict:
+    """JSON for one list, including item ids so later tools can name them."""
+    return {
+        "id": shopping_list.id,
+        "title": shopping_list.title,
+        "icon": shopping_list.icon,
+        "date": shopping_list.date.isoformat(),
+        "items": [
+            {
+                "id": item.id,
+                "name": item.name,
+                "quantity": item.quantity,
+                "checked": item.checked,
+            }
+            for item in shopping_list.items.all()
+        ],
+    }
+
+
+def _recipe_payload(recipe: Recipe) -> dict:
+    """JSON for one recipe, including ingredients and steps."""
+    return {
+        "id": recipe.id,
+        "title": recipe.title,
+        "description": recipe.description,
+        "image_url": recipe.image_url,
+        "calories": recipe.calories,
+        "protein": recipe.protein,
+        "preparation_minutes": recipe.preparation_minutes,
+        "ingredients": [
+            {"name": line.name, "quantity": line.quantity} for line in recipe.ingredients.all()
+        ],
+        "steps": [{"text": line.text} for line in recipe.steps.all()],
+    }
+
+
 def user_from_authorization(authorization: str | None) -> AbstractBaseUser:
     """Resolve the EasyKitchen user from an Authorization: Token header."""
     message = "Send the user's EasyKitchen token in the Authorization header: Token <token>."
@@ -134,16 +175,7 @@ def create_shopping_list(
         )
     except ValueError as error:
         raise ToolError(str(error)) from None
-    return {
-        "id": shopping_list.id,
-        "title": shopping_list.title,
-        "icon": shopping_list.icon,
-        "date": shopping_list.date.isoformat(),
-        "items": [
-            {"id": item.id, "name": item.name, "quantity": item.quantity}
-            for item in shopping_list.items.all()
-        ],
-    }
+    return _shopping_list_payload(shopping_list)
 
 
 @mcp.tool(
@@ -183,20 +215,100 @@ def create_recipe(
         )
     except ValueError as error:
         raise ToolError(str(error)) from None
+    return _recipe_payload(recipe)
+
+
+@mcp.tool(
+    annotations=ToolAnnotations(
+        read_only_hint=True,
+        destructive_hint=False,
+        idempotent_hint=True,
+        open_world_hint=False,
+    )
+)
+def list_shopping_lists(ctx: Context) -> list[dict]:
+    """List the authenticated user's shopping lists and their items."""
+    user = user_from_authorization(_authorization(ctx))
+    return [
+        _shopping_list_payload(shopping_list)
+        for shopping_list in user.shopping_lists.prefetch_related("items")
+    ]
+
+
+@mcp.tool(
+    annotations=ToolAnnotations(
+        read_only_hint=True,
+        destructive_hint=False,
+        idempotent_hint=True,
+        open_world_hint=False,
+    )
+)
+def list_recipes(ctx: Context) -> list[dict]:
+    """List the authenticated user's recipes, including ingredients and steps."""
+    user = user_from_authorization(_authorization(ctx))
+    return [
+        _recipe_payload(recipe)
+        for recipe in user.recipes.prefetch_related("ingredients", "steps")
+    ]
+
+
+@mcp.tool(
+    annotations=ToolAnnotations(
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=True,
+        open_world_hint=False,
+    )
+)
+def set_item_checked(
+    name: Annotated[str, Field(min_length=1, max_length=255)],
+    ctx: Context,
+    checked: bool = True,
+    list_id: int | None = None,
+) -> dict:
+    """Mark an item completed or open. Use list_id when the name is on more than one list."""
+    user = user_from_authorization(_authorization(ctx))
+    try:
+        item = mark_item_checked(user, name=name, checked=checked, list_id=list_id)
+    except ValueError as error:
+        raise ToolError(str(error)) from None
     return {
-        "id": recipe.id,
-        "title": recipe.title,
-        "description": recipe.description,
-        "image_url": recipe.image_url,
-        "calories": recipe.calories,
-        "protein": recipe.protein,
-        "preparation_minutes": recipe.preparation_minutes,
-        "ingredients": [
-            {"id": line.id, "name": line.name, "quantity": line.quantity}
-            for line in recipe.ingredients.all()
-        ],
-        "steps": [{"id": line.id, "text": line.text} for line in recipe.steps.all()],
+        "id": item.id,
+        "name": item.name,
+        "quantity": item.quantity,
+        "checked": item.checked,
+        "list_id": item.shopping_list_id,
     }
+
+
+@mcp.tool(
+    annotations=ToolAnnotations(
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=False,
+    )
+)
+def add_recipe_to_list(
+    ctx: Context,
+    recipe_id: int | None = None,
+    recipe_title: Annotated[str, Field(max_length=255)] = "",
+    list_id: int | None = None,
+    list_title: Annotated[str, Field(max_length=255)] = "",
+) -> dict:
+    """Copy a recipe's ingredients onto a list. Omit the list to use or create today's list."""
+    user = user_from_authorization(_authorization(ctx))
+    try:
+        shopping_list = add_recipe_to_owned_list(
+            user,
+            recipe_id=recipe_id,
+            recipe_title=recipe_title,
+            list_id=list_id,
+            list_title=list_title,
+        )
+    except ValueError as error:
+        raise ToolError(str(error)) from None
+    return _shopping_list_payload(shopping_list)
 
 
 def main() -> None:

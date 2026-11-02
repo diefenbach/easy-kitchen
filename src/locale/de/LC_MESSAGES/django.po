@@ -530,6 +530,36 @@ msgstr "Gib einen Titel ein."
 msgid "Invalid shopping list."
 msgstr "Ungültige Einkaufsliste."
 
+msgid "Recipe not found."
+msgstr "Rezept nicht gefunden."
+
+msgid "Choose a recipe."
+msgstr "Wähle ein Rezept."
+
+msgid "That title matches more than one recipe."
+msgstr "Dieser Titel passt zu mehr als einem Rezept."
+
+msgid "Shopping list not found."
+msgstr "Einkaufsliste nicht gefunden."
+
+msgid "That title matches more than one shopping list."
+msgstr "Dieser Titel passt zu mehr als einer Einkaufsliste."
+
+msgid "There is more than one list for today. Say which list."
+msgstr "Es gibt mehr als eine Liste für heute. Sag, welche."
+
+msgid "Today"
+msgstr "Heute"
+
+msgid "Enter an item name."
+msgstr "Gib einen Artikelnamen ein."
+
+msgid "Item not found."
+msgstr "Artikel nicht gefunden."
+
+msgid "That item is on more than one list. Say which list."
+msgstr "Dieser Artikel steht auf mehr als einer Liste. Sag, welche."
+
 #: src/easy_kitchen/recipe_views.py
 msgid "Imported %(count)d recipe."
 msgid_plural "Imported %(count)d recipes."
