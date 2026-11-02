@@ -39,8 +39,10 @@ Open `docs/_build/html/index.html`. Read the Docs reads `.readthedocs.yaml` and 
 
 `.github/workflows/ci-cd.yml` runs on pull requests and on `main`:
 
-- **test** — Ruff, pytest, and the browser suite.
-- **build** — only on `main`. Pushes `ghcr.io/diefenbach/easy-kitchen:<sha>`.
-- **deploy** — only on `main`. SSHs to production and runs `.github/scripts/deploy.sh`.
+- **test** — Ruff, pytest, and the browser suite (every pull request and every push to `main`).
+- **build** — only on `main`, and only when runtime paths changed (`src/`, `Dockerfile`, lockfiles, deploy script). Pushes `ghcr.io/diefenbach/easy-kitchen:<sha>`.
+- **deploy** — same gate as **build**. SSHs to production and runs `.github/scripts/deploy.sh`.
+
+Documentation-only changes (for example `docs/`, `AGENTS.md`, or `README.md`) still run **test** but skip **build** and **deploy**. Read the Docs publishes the docs tree separately.
 
 Feature branches are tested. They are not deployed.

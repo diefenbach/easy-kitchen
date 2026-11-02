@@ -13,6 +13,23 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.filter.outputs.deploy }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            deploy:
+              - 'src/**'
+              - 'Dockerfile'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - '.github/scripts/**'
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -28,8 +45,8 @@ jobs:
       - run: uv run python -m pytest
 
   build:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.deploy == 'true'
+    needs: [changes, test]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -57,8 +74,8 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.deploy == 'true'
+    needs: [changes, build]
     runs-on: ubuntu-latest
     environment: production
     concurrency:
