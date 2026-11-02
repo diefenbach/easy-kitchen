@@ -17,6 +17,7 @@
   - Split work into sensible commits (one concern per commit) before opening the PR.
   - Open the PR with `gh pr create --base main --head your-branch`.
   - Merge only after required checks pass. Prefer waiting on CI over merging immediately: `gh pr checks <number> --watch` then `gh pr merge <number> --merge` (or `--squash` / `--rebase` if the repo convention calls for it). Alternatively: `gh pr merge <number> --auto --merge` so GitHub merges when checks are green.
+  - After a PR is merged, sync the local clone in the same turn: `git checkout main && git pull`. Do not only suggest this to the user.
   - Long CI runs: a background shell job (`gh pr checks --watch`, `gh run watch <run-id> --exit-status`) is fine; report the outcome when it finishes. Do not merge a PR while its checks are still in progress unless the user explicitly accepts that risk.
 - Every new feature and every bug fix requires appropriate automated tests written or updated in the same change. Start feature work with a failing test whenever practical, then implement the smallest change that makes it pass, then refactor.
 - Keep Django model, service, API, permission, and view tests under `src/easy_kitchen/tests/`. Put browser journeys in `e2e/`, using Playwright through pytest-playwright. Browser tests run with `uv run pytest`; install Chromium once with `uv run playwright install chromium`.
