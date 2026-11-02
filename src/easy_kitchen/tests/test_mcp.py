@@ -8,6 +8,7 @@ from mcp.server.mcpserver import Context
 from mcp.server.mcpserver.exceptions import ToolError
 from rest_framework.authtoken.models import Token
 from easy_kitchen.mcp_server import (
+    add_item_to_list,
     add_recipe_to_list,
     create_recipe,
     create_shopping_list,
@@ -215,12 +216,65 @@ def test_mcp_adds_a_recipe_to_todays_list(user, other_user):
     assert ShoppingItem.objects.filter(shopping_list__user=other_user).count() == 0
 
 
+@pytest.mark.django_db
+def test_mcp_adds_an_item_to_a_named_list(user, other_user):
+    token = Token.objects.create(user=user)
+    shopping_list = save_shopping_list(user, title="Einkaufen", date=date(2026, 11, 2))
+    foreign = save_shopping_list(other_user, title="Einkaufen", date=date(2026, 11, 2))
+
+    result = add_item_to_list(
+        name="Bier",
+        quantity="6",
+        list_title="einkaufen",
+        ctx=authorization_context(token),
+    )
+
+    assert result["name"] == "Bier"
+    assert result["quantity"] == "6"
+    assert result["checked"] is False
+    assert result["list_id"] == shopping_list.id
+    assert list(shopping_list.items.values_list("name", "quantity")) == [("Bier", "6")]
+    assert foreign.items.count() == 0
+
+
+@pytest.mark.django_db
+def test_mcp_adds_an_item_to_todays_list(user):
+    token = Token.objects.create(user=user)
+
+    result = add_item_to_list(name="Milk", ctx=authorization_context(token))
+
+    shopping_list = ShoppingList.objects.get(pk=result["list_id"])
+    assert shopping_list.user == user
+    assert shopping_list.date == timezone.localdate()
+    assert result["name"] == "Milk"
+    assert list(shopping_list.items.values_list("name", flat=True)) == ["Milk"]
+
+
+@pytest.mark.django_db
+def test_mcp_does_not_add_an_item_to_another_users_list(user, other_user):
+    token = Token.objects.create(user=user)
+    foreign = save_shopping_list(
+        other_user, title="Einkaufen", date=date(2026, 11, 2)
+    )
+
+    with translation.override("en"):
+        with pytest.raises(ToolError, match="Shopping list not found"):
+            add_item_to_list(
+                name="Bier",
+                list_id=foreign.id,
+                ctx=authorization_context(token),
+            )
+
+    assert foreign.items.count() == 0
+
+
 def test_mcp_read_and_update_tools_do_not_accept_a_user_argument():
     names = {
         "list_shopping_lists": set(),
         "list_recipes": set(),
         "set_item_checked": {"name", "checked", "list_id"},
         "add_recipe_to_list": {"recipe_id", "recipe_title", "list_id", "list_title"},
+        "add_item_to_list": {"name", "quantity", "list_id", "list_title"},
     }
     tools = {tool.name: tool for tool in mcp._tool_manager.list_tools()}
     for name, properties in names.items():
