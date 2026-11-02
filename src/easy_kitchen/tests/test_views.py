@@ -367,6 +367,18 @@ def test_list_detail_uses_a_minimal_icon_header(client, user, shopping_list):
 
 
 @pytest.mark.django_db
+def test_list_detail_completed_item_actions_keep_visible_labels(client, user, shopping_list):
+    client.force_login(user)
+
+    content = client.get(reverse("easy_kitchen:detail", args=[shopping_list.pk])).content.decode()
+
+    assert '<span class="btn-label">Hide completed</span>' in content
+    assert 'd-none d-md-inline">Hide completed' not in content
+    assert 'd-none d-md-inline">Mark all as not completed' not in content
+    assert ">Mark all as not completed</span>" in content
+
+
+@pytest.mark.django_db
 def test_edit_list_prefills_html_date_input(client, user, shopping_list):
     shopping_list.date = date(2026, 10, 30)
     shopping_list.save()
