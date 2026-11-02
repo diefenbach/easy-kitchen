@@ -49,8 +49,14 @@
             <ul class="dropdown-menu dropdown-menu-end">
               <li>
                 <a class="dropdown-item" href="{% url 'easy_kitchen:import-json' %}" aria-label="{% translate 'Import JSON' %}">
-                  <i class="bi bi-upload" aria-hidden="true"></i>
+                  <i class="bi bi-download" aria-hidden="true"></i>
                   <span>{% translate "Import JSON" %}</span>
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="{% url 'easy_kitchen:export-json' %}" aria-label="{% translate 'Export JSON' %}">
+                  <i class="bi bi-upload" aria-hidden="true"></i>
+                  <span>{% translate "Export JSON" %}</span>
                 </a>
               </li>
               <li>
@@ -78,7 +84,7 @@
   <main class="container pb-5">
     {% if messages %}
       {% for message in messages %}
-        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert" data-autohide="3000">
           {{ message }}
           <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{% translate 'Close' %}"></button>
         </div>

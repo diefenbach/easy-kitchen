@@ -401,7 +401,9 @@ def test_list_overview_offers_edit_and_modal_delete_actions(client, user, shoppi
     assert ">Move</span>" not in content
     assert 'class="card-footer bg-white d-flex flex-nowrap align-items-center gap-2 edit-only position-relative z-2"' in content
     assert 'class="dropdown-item" href="/import/" aria-label="Import JSON"' in content
+    assert 'class="dropdown-item" href="/export/" aria-label="Export JSON"' in content
     assert 'class="btn btn-outline-secondary" aria-label="Import JSON"' not in content
+    assert 'class="btn btn-outline-secondary" aria-label="Export JSON"' not in content
     assert 'bi-plus-lg' in content
     assert 'd-none d-md-inline">New list</span>' in content
 
@@ -501,6 +503,54 @@ def test_json_import_creates_lists_and_items_for_current_user(client, user):
 
 
 @pytest.mark.django_db
+def test_status_messages_are_marked_to_hide_after_three_seconds(client, user):
+    client.force_login(user)
+
+    response = client.post(
+        reverse("easy_kitchen:import-json"),
+        {
+            "json_data": """{
+                \"lists\": [{
+                    \"title\": \"Tofu pan\",
+                    \"date\": \"2026-10-31\",
+                    \"items\": [{\"name\": \"Tofu\", \"quantity\": \"400 g\"}]
+                }]
+            }"""
+        },
+        follow=True,
+    )
+
+    content = response.content.decode()
+    assert "Imported 1 shopping list." in content
+    assert 'data-autohide="3000"' in content
+
+
+@pytest.mark.django_db
+def test_list_views_show_a_status_message_after_create_update_and_delete(client, user):
+    client.force_login(user)
+
+    created = client.post(
+        reverse("easy_kitchen:create"),
+        {"title": "Market", "date": "2026-11-01"},
+        follow=True,
+    )
+    shopping_list = ShoppingList.objects.get(user=user, title="Market")
+    assert "Shopping list created." in created.content.decode()
+    assert 'data-autohide="3000"' in created.content.decode()
+
+    updated = client.post(
+        reverse("easy_kitchen:update", args=[shopping_list.pk]),
+        {"title": "Market", "date": "2026-11-01"},
+        follow=True,
+    )
+    assert "Shopping list updated." in updated.content.decode()
+
+    deleted = client.post(reverse("easy_kitchen:delete", args=[shopping_list.pk]), follow=True)
+    assert "Shopping list deleted." in deleted.content.decode()
+    assert reverse("easy_kitchen:list") == deleted.request["PATH_INFO"]
+
+
+@pytest.mark.django_db
 def test_json_import_rejects_invalid_json_without_creating_a_list(client, user):
     client.force_login(user)
 
@@ -535,3 +585,87 @@ def test_json_import_rejects_json_that_is_neither_list_nor_recipe(client, user):
 
     assert response.status_code == 200
     assert "Could not tell whether this is a shopping list or a recipe." in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_export_page_lists_only_the_current_users_lists_and_recipes(client, user, other_user, shopping_list):
+    from easy_kitchen.models import Recipe
+    from easy_kitchen.services import create_recipe
+
+    create_recipe(user, title="Pancakes")
+    ShoppingList.objects.create(user=other_user, title="Foreign list")
+    Recipe.objects.create(user=other_user, title="Foreign recipe")
+    client.force_login(user)
+
+    response = client.get(reverse("easy_kitchen:export-json"))
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert "Export JSON" in content
+    assert "Wocheneinkauf" in content
+    assert "Pancakes" in content
+    assert "Foreign list" not in content
+    assert "Foreign recipe" not in content
+
+
+@pytest.mark.django_db
+def test_export_downloads_selected_lists_and_recipes_as_importable_json(
+    client, user, other_user, shopping_list
+):
+    from easy_kitchen.models import Recipe
+    from easy_kitchen.services import create_item, create_recipe
+
+    create_item(shopping_list, name="Milk", quantity="1 l")
+    recipe = create_recipe(
+        user,
+        title="Soup",
+        description="Weeknight",
+        image_url="https://example.com/soup.jpg",
+        calories=300,
+        ingredients=[{"name": "Onion", "quantity": "1"}],
+        steps=[{"text": "Simmer."}],
+    )
+    foreign_list = ShoppingList.objects.create(user=other_user, title="Foreign list")
+    foreign_recipe = Recipe.objects.create(user=other_user, title="Foreign recipe")
+    client.force_login(user)
+
+    response = client.post(
+        reverse("easy_kitchen:export-json"),
+        {"lists": [shopping_list.pk, foreign_list.pk], "recipes": [recipe.pk, foreign_recipe.pk]},
+    )
+
+    assert response.status_code == 200
+    assert response["Content-Type"].startswith("application/json")
+    assert 'attachment; filename="easykitchen.json"' in response["Content-Disposition"]
+    payload = json.loads(response.content)
+    assert payload == {
+        "lists": [
+            {
+                "title": "Wocheneinkauf",
+                "icon": "basket",
+                "date": shopping_list.date.isoformat(),
+                "items": [{"name": "Milk", "quantity": "1 l", "checked": False}],
+            }
+        ],
+        "recipes": [
+            {
+                "title": "Soup",
+                "description": "Weeknight",
+                "image_url": "https://example.com/soup.jpg",
+                "calories": 300,
+                "ingredients": [{"name": "Onion", "quantity": "1"}],
+                "steps": [{"text": "Simmer."}],
+            }
+        ],
+    }
+
+
+@pytest.mark.django_db
+def test_export_requires_at_least_one_selection(client, user, shopping_list):
+    client.force_login(user)
+
+    response = client.post(reverse("easy_kitchen:export-json"), {})
+
+    assert response.status_code == 200
+    assert "Choose at least one shopping list or recipe." in response.content.decode()
+    assert response.get("Content-Disposition") is None

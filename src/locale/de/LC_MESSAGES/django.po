@@ -201,6 +201,39 @@ msgstr "Importieren"
 msgid "Import JSON"
 msgstr "JSON importieren"
 
+msgid "Export JSON"
+msgstr "JSON exportieren"
+
+msgid "Export"
+msgstr "Exportieren"
+
+msgid "Choose the shopping lists and recipes to download as JSON."
+msgstr "Wähle die Einkaufslisten und Rezepte, die du als JSON herunterladen willst."
+
+msgid "You can import the file later on the import page."
+msgstr "Die Datei kannst du später auf der Import-Seite wieder einlesen."
+
+msgid "Choose at least one shopping list or recipe."
+msgstr "Wähle mindestens eine Einkaufsliste oder ein Rezept."
+
+msgid "Shopping list created."
+msgstr "Einkaufsliste erstellt."
+
+msgid "Shopping list updated."
+msgstr "Einkaufsliste aktualisiert."
+
+msgid "Shopping list deleted."
+msgstr "Einkaufsliste gelöscht."
+
+msgid "Recipe created."
+msgstr "Rezept erstellt."
+
+msgid "Recipe updated."
+msgstr "Rezept aktualisiert."
+
+msgid "Recipe deleted."
+msgstr "Rezept gelöscht."
+
 msgid "JSON"
 msgstr "JSON"
 

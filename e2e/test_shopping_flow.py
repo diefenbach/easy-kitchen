@@ -414,6 +414,45 @@ def test_user_can_import_a_json_shopping_list(authenticated_page):
     page.get_by_role("button", name="Import").click()
 
     expect(page.get_by_role("link", name="Tofu pan")).to_be_visible()
+    alert = page.get_by_role("alert")
+    expect(alert).to_contain_text("Imported 1 shopping list.")
+    expect(alert).to_be_hidden(timeout=5000)
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
+def test_user_can_export_selected_lists_and_recipes(authenticated_page, user):
+    import json
+    from datetime import date
+
+    from easy_kitchen.services import create_recipe, create_shopping_list
+
+    create_shopping_list(
+        user,
+        title="Weekend shop",
+        date=date(2026, 11, 1),
+        items=[{"name": "Apples", "quantity": "1 kg"}],
+    )
+    create_recipe(
+        user,
+        title="Pancakes",
+        ingredients=[{"name": "Flour", "quantity": "200 g"}],
+        steps=[{"text": "Mix the batter."}],
+    )
+    page = authenticated_page
+    open_account_menu(page)
+    page.get_by_role("link", name="Export JSON").click()
+    expect(page.get_by_role("heading", name="Export JSON")).to_be_visible()
+    page.get_by_label("Weekend shop").check()
+    page.get_by_label("Pancakes").check()
+
+    with page.expect_download() as download_info:
+        page.get_by_role("button", name="Export").click()
+    payload = json.loads(download_info.value.path().read_text())
+
+    assert payload["lists"][0]["title"] == "Weekend shop"
+    assert payload["lists"][0]["items"] == [{"name": "Apples", "quantity": "1 kg", "checked": False}]
+    assert payload["recipes"][0]["title"] == "Pancakes"
 
 
 @pytest.mark.e2e

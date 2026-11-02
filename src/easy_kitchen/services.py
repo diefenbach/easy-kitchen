@@ -446,3 +446,51 @@ def _reorder(
         raise ValueError(_("Invalid order."))
     for position, line_id in enumerate(ordered_ids, start=1):
         model.objects.filter(pk=line_id, **{parent_field: parent}).update(position=position)
+
+
+def shopping_list_export_data(shopping_list: ShoppingList) -> dict[str, Any]:
+    """JSON for one list that Import JSON can read again."""
+    return {
+        "title": shopping_list.title,
+        "icon": shopping_list.icon,
+        "date": shopping_list.date.isoformat(),
+        "items": [
+            {"name": item.name, "quantity": item.quantity, "checked": item.checked}
+            for item in shopping_list.items.all()
+        ],
+    }
+
+
+def recipe_export_data(recipe: Recipe) -> dict[str, Any]:
+    """JSON for one recipe that Import JSON can read again."""
+    data: dict[str, Any] = {
+        "title": recipe.title,
+        "description": recipe.description,
+        "ingredients": [
+            {"name": line.name, "quantity": line.quantity} for line in recipe.ingredients.all()
+        ],
+        "steps": [{"text": line.text} for line in recipe.steps.all()],
+    }
+    if recipe.image_url:
+        data["image_url"] = recipe.image_url
+    if recipe.calories is not None:
+        data["calories"] = recipe.calories
+    if recipe.protein is not None:
+        data["protein"] = recipe.protein
+    if recipe.preparation_minutes is not None:
+        data["preparation_minutes"] = recipe.preparation_minutes
+    return data
+
+
+def export_records(
+    *,
+    lists: Sequence[ShoppingList] | None = None,
+    recipes: Sequence[Recipe] | None = None,
+) -> dict[str, Any]:
+    """Build an importable document from the chosen lists and recipes."""
+    payload: dict[str, Any] = {}
+    if lists:
+        payload["lists"] = [shopping_list_export_data(shopping_list) for shopping_list in lists]
+    if recipes:
+        payload["recipes"] = [recipe_export_data(recipe) for recipe in recipes]
+    return payload

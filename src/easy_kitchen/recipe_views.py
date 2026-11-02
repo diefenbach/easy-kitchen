@@ -58,7 +58,9 @@ class RecipeCreateView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.user = self.request.user
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        messages.success(self.request, _("Recipe created."))
+        return response
 
     def get_success_url(self):
         return reverse("easy_kitchen:recipe-detail", kwargs={"pk": self.object.pk})
@@ -76,6 +78,11 @@ class RecipeUpdateView(UserRecipeMixin, UpdateView):
     form_class = RecipeForm
     template_name = "easy_kitchen/recipes/form.html"
 
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, _("Recipe updated."))
+        return response
+
     def get_success_url(self):
         if self.request.GET.get("return_to") == "overview":
             return reverse("easy_kitchen:recipes")
@@ -92,6 +99,11 @@ class RecipeDeleteView(UserRecipeMixin, DeleteView):
 
     model = Recipe
     template_name = "easy_kitchen/recipes/confirm_delete.html"
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, _("Recipe deleted."))
+        return response
 
     def get_success_url(self):
         return reverse("easy_kitchen:recipes")

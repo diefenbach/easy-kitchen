@@ -10,6 +10,7 @@
 - Use `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, and `POSTGRES_PORT` for database configuration; do not introduce `DATABASE_URL` or dotenv-loading dependencies.
 - `docker-compose.yaml` exists only for the local PostgreSQL service. Develop the Django app locally with `uv run --env-file .env python src/manage.py runserver`; the production Compose stack lives separately.
 - Keep source assets in `src/easy_kitchen/static/`. Generated `staticfiles/` are production output for the shared Nginx volume and must never be committed.
+- Do all feature and bug-fix work on a dedicated branch. Open a pull request and merge to `main` only when CI is green. Do not commit or push directly to `main`.
 - Every new feature and every bug fix requires appropriate automated tests written or updated in the same change. Start feature work with a failing test whenever practical, then implement the smallest change that makes it pass, then refactor.
 - Keep Django model, service, API, permission, and view tests under `src/easy_kitchen/tests/`. Put browser journeys in `e2e/`, using Playwright through pytest-playwright. Browser tests run with `uv run pytest`; install Chromium once with `uv run playwright install chromium`.
 - For HTMX state-changing requests outside a form, send Django's CSRF token explicitly. Cover the browser interaction with an E2E test when it is user-visible.
