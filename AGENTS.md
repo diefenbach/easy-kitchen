@@ -11,6 +11,12 @@
 - `docker-compose.yaml` exists only for the local PostgreSQL service. Develop the Django app locally with `uv run --env-file .env python src/manage.py runserver`; the production Compose stack lives separately.
 - Keep source assets in `src/easy_kitchen/static/`. Generated `staticfiles/` are production output for the shared Nginx volume and must never be committed.
 - Do all feature and bug-fix work on a dedicated branch. Open a pull request and merge to `main` only when CI is green. Do not commit or push directly to `main`.
+- Git and pull requests (agents):
+  - Create a feature branch from up-to-date `main`. Push with `git push -u origin HEAD:your-branch` so the remote branch name matches the feature branch; do not push to `origin/main` unless the user explicitly asks.
+  - Split work into sensible commits (one concern per commit) before opening the PR.
+  - Open the PR with `gh pr create --base main --head your-branch`.
+  - Merge only after required checks pass. Prefer waiting on CI over merging immediately: `gh pr checks <number> --watch` then `gh pr merge <number> --merge` (or `--squash` / `--rebase` if the repo convention calls for it). Alternatively: `gh pr merge <number> --auto --merge` so GitHub merges when checks are green.
+  - Long CI runs: a background shell job (`gh pr checks --watch`, `gh run watch <run-id> --exit-status`) is fine; report the outcome when it finishes. Do not merge a PR while its checks are still in progress unless the user explicitly accepts that risk.
 - Every new feature and every bug fix requires appropriate automated tests written or updated in the same change. Start feature work with a failing test whenever practical, then implement the smallest change that makes it pass, then refactor.
 - Keep Django model, service, API, permission, and view tests under `src/easy_kitchen/tests/`. Put browser journeys in `e2e/`, using Playwright through pytest-playwright. Browser tests run with `uv run pytest`; install Chromium once with `uv run playwright install chromium`.
 - For HTMX state-changing requests outside a form, send Django's CSRF token explicitly. Cover the browser interaction with an E2E test when it is user-visible.
