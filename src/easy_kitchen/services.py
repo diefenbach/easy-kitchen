@@ -9,6 +9,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
 from django.db import transaction
 from django.db.models import F, Manager, Max, Model
+from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from .models import Article, Recipe, RecipeIngredient, RecipeStep, ShoppingItem, ShoppingList
@@ -409,6 +410,105 @@ def add_recipe_ingredients_to_list(recipe: Recipe, shopping_list: ShoppingList) 
     for ingredient in recipe.ingredients.all():
         create_item(shopping_list, name=ingredient.name, quantity=ingredient.quantity)
     return shopping_list
+
+
+def owned_recipe(
+    user: AbstractBaseUser, *, recipe_id: int | None = None, title: str = ""
+) -> Recipe:
+    """Return one of this user's recipes by id or unique title."""
+    if recipe_id is not None:
+        recipe = user.recipes.filter(pk=recipe_id).first()
+        if recipe is None:
+            raise ValueError(_("Recipe not found."))
+        return recipe
+    title = _normalized_name(title)
+    if not title:
+        raise ValueError(_("Choose a recipe."))
+    matches = [
+        recipe
+        for recipe in user.recipes.all()
+        if _normalized_name(recipe.title).casefold() == title.casefold()
+    ]
+    if not matches:
+        raise ValueError(_("Recipe not found."))
+    if len(matches) > 1:
+        raise ValueError(_("That title matches more than one recipe."))
+    return matches[0]
+
+
+def owned_or_today_list(
+    user: AbstractBaseUser, *, list_id: int | None = None, title: str = ""
+) -> ShoppingList:
+    """Return a list by id or title, or today's list, creating it when needed."""
+    if list_id is not None:
+        shopping_list = user.shopping_lists.filter(pk=list_id).first()
+        if shopping_list is None:
+            raise ValueError(_("Shopping list not found."))
+        return shopping_list
+    title = _normalized_name(title)
+    if title:
+        matches = [
+            shopping_list
+            for shopping_list in user.shopping_lists.all()
+            if _normalized_name(shopping_list.title).casefold() == title.casefold()
+        ]
+        if len(matches) > 1:
+            raise ValueError(_("That title matches more than one shopping list."))
+        if matches:
+            return matches[0]
+        return create_shopping_list(user, title=title, date=timezone.localdate())
+    today = timezone.localdate()
+    todays = list(user.shopping_lists.filter(date=today).order_by("position", "id"))
+    if len(todays) > 1:
+        raise ValueError(_("There is more than one list for today. Say which list."))
+    if todays:
+        return todays[0]
+    return create_shopping_list(user, title=_("Today"), date=today)
+
+
+def set_item_checked(
+    user: AbstractBaseUser,
+    *,
+    name: str,
+    checked: bool = True,
+    list_id: int | None = None,
+) -> ShoppingItem:
+    """Mark one of this user's items completed or open."""
+    name = _normalized_name(name)
+    if not name:
+        raise ValueError(_("Enter an item name."))
+    items = ShoppingItem.objects.filter(shopping_list__user=user)
+    if list_id is not None:
+        if not user.shopping_lists.filter(pk=list_id).exists():
+            raise ValueError(_("Shopping list not found."))
+        items = items.filter(shopping_list_id=list_id)
+    matches = [
+        item
+        for item in items.select_related("shopping_list")
+        if _normalized_name(item.name).casefold() == name.casefold()
+    ]
+    if not matches:
+        raise ValueError(_("Item not found."))
+    if list_id is None and len(matches) > 1:
+        raise ValueError(_("That item is on more than one list. Say which list."))
+    item = matches[0]
+    item.checked = checked
+    item.save(update_fields=["checked", "updated_at"])
+    return item
+
+
+def add_recipe_to_owned_list(
+    user: AbstractBaseUser,
+    *,
+    recipe_id: int | None = None,
+    recipe_title: str = "",
+    list_id: int | None = None,
+    list_title: str = "",
+) -> ShoppingList:
+    """Copy a recipe's ingredients onto a list belonging to the same user."""
+    recipe = owned_recipe(user, recipe_id=recipe_id, title=recipe_title)
+    shopping_list = owned_or_today_list(user, list_id=list_id, title=list_title)
+    return add_recipe_ingredients_to_list(recipe, shopping_list)
 
 
 def _recipe_lines(recipe: Recipe, kind: Literal["ingredient", "step"]) -> Manager:

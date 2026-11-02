@@ -2,12 +2,23 @@ from datetime import date
 from types import SimpleNamespace
 
 import pytest
+from django.utils import timezone, translation
 from mcp.server.context import ServerRequestContext
 from mcp.server.mcpserver import Context
 from mcp.server.mcpserver.exceptions import ToolError
 from rest_framework.authtoken.models import Token
-from easy_kitchen.mcp_server import create_recipe, create_shopping_list, mcp
-from easy_kitchen.models import Recipe, ShoppingList
+from easy_kitchen.mcp_server import (
+    add_recipe_to_list,
+    create_recipe,
+    create_shopping_list,
+    list_recipes,
+    list_shopping_lists,
+    mcp,
+    set_item_checked,
+)
+from easy_kitchen.models import Recipe, ShoppingItem, ShoppingList
+from easy_kitchen.services import create_recipe as save_recipe
+from easy_kitchen.services import create_shopping_list as save_shopping_list
 
 
 def authorization_context(token):
@@ -123,3 +134,94 @@ def test_mcp_recipe_tool_does_not_accept_a_user_argument():
         "ingredients",
         "steps",
     }
+
+
+@pytest.mark.django_db
+def test_mcp_lists_only_the_token_owners_lists_and_recipes(user, other_user):
+    token = Token.objects.create(user=user)
+    own_list = save_shopping_list(
+        user, title="Week", date=date(2026, 11, 2), items=[{"name": "Milk", "quantity": "1 l"}]
+    )
+    save_recipe(user, title="Pasta", ingredients=[{"name": "Nudeln", "quantity": "500 g"}])
+    save_shopping_list(other_user, title="Foreign", date=date(2026, 11, 2))
+    save_recipe(other_user, title="Foreign stew")
+
+    lists = list_shopping_lists(ctx=authorization_context(token))
+    recipes = list_recipes(ctx=authorization_context(token))
+
+    assert [entry["title"] for entry in lists] == ["Week"]
+    assert lists[0]["id"] == own_list.id
+    assert lists[0]["items"] == [
+        {"id": own_list.items.get().id, "name": "Milk", "quantity": "1 l", "checked": False}
+    ]
+    assert [entry["title"] for entry in recipes] == ["Pasta"]
+    assert recipes[0]["ingredients"] == [{"name": "Nudeln", "quantity": "500 g"}]
+
+
+@pytest.mark.django_db
+def test_mcp_checks_an_item_on_the_owners_list(user, other_user):
+    token = Token.objects.create(user=user)
+    shopping_list = save_shopping_list(
+        user, title="Week", date=date(2026, 11, 2), items=[{"name": "Milk", "quantity": "1 l"}]
+    )
+    foreign = save_shopping_list(
+        other_user, title="Other", date=date(2026, 11, 2), items=[{"name": "Milk", "quantity": "1 l"}]
+    )
+
+    result = set_item_checked(name="milk", ctx=authorization_context(token))
+
+    assert result["checked"] is True
+    assert result["name"] == "Milk"
+    assert shopping_list.items.get().checked is True
+    assert foreign.items.get().checked is False
+
+
+@pytest.mark.django_db
+def test_mcp_needs_a_list_when_the_item_name_is_on_two_lists(user):
+    token = Token.objects.create(user=user)
+    first = save_shopping_list(
+        user, title="Today", date=date(2026, 11, 2), items=[{"name": "Milk"}]
+    )
+    second = save_shopping_list(
+        user, title="Weekend", date=date(2026, 11, 3), items=[{"name": "Milk"}]
+    )
+
+    with translation.override("en"):
+        with pytest.raises(ToolError, match="more than one list"):
+            set_item_checked(name="Milk", ctx=authorization_context(token))
+
+    result = set_item_checked(
+        name="Milk", list_id=second.id, checked=True, ctx=authorization_context(token)
+    )
+    assert result["list_id"] == second.id
+    assert first.items.get().checked is False
+    assert second.items.get().checked is True
+
+
+@pytest.mark.django_db
+def test_mcp_adds_a_recipe_to_todays_list(user, other_user):
+    token = Token.objects.create(user=user)
+    save_recipe(
+        user, title="Pasta", ingredients=[{"name": "Nudeln", "quantity": "500 g"}]
+    )
+    save_recipe(other_user, title="Pasta", ingredients=[{"name": "Secret"}])
+
+    result = add_recipe_to_list(recipe_title="Pasta", ctx=authorization_context(token))
+
+    shopping_list = ShoppingList.objects.get(pk=result["id"])
+    assert shopping_list.user == user
+    assert shopping_list.date == timezone.localdate()
+    assert [(item["name"], item["quantity"]) for item in result["items"]] == [("Nudeln", "500 g")]
+    assert ShoppingItem.objects.filter(shopping_list__user=other_user).count() == 0
+
+
+def test_mcp_read_and_update_tools_do_not_accept_a_user_argument():
+    names = {
+        "list_shopping_lists": set(),
+        "list_recipes": set(),
+        "set_item_checked": {"name", "checked", "list_id"},
+        "add_recipe_to_list": {"recipe_id", "recipe_title", "list_id", "list_title"},
+    }
+    tools = {tool.name: tool for tool in mcp._tool_manager.list_tools()}
+    for name, properties in names.items():
+        assert set(tools[name].parameters["properties"]) == properties
