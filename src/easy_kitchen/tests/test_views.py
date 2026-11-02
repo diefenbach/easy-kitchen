@@ -392,6 +392,16 @@ def test_list_detail_item_row_actions_are_icon_only(client, user, shopping_list)
 
 
 @pytest.mark.django_db
+def test_item_edit_form_vertically_centers_save_button(client, user, shopping_list):
+    item = ShoppingItem.objects.create(shopping_list=shopping_list, name="Tofu", quantity="400 g")
+    client.force_login(user)
+
+    content = client.get(reverse("easy_kitchen:item-update", args=[shopping_list.pk, item.pk])).content.decode()
+
+    assert 'class="card-body py-2 px-3 row g-2 align-items-center"' in content
+
+
+@pytest.mark.django_db
 def test_edit_list_prefills_html_date_input(client, user, shopping_list):
     shopping_list.date = date(2026, 10, 30)
     shopping_list.save()
