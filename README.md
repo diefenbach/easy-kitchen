@@ -56,6 +56,7 @@ A private, responsive shopping list application built with Django 5.2 LTS. It us
 - It authenticates the same DRF token. The tools have no user argument; records belong to the token owner.
 - `list_shopping_lists` and `list_recipes` read the token owner's lists and recipes.
 - `set_item_checked` marks an item completed. Pass `list_id` when the name is on more than one list. `checked` defaults to `true`.
+- `add_item_to_list` adds an item. Pass `list_id` or `list_title` to choose the list. Omit the list to use today's list, or create one titled Today.
 - `add_recipe_to_list` copies a recipe's ingredients onto a list. Omit the list to use today's list, or create one titled Today.
 - Confirm `title`, an ISO `date`, and `items` before creating a list.
 - Confirm `title`, `ingredients`, and `steps` before creating a recipe. `image_url`, `calories`, `protein`, and `preparation_minutes` are optional.

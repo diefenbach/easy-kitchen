@@ -511,6 +511,22 @@ def add_recipe_to_owned_list(
     return add_recipe_ingredients_to_list(recipe, shopping_list)
 
 
+def add_item_to_owned_list(
+    user: AbstractBaseUser,
+    *,
+    name: str,
+    quantity: str = "",
+    list_id: int | None = None,
+    list_title: str = "",
+) -> ShoppingItem:
+    """Add an item to a list belonging to this user."""
+    name = _normalized_name(name)
+    if not name:
+        raise ValueError(_("Enter an item name."))
+    shopping_list = owned_or_today_list(user, list_id=list_id, title=list_title)
+    return create_item(shopping_list, name=name, quantity=quantity)
+
+
 def _recipe_lines(recipe: Recipe, kind: Literal["ingredient", "step"]) -> Manager:
     """Return the ingredients or steps manager for this recipe."""
     if kind == "ingredient":

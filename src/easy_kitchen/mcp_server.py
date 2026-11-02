@@ -22,7 +22,7 @@ from pydantic import BaseModel, Field
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 from easy_kitchen.models import Recipe, ShoppingList
-from easy_kitchen.services import add_recipe_to_owned_list
+from easy_kitchen.services import add_item_to_owned_list, add_recipe_to_owned_list
 from easy_kitchen.services import create_recipe as save_recipe
 from easy_kitchen.services import create_shopping_list as save_shopping_list
 from easy_kitchen.services import set_item_checked as mark_item_checked
@@ -35,6 +35,7 @@ mcp = MCPServer(
         "Do not invent a user id. Confirm the title, date, and items before creating a list. "
         "Confirm the title, ingredients, and steps before creating a recipe. "
         "When checking an item off, use the list the user named, or today's list. "
+        "When adding an item, use the named list or today's list; create today's list if none exists. "
         "When adding a recipe to a list, use the named list or today's list; create today's list if none exists."
     ),
 )
@@ -270,6 +271,42 @@ def set_item_checked(
     user = user_from_authorization(_authorization(ctx))
     try:
         item = mark_item_checked(user, name=name, checked=checked, list_id=list_id)
+    except ValueError as error:
+        raise ToolError(str(error)) from None
+    return {
+        "id": item.id,
+        "name": item.name,
+        "quantity": item.quantity,
+        "checked": item.checked,
+        "list_id": item.shopping_list_id,
+    }
+
+
+@mcp.tool(
+    annotations=ToolAnnotations(
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=False,
+    )
+)
+def add_item_to_list(
+    name: Annotated[str, Field(min_length=1, max_length=255)],
+    ctx: Context,
+    quantity: Annotated[str, Field(max_length=100)] = "",
+    list_id: int | None = None,
+    list_title: Annotated[str, Field(max_length=255)] = "",
+) -> dict:
+    """Add an item to a list. Omit the list to use or create today's list."""
+    user = user_from_authorization(_authorization(ctx))
+    try:
+        item = add_item_to_owned_list(
+            user,
+            name=name,
+            quantity=quantity,
+            list_id=list_id,
+            list_title=list_title,
+        )
     except ValueError as error:
         raise ToolError(str(error)) from None
     return {
