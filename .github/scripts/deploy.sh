@@ -13,6 +13,14 @@ else
 fi
 
 docker compose pull kitchen kitchen-mcp
+docker compose up -d postgres
+docker compose run --rm --no-deps kitchen python manage.py migrate --noinput
+docker compose run --rm --no-deps kitchen python manage.py collectstatic --noinput --clear
+docker compose run --rm --no-deps kitchen sh -c '
+  if [ "${DJANGO_SUPERUSER_USERNAME:-}" ] && [ "${DJANGO_SUPERUSER_PASSWORD:-}" ]; then
+    python manage.py createsuperuser --noinput || true
+  fi
+'
 docker compose up -d --no-deps kitchen kitchen-mcp
 docker compose up -d --no-deps nginx
 
