@@ -6,7 +6,6 @@ from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedire
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
-from django.utils import timezone
 from django.utils.translation import gettext as _, ngettext
 from django.views import View
 from django.views.generic import (
@@ -22,6 +21,7 @@ from .forms import ArticleForm, ExportForm, ImportForm, ShoppingItemForm, Shoppi
 from .models import Article, ShoppingItem, ShoppingList
 from .services import (
     create_item,
+    delete_completed_items,
     export_records,
     import_recipes,
     import_shopping_lists,
@@ -77,6 +77,20 @@ class ShoppingListReorderView(LoginRequiredMixin, View):
         return HttpResponseRedirect(reverse("easy_kitchen:list"))
 
 
+class ListHideCompletedView(LoginRequiredMixin, View):
+    """Persist whether completed items stay hidden on this list."""
+
+    def post(self, request, pk):
+        shopping_list = get_object_or_404(ShoppingList, pk=pk, user=request.user)
+        try:
+            hide = bool(json.loads(request.body)["hide"])
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+            return HttpResponseBadRequest(_("Invalid request."))
+        shopping_list.hide_completed_items = hide
+        shopping_list.save(update_fields=["hide_completed_items", "updated_at"])
+        return HttpResponse(status=204)
+
+
 class ShoppingListDetailView(UserListMixin, DetailView):
     """Show one list, its items, and the user's saved articles."""
 
@@ -88,6 +102,7 @@ class ShoppingListDetailView(UserListMixin, DetailView):
         context["form"] = ShoppingItemForm()
         context["shopping_list"] = self.object
         context["articles"] = self.request.user.articles.all()
+        context["completed_item_count"] = self.object.items.filter(checked=True).count()
         return context
 
 
@@ -412,10 +427,20 @@ class ArticleDeleteView(LoginRequiredMixin, View):
         return redirect_to_articles(request)
 
 
-class ItemsResetCheckedView(LoginRequiredMixin, View):
-    """Mark every completed item on the list as open."""
+class ItemsDeleteCompletedView(LoginRequiredMixin, View):
+    """Delete every completed item on the list after confirmation."""
 
     def post(self, request, list_pk):
         shopping_list = get_object_or_404(ShoppingList, pk=list_pk, user=request.user)
-        shopping_list.items.filter(checked=True).update(checked=False, updated_at=timezone.now())
+        deleted = delete_completed_items(shopping_list)
+        if deleted:
+            messages.success(
+                request,
+                ngettext(
+                    "Deleted one completed item.",
+                    "Deleted %(count)s completed items.",
+                    deleted,
+                )
+                % {"count": deleted},
+            )
         return redirect("easy_kitchen:detail", pk=shopping_list.pk)

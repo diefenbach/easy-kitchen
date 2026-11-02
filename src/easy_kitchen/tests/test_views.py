@@ -364,6 +364,26 @@ def test_list_detail_uses_a_minimal_icon_header(client, user, shopping_list):
     assert 'aria-label="Delete list"' in content
     assert "data-edit-toggle" in content
     assert 'src="/static/easy_kitchen/list-detail.js"' in content
+    assert f'data-hide-completed-url="/lists/{shopping_list.pk}/hide-completed/"' in content
+
+
+@pytest.mark.django_db
+def test_hide_completed_preference_is_stored_on_the_list(client, user, shopping_list):
+    ShoppingItem.objects.create(shopping_list=shopping_list, name="Tofu", checked=True)
+    client.force_login(user)
+
+    save = client.post(
+        reverse("easy_kitchen:list-hide-completed", args=[shopping_list.pk]),
+        json.dumps({"hide": True}),
+        content_type="application/json",
+    )
+    assert save.status_code == 204
+    shopping_list.refresh_from_db()
+    assert shopping_list.hide_completed_items is True
+
+    content = client.get(reverse("easy_kitchen:detail", args=[shopping_list.pk])).content.decode()
+    assert 'id="items" class="hide-completed"' in content
+    assert "Show completed" in content
 
 
 @pytest.mark.django_db
@@ -374,8 +394,30 @@ def test_list_detail_completed_item_actions_keep_visible_labels(client, user, sh
 
     assert '<span class="btn-label">Hide completed</span>' in content
     assert 'd-none d-md-inline">Hide completed' not in content
-    assert 'd-none d-md-inline">Mark all as not completed' not in content
-    assert ">Mark all as not completed</span>" in content
+    assert "Mark all as not completed" not in content
+
+
+@pytest.mark.django_db
+def test_list_detail_shows_delete_completed_when_items_are_checked(client, user, shopping_list):
+    ShoppingItem.objects.create(shopping_list=shopping_list, name="Tofu", checked=True)
+    client.force_login(user)
+
+    content = client.get(reverse("easy_kitchen:detail", args=[shopping_list.pk])).content.decode()
+
+    assert 'aria-label="Delete completed"' in content
+    assert "Delete completed items?" in content
+    assert 'id="delete-completed-modal"' in content
+
+
+@pytest.mark.django_db
+def test_list_detail_hides_delete_completed_without_checked_items(client, user, shopping_list):
+    ShoppingItem.objects.create(shopping_list=shopping_list, name="Tofu")
+    client.force_login(user)
+
+    content = client.get(reverse("easy_kitchen:detail", args=[shopping_list.pk])).content.decode()
+
+    assert "Delete completed" not in content
+    assert "delete-completed-modal" not in content
 
 
 @pytest.mark.django_db
@@ -413,18 +455,17 @@ def test_edit_list_prefills_html_date_input(client, user, shopping_list):
 
 
 @pytest.mark.django_db
-def test_reset_checked_items_marks_all_items_as_open(client, user, shopping_list):
+def test_delete_completed_items_removes_only_checked_items(client, user, shopping_list):
     completed = ShoppingItem.objects.create(shopping_list=shopping_list, name="Tofu", checked=True)
     open_item = ShoppingItem.objects.create(shopping_list=shopping_list, name="Reis")
     client.force_login(user)
 
-    response = client.post(reverse("easy_kitchen:items-reset-checked", args=[shopping_list.pk]))
+    response = client.post(reverse("easy_kitchen:items-delete-completed", args=[shopping_list.pk]), follow=True)
 
-    assert response.status_code == 302
-    completed.refresh_from_db()
-    open_item.refresh_from_db()
-    assert completed.checked is False
-    assert open_item.checked is False
+    assert response.status_code == 200
+    assert not ShoppingItem.objects.filter(pk=completed.pk).exists()
+    assert ShoppingItem.objects.filter(pk=open_item.pk).exists()
+    assert "Deleted one completed item." in response.content.decode()
 
 
 @pytest.mark.django_db

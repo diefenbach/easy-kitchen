@@ -196,9 +196,38 @@ def test_user_can_hide_and_reset_completed_items(authenticated_page, user):
     page.get_by_role("button", name="Hide completed").click()
     expect(completed_item).to_be_hidden()
 
-    page.get_by_role("button", name="Mark all as not completed").click()
+    page.get_by_role("button", name="Delete completed").click()
+    dialog = page.get_by_role("dialog")
+    expect(dialog).to_be_visible()
+    page.locator("#delete-completed-modal").get_by_role("button", name="Delete permanently").click()
+    expect(completed_item).to_have_count(0)
+    expect(page.locator(".shopping-item", has_text="Reis")).to_be_visible()
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
+def test_hide_completed_persists_after_reload(authenticated_page, user):
+    from easy_kitchen.models import ShoppingItem, ShoppingList
+
+    shopping_list = ShoppingList.objects.create(user=user, title="Wocheneinkauf")
+    completed = ShoppingItem.objects.create(shopping_list=shopping_list, name="Tofu", checked=True)
+    ShoppingItem.objects.create(shopping_list=shopping_list, name="Reis")
+    page = authenticated_page
+    page.goto(f"{page.url.rstrip('/')}/lists/{shopping_list.pk}/")
+
+    completed_item = page.locator(f'.shopping-item[data-item-id="{completed.pk}"]')
+    page.get_by_role("button", name="Hide completed").click()
+    expect(completed_item).to_be_hidden()
+
+    page.reload()
+    expect(completed_item).to_be_hidden()
+    expect(page.get_by_role("button", name="Show completed")).to_be_visible()
+
+    page.get_by_role("button", name="Show completed").click()
     expect(completed_item).to_be_visible()
-    expect(completed_item).not_to_have_class(re.compile(r".*\bchecked\b.*"))
+
+    page.reload()
+    expect(completed_item).to_be_visible()
 
 
 @pytest.mark.e2e

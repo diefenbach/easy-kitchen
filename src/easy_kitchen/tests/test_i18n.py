@@ -2,7 +2,7 @@ import pytest
 from django.urls import reverse
 from django.utils import translation
 from rest_framework.authtoken.models import Token
-from easy_kitchen.models import ShoppingList
+from easy_kitchen.models import ShoppingItem, ShoppingList
 
 
 @pytest.mark.django_db
@@ -203,3 +203,16 @@ def test_api_errors_are_english_and_can_be_german(client, user):
             **headers,
         )
     assert german_reorder.json()["detail"] == "Ungültige Reihenfolge."
+
+
+@pytest.mark.django_db
+def test_delete_completed_modal_uses_german_plural(client, user):
+    shopping_list = ShoppingList.objects.create(user=user, title="Test")
+    for name in ("A", "B", "C", "D"):
+        ShoppingItem.objects.create(shopping_list=shopping_list, name=name, checked=True)
+    client.force_login(user)
+
+    with translation.override("de"):
+        content = client.get(reverse("easy_kitchen:detail", args=[shopping_list.pk])).content.decode()
+
+    assert "Alle 4 erledigten Artikel auf dieser Liste werden dauerhaft gelöscht." in content
