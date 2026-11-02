@@ -16,7 +16,9 @@ def required(name):
 DEBUG = False
 SECRET_KEY = required("DJANGO_SECRET_KEY")
 ALLOWED_HOSTS = [host.strip() for host in required("DJANGO_ALLOWED_HOSTS").split(",") if host.strip()]
-CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in required("DJANGO_CSRF_TRUSTED_ORIGINS").split(",") if origin.strip()]
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip() for origin in required("DJANGO_CSRF_TRUSTED_ORIGINS").split(",") if origin.strip()
+]
 for database_setting in ("POSTGRES_DB", "POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_HOST"):
     required(database_setting)
 DATABASES = {"default": postgres_database_from_environment()}
