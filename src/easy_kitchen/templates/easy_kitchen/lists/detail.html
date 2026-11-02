@@ -32,25 +32,56 @@
   <div class="card-body" id="item-form">{% include "easy_kitchen/lists/partials/item_form.html" %}</div>
 </section>
 <div class="d-flex flex-wrap gap-2 mb-3">
-  <button id="toggle-checked-items" type="button" class="btn btn-outline-secondary btn-sm" aria-pressed="false" aria-label="{% translate 'Hide completed' %}" data-label-hide="{% translate 'Hide completed' %}" data-label-show="{% translate 'Show completed' %}">
+  <button id="toggle-checked-items" type="button" class="btn btn-outline-secondary btn-sm" aria-pressed="{% if object.hide_completed_items %}true{% else %}false{% endif %}" aria-label="{% if object.hide_completed_items %}{% translate 'Show completed' %}{% else %}{% translate 'Hide completed' %}{% endif %}" data-label-hide="{% translate 'Hide completed' %}" data-label-show="{% translate 'Show completed' %}">
     <i class="bi bi-eye-slash" aria-hidden="true"></i>
-    <span class="btn-label">{% translate "Hide completed" %}</span>
+    <span class="btn-label">{% if object.hide_completed_items %}{% translate "Show completed" %}{% else %}{% translate "Hide completed" %}{% endif %}</span>
   </button>
-  <form method="post" action="{% url 'easy_kitchen:items-reset-checked' object.pk %}">
-    {% csrf_token %}
-    <button class="btn btn-outline-secondary btn-sm" aria-label="{% translate 'Mark all as not completed' %}">
-      <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
-      <span>{% translate "Mark all as not completed" %}</span>
+  {% if completed_item_count %}
+    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#delete-completed-modal" aria-label="{% translate 'Delete completed' %}">
+      <i class="bi bi-trash" aria-hidden="true"></i>
+      <span>{% translate "Delete completed" %}</span>
     </button>
-  </form>
+  {% endif %}
 </div>
-<div id="items" data-reorder-url="{% url 'easy_kitchen:item-reorder' object.pk %}">
+<div id="items" class="{% if object.hide_completed_items %}hide-completed{% endif %}" data-hide-completed-url="{% url 'easy_kitchen:list-hide-completed' object.pk %}" data-reorder-url="{% url 'easy_kitchen:item-reorder' object.pk %}">
   {% for item in object.items.all %}
     {% include "easy_kitchen/lists/partials/item.html" %}
   {% empty %}
     <p id="empty-message" class="text-center text-secondary py-4 mb-0">{% translate "No items yet." %}</p>
   {% endfor %}
 </div>
+{% if completed_item_count %}
+<div class="modal fade" id="delete-completed-modal" tabindex="-1" aria-labelledby="delete-completed-title" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title fs-5" id="delete-completed-title">{% translate "Delete completed items?" %}</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate 'Close' %}"></button>
+      </div>
+      <div class="modal-body">
+        {% blocktranslate count counter=completed_item_count trimmed %}
+The completed item on this list will be permanently deleted.
+{% plural %}
+All {{ counter }} completed items on this list will be permanently deleted.
+        {% endblocktranslate %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" aria-label="{% translate 'Cancel' %}">
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
+          <span class="d-none d-md-inline">{% translate "Cancel" %}</span>
+        </button>
+        <form method="post" action="{% url 'easy_kitchen:items-delete-completed' object.pk %}">
+          {% csrf_token %}
+          <button class="btn btn-danger" aria-label="{% translate 'Delete permanently' %}">
+            <i class="bi bi-trash" aria-hidden="true"></i>
+            <span class="d-none d-md-inline">{% translate "Delete permanently" %}</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
 <div class="modal fade" id="delete-list-modal" tabindex="-1" aria-labelledby="delete-list-title" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">

@@ -60,13 +60,18 @@ urlpatterns = [
     path("lists/reorder/", views.ShoppingListReorderView.as_view(), name="list-reorder"),
     path("lists/new/", views.ShoppingListCreateView.as_view(), name="create"),
     path("lists/<int:pk>/", views.ShoppingListDetailView.as_view(), name="detail"),
+    path(
+        "lists/<int:pk>/hide-completed/",
+        views.ListHideCompletedView.as_view(),
+        name="list-hide-completed",
+    ),
     path("lists/<int:pk>/edit/", views.ShoppingListUpdateView.as_view(), name="update"),
     path("lists/<int:pk>/delete/", views.ShoppingListDeleteView.as_view(), name="delete"),
     path("lists/<int:list_pk>/items/", views.ItemCreateView.as_view(), name="item-create"),
     path(
-        "lists/<int:list_pk>/items/reset/",
-        views.ItemsResetCheckedView.as_view(),
-        name="items-reset-checked",
+        "lists/<int:list_pk>/items/delete-completed/",
+        views.ItemsDeleteCompletedView.as_view(),
+        name="items-delete-completed",
     ),
     path(
         "lists/<int:list_pk>/items/reorder/",

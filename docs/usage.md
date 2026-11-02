@@ -8,7 +8,7 @@ A list has a title, a date, an icon, and ordered items. An item has a name, a qu
 
 - Drag the handle to reorder items or lists.
 - Check an item off with the checkbox or by tapping its name. The name and quantity are then struck through.
-- Hide completed items, or mark every completed item as open again.
+- Hide completed items, or delete every completed item after confirmation.
 - Adding an item whose name already exists updates that row. Matching ignores case and extra spaces.
 - Quantities with the same unit are added. `1 l` plus `2 l` becomes `3 l`. A decimal comma is accepted, so `1,5 kg` plus `0,5 kg` becomes `2 kg`.
 - A different unit stays beside the others. `1 l` plus `500 ml` stays `1 l, 500 ml`.

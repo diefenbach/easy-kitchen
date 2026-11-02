@@ -1,4 +1,4 @@
-function postJson(url, body) {
+export function postJson(url, body) {
   const token = document.querySelector("[name=csrfmiddlewaretoken]")?.value;
   return fetch(url, {
     method: "POST",

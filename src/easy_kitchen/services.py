@@ -497,6 +497,15 @@ def set_item_checked(
     return item
 
 
+def delete_completed_items(shopping_list: ShoppingList) -> int:
+    """Remove every completed item from this list. Returns how many were deleted."""
+    queryset = shopping_list.items.filter(checked=True)
+    count = queryset.count()
+    if count:
+        queryset.delete()
+    return count
+
+
 def add_recipe_to_owned_list(
     user: AbstractBaseUser,
     *,

@@ -1,4 +1,4 @@
-import {bindSortable} from "./easykitchen.js";
+import {bindSortable, postJson} from "./easykitchen.js";
 
 function showArticleSuggestions(input) {
   const field = input.closest(".article-field");
@@ -61,8 +61,11 @@ document.addEventListener("reset", (event) => {
 
 const itemsContainer = document.getElementById("items");
 const checkedItemsToggle = document.getElementById("toggle-checked-items");
-checkedItemsToggle?.addEventListener("click", () => {
-  const hidden = itemsContainer.classList.toggle("hide-completed");
+const hideCompletedUrl = itemsContainer?.dataset.hideCompletedUrl;
+
+function setCompletedItemsHidden(hidden) {
+  if (!itemsContainer || !checkedItemsToggle) return;
+  itemsContainer.classList.toggle("hide-completed", hidden);
   itemsContainer.querySelectorAll(".shopping-item.checked").forEach((item) => {
     item.hidden = hidden;
   });
@@ -70,6 +73,16 @@ checkedItemsToggle?.addEventListener("click", () => {
   const label = checkedItemsToggle.querySelector(".btn-label");
   if (label) label.textContent = text;
   checkedItemsToggle.setAttribute("aria-label", text);
-  checkedItemsToggle.setAttribute("aria-pressed", hidden);
+  checkedItemsToggle.setAttribute("aria-pressed", hidden ? "true" : "false");
+}
+
+if (itemsContainer?.classList.contains("hide-completed")) {
+  setCompletedItemsHidden(true);
+}
+
+checkedItemsToggle?.addEventListener("click", () => {
+  const hidden = !itemsContainer.classList.contains("hide-completed");
+  setCompletedItemsHidden(hidden);
+  if (hideCompletedUrl) postJson(hideCompletedUrl, {hide: hidden});
 });
 bindSortable(itemsContainer, {draggable: ".shopping-item", datasetKey: "itemId", field: "item_ids"});

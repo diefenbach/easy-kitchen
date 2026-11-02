@@ -9,7 +9,7 @@ A private, responsive shopping list application built with Django 5.2 LTS. It us
 - Each user has their own lists. A list has a title, a date, and ordered items.
 - An item has a name, a quantity, and a completed state. Drag the handle to reorder it.
 - Check an item off with the checkbox or by tapping its name. The name and the quantity are then struck through.
-- Hide completed items, or mark every completed item as open again.
+- Hide completed items, or delete every completed item after confirmation.
 - Adding an item whose name already exists updates that row. Matching ignores case and extra spaces.
 - Quantities with the same unit are added. `1 l` plus `2 l` becomes `3 l`, and `6` plus `2` becomes `8`. A decimal comma is accepted, so `1,5 kg` plus `0,5 kg` becomes `2 kg`.
 - A different unit stays beside the others. `1 l` plus `500 ml` stays `1 l, 500 ml`, and `2 packs` plus `2` stays `2 packs, 2`.

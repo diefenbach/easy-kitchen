@@ -61,6 +61,7 @@ class ShoppingList(models.Model):
     title = models.CharField(_("title"), max_length=255)
     icon = models.CharField(_("icon"), max_length=20, choices=Icon.choices, default=Icon.BASKET)
     date = models.DateField(_("date"), default=timezone.localdate)
+    hide_completed_items = models.BooleanField(_("hide completed items"), default=False)
     position = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
