@@ -44,7 +44,7 @@ def test_saved_articles_are_suggested_and_can_be_renamed(authenticated_page):
     name.locator("xpath=ancestor::form[1]").get_by_role("button", name="Save").click()
     expect(page.get_by_role("textbox", name="Edit Räuchertofu")).to_have_value("Räuchertofu")
 
-    page.get_by_role("link", name="EasyKitchen").click()
+    page.get_by_role("link", name="Easy Kitchen").click()
     page.get_by_role("link", name="Vorrat").click()
     expect(page.locator('#articles option[value="Räuchertofu"]')).to_have_count(1)
     expect(page.locator('#articles option[value="Naturtofu"]')).to_have_count(0)
@@ -88,7 +88,7 @@ def test_articles_return_to_the_page_they_were_opened_from(authenticated_page):
     page.get_by_role("link", name="Vorrat").click()
     expect(page.get_by_role("heading", name="Vorrat")).to_be_visible()
 
-    page.get_by_role("link", name="EasyKitchen").click()
+    page.get_by_role("link", name="Easy Kitchen").click()
     open_account_menu(page)
     page.get_by_role("link", name="Edit articles", exact=True).click()
     page.locator("main").get_by_role("link", name="Shopping lists").click()

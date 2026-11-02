@@ -16,18 +16,22 @@ h1, h2, .navbar-brand { color: var(--ek-sage-dark); font-family: Fraunces, Georg
 .navbar-brand {
   display: inline-flex;
   align-items: center;
-  gap: .5rem;
-  font-size: 1.45rem;
-  letter-spacing: -.02em;
+  gap: 0.9rem;
   text-decoration: none;
 }
-.brand-mark { width: 1.9rem; height: 1.9rem; color: var(--ek-sage); flex: none; }
-.brand-mark path {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.navbar-brand .brand-mark {
+  display: block;
+  height: 3.15rem;
+  width: auto;
+}
+.navbar-brand .brand-word {
+  color: #6e7b55;
+  font-family: Fraunces, Georgia, serif;
+  font-size: 1.85rem;
+  font-weight: 560;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  white-space: nowrap;
 }
 .home-more {
   color: #8a4d55;

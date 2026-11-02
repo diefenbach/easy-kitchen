@@ -9,6 +9,15 @@ from easy_kitchen.models import ShoppingItem, ShoppingList
 
 
 @pytest.mark.django_db
+def test_pages_show_the_wordmark_logo(client, user):
+    client.force_login(user)
+    content = client.get(reverse("easy_kitchen:home")).content.decode()
+    assert "easy_kitchen/logo.png" in content
+    assert ">Easy Kitchen</span>" in content
+    assert 'aria-label="Easy Kitchen"' in content
+
+
+@pytest.mark.django_db
 def test_home_shows_the_three_newest_lists_and_recipes(client, user, other_user):
     from easy_kitchen.models import Recipe
 

@@ -35,6 +35,7 @@ exclude_patterns = ["_build", "chatgpt", "Thumbs.db", ".DS_Store"]
 templates_path = ["_templates"]
 html_static_path = ["_static"]
 html_theme = "sphinx_rtd_theme"
+html_logo = "_static/logo.png"
 html_title = "EasyKitchen"
 html_context = {
     "display_github": True,
