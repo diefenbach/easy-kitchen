@@ -394,6 +394,36 @@ def test_adding_a_recipe_to_an_existing_list_keeps_the_quantity(client, user):
 
 
 @pytest.mark.django_db
+def test_recipe_line_row_actions_are_icon_only(client, user):
+    client.force_login(user)
+    recipe = create_recipe(user, title="Pancakes", ingredients=[{"name": "Flour"}], steps=["Mix"])
+
+    content = client.get(reverse("easy_kitchen:recipe-detail", args=[recipe.pk])).content.decode()
+
+    assert 'aria-label="Edit ingredient"' in content
+    assert 'aria-label="Delete ingredient"' in content
+    assert 'aria-label="Edit step"' in content
+    assert 'aria-label="Delete step"' in content
+    assert 'd-none d-md-inline">Edit ingredient' not in content
+    assert 'd-none d-md-inline">Delete ingredient' not in content
+    assert 'd-none d-md-inline">Edit step' not in content
+    assert 'd-none d-md-inline">Delete step' not in content
+
+
+@pytest.mark.django_db
+def test_recipe_line_edit_form_vertically_centers_save_button(client, user):
+    client.force_login(user)
+    recipe = create_recipe(user, title="Pancakes", ingredients=[{"name": "Flour", "quantity": "200 g"}])
+    ingredient = recipe.ingredients.get()
+
+    content = client.get(
+        reverse("easy_kitchen:recipe-ingredient-update", args=[recipe.pk, ingredient.pk]),
+    ).content.decode()
+
+    assert 'class="card-body py-2 px-3 row g-2 align-items-center"' in content
+
+
+@pytest.mark.django_db
 def test_an_ingredient_name_and_quantity_can_be_changed(client, user):
     client.force_login(user)
     recipe = create_recipe(user, title="Pancakes", ingredients=[{"name": "Flour", "quantity": "200 g"}])

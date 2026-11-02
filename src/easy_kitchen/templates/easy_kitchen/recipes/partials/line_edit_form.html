@@ -1,6 +1,6 @@
 {% load i18n %}
 <div class="recipe-line card mb-2" data-line-id="{{ line.id }}">
-  <form class="card-body py-2 px-3 row g-2 align-items-end" hx-post="{{ update_url }}" hx-target="closest .recipe-line" hx-swap="outerHTML">
+  <form class="card-body py-2 px-3 row g-2 align-items-center" hx-post="{{ update_url }}" hx-target="closest .recipe-line" hx-swap="outerHTML">
     {% csrf_token %}
     {% if kind == "ingredient" %}
       <div class="col">
