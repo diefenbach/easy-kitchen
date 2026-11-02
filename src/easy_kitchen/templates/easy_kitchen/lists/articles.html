@@ -42,12 +42,10 @@
             {% endif %}
             <button class="btn btn-outline-secondary flex-shrink-0" aria-label="{% translate 'Save' %}">
               <i class="bi bi-check-lg" aria-hidden="true"></i>
-              <span class="d-none d-md-inline">{% translate "Save" %}</span>
             </button>
           </form>
           <button type="button" class="btn btn-outline-danger flex-shrink-0" data-bs-toggle="modal" data-bs-target="#delete-article-modal-{{ article.pk }}" aria-label="{% translate 'Delete' %}">
             <i class="bi bi-trash" aria-hidden="true"></i>
-            <span class="d-none d-md-inline">{% translate "Delete" %}</span>
           </button>
         </div>
       </div>

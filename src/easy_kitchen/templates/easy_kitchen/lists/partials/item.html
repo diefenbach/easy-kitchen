@@ -14,11 +14,9 @@
     <div class="btn-group edit-only" role="group" aria-label="{% translate 'Item actions' %}">
       <button class="btn btn-outline-secondary" hx-get="{% url 'easy_kitchen:item-update' shopping_list.pk item.pk %}" hx-target="closest .shopping-item" hx-swap="outerHTML" aria-label="{% translate 'Edit item' %}">
         <i class="bi bi-pencil" aria-hidden="true"></i>
-        <span class="d-none d-md-inline">{% translate "Edit item" %}</span>
       </button>
       <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#delete-item-modal-{{ item.id }}" aria-label="{% translate 'Delete item' %}">
         <i class="bi bi-trash" aria-hidden="true"></i>
-        <span class="d-none d-md-inline">{% translate "Delete item" %}</span>
       </button>
     </div>
   </div>

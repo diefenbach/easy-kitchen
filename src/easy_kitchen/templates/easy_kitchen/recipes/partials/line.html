@@ -16,11 +16,9 @@
     <div class="btn-group edit-only" role="group" aria-label="{% if kind == 'ingredient' %}{% translate 'Ingredient actions' %}{% else %}{% translate 'Step actions' %}{% endif %}">
       <button class="btn btn-outline-secondary" hx-get="{{ update_url }}" hx-target="closest .recipe-line" hx-swap="outerHTML" aria-label="{% if kind == 'ingredient' %}{% translate 'Edit ingredient' %}{% else %}{% translate 'Edit step' %}{% endif %}">
         <i class="bi bi-pencil" aria-hidden="true"></i>
-        <span class="d-none d-md-inline">{% if kind == "ingredient" %}{% translate "Edit ingredient" %}{% else %}{% translate "Edit step" %}{% endif %}</span>
       </button>
       <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#delete-line-modal-{{ kind }}-{{ line.id }}" aria-label="{% if kind == 'ingredient' %}{% translate 'Delete ingredient' %}{% else %}{% translate 'Delete step' %}{% endif %}">
         <i class="bi bi-trash" aria-hidden="true"></i>
-        <span class="d-none d-md-inline">{% if kind == "ingredient" %}{% translate "Delete ingredient" %}{% else %}{% translate "Delete step" %}{% endif %}</span>
       </button>
     </div>
   </div>

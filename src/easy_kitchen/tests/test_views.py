@@ -379,6 +379,19 @@ def test_list_detail_completed_item_actions_keep_visible_labels(client, user, sh
 
 
 @pytest.mark.django_db
+def test_list_detail_item_row_actions_are_icon_only(client, user, shopping_list):
+    ShoppingItem.objects.create(shopping_list=shopping_list, name="Tofu")
+    client.force_login(user)
+
+    content = client.get(reverse("easy_kitchen:detail", args=[shopping_list.pk])).content.decode()
+
+    assert 'aria-label="Edit item"' in content
+    assert 'aria-label="Delete item"' in content
+    assert 'd-none d-md-inline">Edit item' not in content
+    assert 'd-none d-md-inline">Delete item' not in content
+
+
+@pytest.mark.django_db
 def test_edit_list_prefills_html_date_input(client, user, shopping_list):
     shopping_list.date = date(2026, 10, 30)
     shopping_list.save()
