@@ -12,9 +12,7 @@ else
   printf '\nEASYKITCHEN_IMAGE=%s\n' "$IMAGE" >> .env
 fi
 
-
-docker compose pull kitchen kitchen-mcp kitchen-static-init
-docker compose up --no-deps kitchen-static-init
+docker compose pull kitchen kitchen-mcp
 docker compose up -d --no-deps kitchen kitchen-mcp
 docker compose up -d --no-deps nginx
 

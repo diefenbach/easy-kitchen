@@ -21,7 +21,9 @@ RUN addgroup --system app && adduser --system --ingroup app app
 COPY --from=build /app/.venv /app/.venv
 COPY src /app/src
 COPY docker-entrypoint.sh /app/
-RUN chmod +x /app/docker-entrypoint.sh && chown -R app:app /app
+RUN mkdir -p /app/src/staticfiles /app/src/media \
+    && chmod +x /app/docker-entrypoint.sh \
+    && chown -R app:app /app
 USER app
 EXPOSE 8000 8001
 ENTRYPOINT ["/app/docker-entrypoint.sh"]

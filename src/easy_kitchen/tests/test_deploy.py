@@ -4,10 +4,23 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 DEPLOY_SH = ROOT / ".github" / "scripts" / "deploy.sh"
 CI_CD = ROOT / ".github" / "workflows" / "ci-cd.yml"
+ENTRYPOINT = ROOT / "docker-entrypoint.sh"
+DOCKERFILE = ROOT / "Dockerfile"
 
 
 def test_deploy_script_is_valid_shell():
     subprocess.run(["sh", "-n", str(DEPLOY_SH)], check=True)
+
+
+def test_entrypoint_clears_stale_static_files_before_collecting():
+    assert "python manage.py collectstatic --noinput --clear" in ENTRYPOINT.read_text()
+
+
+def test_deployment_does_not_require_a_static_init_service():
+    assert "kitchen-static-init" not in DEPLOY_SH.read_text()
+    dockerfile = DOCKERFILE.read_text()
+    assert "mkdir -p /app/src/staticfiles /app/src/media" in dockerfile
+    assert "USER app" in dockerfile
 
 
 def test_ci_cd_deploys_only_when_runtime_paths_change():
