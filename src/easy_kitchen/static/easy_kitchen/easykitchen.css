@@ -16,18 +16,18 @@ h1, h2, .navbar-brand { color: var(--ek-sage-dark); font-family: Fraunces, Georg
 .navbar-brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.9rem;
+  gap: 0.5rem;
   text-decoration: none;
 }
 .navbar-brand .brand-mark {
   display: block;
-  height: 3.15rem;
+  height: 1.9rem;
   width: auto;
 }
 .navbar-brand .brand-word {
   color: #6e7b55;
   font-family: Fraunces, Georgia, serif;
-  font-size: 1.85rem;
+  font-size: 1.45rem;
   font-weight: 560;
   letter-spacing: -0.02em;
   line-height: 1;
