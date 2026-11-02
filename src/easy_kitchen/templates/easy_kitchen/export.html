@@ -1,0 +1,62 @@
+{% extends "easy_kitchen/base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Export JSON" %} · EasyKitchen{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h1 class="h2 mb-3">{% translate "Export JSON" %}</h1>
+        <p>{% translate "Choose the shopping lists and recipes to download as JSON." %}</p>
+        <p class="text-secondary">{% translate "You can import the file later on the import page." %}</p>
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% if form.non_field_errors %}
+            {% for error in form.non_field_errors %}
+              <div class="invalid-feedback d-block mb-3">{{ error }}</div>
+            {% endfor %}
+          {% endif %}
+          <div class="row g-4 mb-4">
+            <div class="col-md-6">
+              <h2 class="h5">{% translate "Shopping lists" %}</h2>
+              {% if shopping_lists %}
+                {% for shopping_list in shopping_lists %}
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="lists" value="{{ shopping_list.pk }}" id="list-{{ shopping_list.pk }}">
+                    <label class="form-check-label" for="list-{{ shopping_list.pk }}">{{ shopping_list.title }}</label>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <p class="text-secondary mb-0">{% translate "No shopping list yet" %}</p>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <h2 class="h5">{% translate "Recipes" %}</h2>
+              {% if recipes %}
+                {% for recipe in recipes %}
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="recipes" value="{{ recipe.pk }}" id="recipe-{{ recipe.pk }}">
+                    <label class="form-check-label" for="recipe-{{ recipe.pk }}">{{ recipe.title }}</label>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <p class="text-secondary mb-0">{% translate "No recipes yet" %}</p>
+              {% endif %}
+            </div>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-primary" aria-label="{% translate 'Export' %}">
+              <i class="bi bi-upload" aria-hidden="true"></i>
+              <span class="d-none d-md-inline">{% translate "Export" %}</span>
+            </button>
+            <a href="{% url 'easy_kitchen:home' %}" class="btn btn-outline-secondary" aria-label="{% translate 'Cancel' %}">
+              <i class="bi bi-x-lg" aria-hidden="true"></i>
+              <span class="d-none d-md-inline">{% translate "Cancel" %}</span>
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

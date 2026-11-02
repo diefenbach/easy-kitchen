@@ -40,6 +40,31 @@ def test_recipe_belongs_to_its_user_and_keeps_line_order(user, other_user):
 
 
 @pytest.mark.django_db
+def test_recipe_views_show_a_status_message_after_create_update_and_delete(client, user):
+    client.force_login(user)
+
+    created = client.post(
+        reverse("easy_kitchen:recipe-create"),
+        {"title": "Pancakes", "description": "", "image_url": ""},
+        follow=True,
+    )
+    recipe = Recipe.objects.get(user=user, title="Pancakes")
+    assert "Recipe created." in created.content.decode()
+    assert 'data-autohide="3000"' in created.content.decode()
+
+    updated = client.post(
+        reverse("easy_kitchen:recipe-update", args=[recipe.pk]),
+        {"title": "Pancakes", "description": "Sunday", "image_url": ""},
+        follow=True,
+    )
+    assert "Recipe updated." in updated.content.decode()
+
+    deleted = client.post(reverse("easy_kitchen:recipe-delete", args=[recipe.pk]), follow=True)
+    assert "Recipe deleted." in deleted.content.decode()
+    assert reverse("easy_kitchen:recipes") == deleted.request["PATH_INFO"]
+
+
+@pytest.mark.django_db
 def test_recipe_stores_calories_protein_and_preparation_time(client, user):
     client.force_login(user)
 
@@ -137,7 +162,9 @@ def test_a_new_recipe_is_placed_first_and_the_overview_can_be_reordered(client, 
     assert ">Move</span>" not in overview
     assert f'{reverse("easy_kitchen:recipe-update", args=[second.pk])}?return_to=overview' in overview
     assert 'class="dropdown-item" href="/import/" aria-label="Import JSON"' in overview
+    assert 'class="dropdown-item" href="/export/" aria-label="Export JSON"' in overview
     assert 'class="btn btn-outline-secondary" aria-label="Import JSON"' not in overview
+    assert 'class="btn btn-outline-secondary" aria-label="Export JSON"' not in overview
     assert "bi-plus-lg" in overview
     assert "New recipe" in overview
     rejected = client.post(
@@ -236,6 +263,9 @@ def test_recipe_pages_are_private_and_can_send_ingredients_to_a_new_list(client,
     assert created.status_code == 302
     assert recipe.image
     assert recipe.picture_url == recipe.image.url
+    created_page = client.get(created.url)
+    assert "Recipe created." in created_page.content.decode()
+    assert 'data-autohide="3000"' in created_page.content.decode()
 
     detail = client.get(reverse("easy_kitchen:recipe-detail", args=[recipe.pk]))
     assert detail.status_code == 200

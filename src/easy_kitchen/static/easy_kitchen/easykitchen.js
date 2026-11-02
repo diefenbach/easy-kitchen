@@ -42,6 +42,11 @@ document.querySelectorAll("[data-edit-toggle]").forEach((button) => {
   });
 });
 
+document.querySelectorAll("[data-autohide]").forEach((element) => {
+  const delay = Number(element.dataset.autohide) || 3000;
+  window.setTimeout(() => element.remove(), delay + 800);
+});
+
 document.querySelectorAll("[data-card-reorder]").forEach((container) => {
   new globalThis.Sortable(container, {
     animation: 150,

@@ -230,6 +230,42 @@ class RecipeLineForm(forms.Form):
             )
 
 
+class OwnedMultipleChoiceField(forms.ModelMultipleChoiceField):
+    """Keep ids that belong to the queryset and ignore the rest."""
+
+    def _check_values(self, value):
+        return self.queryset.filter(pk__in=value)
+
+
+class ExportForm(forms.Form):
+    """Choose the current user's lists and recipes to download as JSON."""
+
+    lists = OwnedMultipleChoiceField(
+        label=_("Shopping lists"),
+        queryset=ShoppingList.objects.none(),
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+    )
+    recipes = OwnedMultipleChoiceField(
+        label=_("Recipes"),
+        queryset=Recipe.objects.none(),
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    def __init__(self, *args, user, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["lists"].queryset = user.shopping_lists.all()
+        self.fields["recipes"].queryset = user.recipes.all()
+
+    def clean(self):
+        """Require at least one list or recipe."""
+        cleaned = super().clean()
+        if not cleaned.get("lists") and not cleaned.get("recipes"):
+            raise forms.ValidationError(_("Choose at least one shopping list or recipe."))
+        return cleaned
+
+
 class AddRecipeToListForm(forms.Form):
     """Choose one of the user's lists, or name a new list for the recipe's ingredients."""
 

@@ -2,7 +2,7 @@ import json
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponseBadRequest, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
@@ -18,10 +18,11 @@ from django.views.generic import (
     UpdateView,
 )
 
-from .forms import ArticleForm, ImportForm, ShoppingItemForm, ShoppingListForm
+from .forms import ArticleForm, ExportForm, ImportForm, ShoppingItemForm, ShoppingListForm
 from .models import Article, ShoppingItem, ShoppingList
 from .services import (
     create_item,
+    export_records,
     import_recipes,
     import_shopping_lists,
     remember_article,
@@ -99,7 +100,9 @@ class ShoppingListCreateView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.user = self.request.user
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        messages.success(self.request, _("Shopping list created."))
+        return response
 
     def get_success_url(self):
         return reverse("easy_kitchen:detail", kwargs={"pk": self.object.pk})
@@ -149,12 +152,48 @@ class ImportView(LoginRequiredMixin, View):
         return redirect("easy_kitchen:home")
 
 
+class ExportView(LoginRequiredMixin, View):
+    """Download selected lists and recipes as JSON the import page can read."""
+
+    template_name = "easy_kitchen/export.html"
+
+    def get(self, request):
+        return render(request, self.template_name, self._context(request))
+
+    def post(self, request):
+        form = ExportForm(request.POST, user=request.user)
+        if not form.is_valid():
+            return render(request, self.template_name, self._context(request, form))
+        payload = export_records(
+            lists=form.cleaned_data["lists"],
+            recipes=form.cleaned_data["recipes"],
+        )
+        response = HttpResponse(
+            json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+            content_type="application/json; charset=utf-8",
+        )
+        response["Content-Disposition"] = 'attachment; filename="easykitchen.json"'
+        return response
+
+    def _context(self, request, form=None):
+        return {
+            "form": form or ExportForm(user=request.user),
+            "shopping_lists": request.user.shopping_lists.all(),
+            "recipes": request.user.recipes.all(),
+        }
+
+
 class ShoppingListUpdateView(UserListMixin, UpdateView):
     """Edit a list and return to the overview or the list that opened the form."""
 
     model = ShoppingList
     form_class = ShoppingListForm
     template_name = "easy_kitchen/lists/form.html"
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, _("Shopping list updated."))
+        return response
 
     def get_success_url(self):
         if self.request.GET.get("return_to") == "overview":
@@ -173,6 +212,11 @@ class ShoppingListDeleteView(UserListMixin, DeleteView):
     model = ShoppingList
     template_name = "easy_kitchen/lists/confirm_delete.html"
     success_url = reverse_lazy("easy_kitchen:list")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, _("Shopping list deleted."))
+        return response
 
 
 class ItemCreateView(LoginRequiredMixin, View):

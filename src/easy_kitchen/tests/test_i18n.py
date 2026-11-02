@@ -136,6 +136,42 @@ def test_import_page_uses_the_active_language(client, user):
 
 
 @pytest.mark.django_db
+def test_export_page_uses_the_active_language(client, user):
+    client.force_login(user)
+
+    english = client.get(reverse("easy_kitchen:export-json")).content.decode()
+    assert "Export JSON" in english
+    assert "Choose the shopping lists and recipes to download as JSON." in english
+    assert ">Export JSON</span>" in client.get(reverse("easy_kitchen:list")).content.decode()
+
+    with translation.override("de"):
+        german = client.get(reverse("easy_kitchen:export-json")).content.decode()
+        overview = client.get(reverse("easy_kitchen:list")).content.decode()
+    assert "JSON exportieren" in german
+    assert "Wähle die Einkaufslisten und Rezepte, die du als JSON herunterladen willst." in german
+    assert ">JSON exportieren</span>" in overview
+
+
+@pytest.mark.django_db
+def test_list_and_recipe_status_messages_use_the_active_language(client, user):
+    client.force_login(user)
+
+    with translation.override("de"):
+        created_list = client.post(
+            reverse("easy_kitchen:create"),
+            {"title": "Markt", "date": "2026-11-01"},
+            follow=True,
+        )
+        created_recipe = client.post(
+            reverse("easy_kitchen:recipe-create"),
+            {"title": "Suppe", "description": "", "image_url": ""},
+            follow=True,
+        )
+    assert "Einkaufsliste erstellt." in created_list.content.decode()
+    assert "Rezept erstellt." in created_recipe.content.decode()
+
+
+@pytest.mark.django_db
 def test_api_errors_are_english_and_can_be_german(client, user):
     token = Token.objects.create(user=user)
     shopping_list = ShoppingList.objects.create(user=user, title="Week")
