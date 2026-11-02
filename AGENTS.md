@@ -13,6 +13,7 @@
 - Do all feature and bug-fix work on a dedicated branch. Open a pull request and merge to `main` only when CI is green. Do not commit or push directly to `main` for runtime or user-visible application changes.
 - Documentation-only and housekeeping changes (`docs/`, `AGENTS.md`, `README.md` without matching `src/` changes, and CI tweaks such as skipping deploy for those paths) do not need a separate GitHub branch or pull request. Commit sensible chunks on `main`, push, and let CI on `main` run; production deploy is skipped when only non-runtime paths changed (see `.github/workflows/ci-cd.yml`).
 - Git and pull requests (agents, for application work):
+  - Before every commit that touches `src/easy_kitchen/`, run `uv run ruff check src/easy_kitchen` (same as CI) and fix any findings first.
   - Create a feature branch from up-to-date `main`. Push with `git push -u origin HEAD:your-branch` so the remote branch name matches the feature branch.
   - Split work into sensible commits (one concern per commit) before opening the PR.
   - Open the PR with `gh pr create --base main --head your-branch`.
