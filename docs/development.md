@@ -1,6 +1,6 @@
 # Development
 
-Work on a feature or bug-fix branch. Open a pull request and merge to `main` only when CI is green. Do not commit or push directly to `main`.
+Work on a feature or bug-fix branch. Open a pull request and merge to `main` only when CI is green. Documentation-only updates may go straight to `main` without a pull request; CI still runs there, and deploy is skipped when no runtime paths changed (see below).
 
 Shared writes belong in `easy_kitchen/services.py`. Scope every query to the current user. Do not add a PWA, SPA, or dependency without a clear product need.
 

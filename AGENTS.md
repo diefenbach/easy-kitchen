@@ -10,9 +10,10 @@
 - Use `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, and `POSTGRES_PORT` for database configuration; do not introduce `DATABASE_URL` or dotenv-loading dependencies.
 - `docker-compose.yaml` exists only for the local PostgreSQL service. Develop the Django app locally with `uv run --env-file .env python src/manage.py runserver`; the production Compose stack lives separately.
 - Keep source assets in `src/easy_kitchen/static/`. Generated `staticfiles/` are production output for the shared Nginx volume and must never be committed.
-- Do all feature and bug-fix work on a dedicated branch. Open a pull request and merge to `main` only when CI is green. Do not commit or push directly to `main`.
-- Git and pull requests (agents):
-  - Create a feature branch from up-to-date `main`. Push with `git push -u origin HEAD:your-branch` so the remote branch name matches the feature branch; do not push to `origin/main` unless the user explicitly asks.
+- Do all feature and bug-fix work on a dedicated branch. Open a pull request and merge to `main` only when CI is green. Do not commit or push directly to `main` for runtime or user-visible application changes.
+- Documentation-only and housekeeping changes (`docs/`, `AGENTS.md`, `README.md` without matching `src/` changes, and CI tweaks such as skipping deploy for those paths) do not need a separate GitHub branch or pull request. Commit sensible chunks on `main`, push, and let CI on `main` run; production deploy is skipped when only non-runtime paths changed (see `.github/workflows/ci-cd.yml`).
+- Git and pull requests (agents, for application work):
+  - Create a feature branch from up-to-date `main`. Push with `git push -u origin HEAD:your-branch` so the remote branch name matches the feature branch.
   - Split work into sensible commits (one concern per commit) before opening the PR.
   - Open the PR with `gh pr create --base main --head your-branch`.
   - Merge only after required checks pass. Prefer waiting on CI over merging immediately: `gh pr checks <number> --watch` then `gh pr merge <number> --merge` (or `--squash` / `--rebase` if the repo convention calls for it). Alternatively: `gh pr merge <number> --auto --merge` so GitHub merges when checks are green.
