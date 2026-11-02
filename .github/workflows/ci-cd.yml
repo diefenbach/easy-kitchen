@@ -23,6 +23,7 @@ jobs:
           enable-cache: true
       - run: uv sync --frozen --all-groups
       - run: uv run ruff check src/easy_kitchen
+      - run: uv run sphinx-build -W -b html docs docs/_build/html
       - run: uv run playwright install --with-deps chromium
       - run: uv run python -m pytest
 

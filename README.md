@@ -245,6 +245,17 @@ DJANGO_SETTINGS_MODULE=project.settings.development PYTHONPATH=src \
 
 It listens on `http://127.0.0.1:8001/mcp`. Create a token with `drf_create_token` and send it as `Authorization: Token <token>`.
 
+## Documentation
+
+Sphinx sources live in `docs/`. Read the Docs builds them from `.readthedocs.yaml`.
+
+```sh
+uv sync --all-groups
+uv run sphinx-build -W -b html docs docs/_build/html
+```
+
+Open `docs/_build/html/index.html`. Import the GitHub repository at [readthedocs.org](https://readthedocs.org/) to publish the HTML.
+
 ## Quality
 
 ```sh
