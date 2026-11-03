@@ -23,7 +23,7 @@ A private, responsive shopping list application built with Django 5.2 LTS. It us
 
 ### Recipes
 
-- Each user has their own recipes. A recipe has a title, a description, one picture, optional calories, protein, and preparation time, ordered ingredients, and ordered cooking steps.
+- Each user has their own recipes. A recipe has a title, a description, one picture, optional calories, protein, carbohydrates, fat, and preparation time, ordered ingredients, and ordered cooking steps.
 - The picture is a file uploaded in the app, or an image URL supplied by the API, MCP, or JSON import. The uploaded file is shown when both are present.
 - An ingredient has a name and a quantity, in the same way a shopping-list item does. A step is one block of text. Drag the handle to reorder either list.
 - **Add to list** copies those ingredients onto a shopping list that belongs to the same user. Choose an existing list, or enter a title to create one for today. The ingredient name and quantity are copied onto the new item.
@@ -59,7 +59,7 @@ A private, responsive shopping list application built with Django 5.2 LTS. It us
 - `add_item_to_list` adds an item. Pass `list_id` or `list_title` to choose the list. Omit the list to use today's list, or create one titled Today.
 - `add_recipe_to_list` copies a recipe's ingredients onto a list. Omit the list to use today's list, or create one titled Today.
 - Confirm `title`, an ISO `date`, and `items` before creating a list.
-- Confirm `title`, `ingredients`, and `steps` before creating a recipe. `image_url`, `calories`, `protein`, and `preparation_minutes` are optional.
+- Confirm `title`, `ingredients`, and `steps` before creating a recipe. `image_url`, `calories`, `protein`, `carbohydrates`, `fat`, and `preparation_minutes` are optional.
 - Host and origin checks use `DJANGO_ALLOWED_HOSTS` and `DJANGO_CSRF_TRUSTED_ORIGINS`. Override them with `MCP_ALLOWED_HOSTS` and `MCP_ALLOWED_ORIGINS`.
 - In production, Nginx proxies `/mcp` to the MCP container. The process does not call the HTTP API. It uses the shared database and service layer.
 
@@ -117,6 +117,8 @@ The body is either an object with a `recipes` array or the array itself. Every r
       "image_url": "https://example.com/pancakes.jpg",
       "calories": 450,
       "protein": 12,
+      "carbohydrates": 55,
+      "fat": 18,
       "preparation_minutes": 25,
       "ingredients": [
         {"name": "flour", "quantity": "200 g"},
@@ -138,6 +140,8 @@ The body is either an object with a `recipes` array or the array itself. Every r
 | `image_url` | no | `http` or `https` address of a picture. Shown when no file has been uploaded. |
 | `calories` | no | Whole number of kilocalories. Omit it or send `null` when unknown. |
 | `protein` | no | Whole number of grams of protein. Omit it or send `null` when unknown. |
+| `carbohydrates` | no | Whole number of grams of carbohydrates. Omit it or send `null` when unknown. |
+| `fat` | no | Whole number of grams of fat. Omit it or send `null` when unknown. |
 | `preparation_minutes` | no | Whole number of minutes. Omit it or send `null` when unknown. |
 | `ingredients` | no | Ordered ingredients. Omit it for a recipe without ingredients. |
 | `ingredients[].name` | yes | Ingredient name |

@@ -88,6 +88,8 @@ _RECIPE_KEYS = {
     "image_url",
     "calories",
     "protein",
+    "carbohydrates",
+    "fat",
     "preparation_minutes",
 }
 _LIST_KEYS = {"items", "date", "icon"}
@@ -192,6 +194,8 @@ class RecipeForm(forms.ModelForm):
             "description",
             "calories",
             "protein",
+            "carbohydrates",
+            "fat",
             "preparation_minutes",
             "image",
             "image_url",
@@ -201,6 +205,8 @@ class RecipeForm(forms.ModelForm):
             "description": _("Description"),
             "calories": _("Calories (kcal)"),
             "protein": _("Protein (g)"),
+            "carbohydrates": _("Carbohydrates (g)"),
+            "fat": _("Fat (g)"),
             "preparation_minutes": _("Preparation time (min)"),
             "image": _("Image"),
         }
@@ -208,6 +214,8 @@ class RecipeForm(forms.ModelForm):
             "description": forms.Textarea(attrs={"rows": 4}),
             "calories": forms.NumberInput(attrs={"min": 0}),
             "protein": forms.NumberInput(attrs={"min": 0}),
+            "carbohydrates": forms.NumberInput(attrs={"min": 0}),
+            "fat": forms.NumberInput(attrs={"min": 0}),
             "preparation_minutes": forms.NumberInput(attrs={"min": 0}),
         }
 

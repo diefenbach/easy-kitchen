@@ -146,6 +146,8 @@ class Recipe(models.Model):
     )
     calories = models.PositiveIntegerField(_("calories"), null=True, blank=True)
     protein = models.PositiveIntegerField(_("protein"), null=True, blank=True)
+    carbohydrates = models.PositiveIntegerField(_("carbohydrates"), null=True, blank=True)
+    fat = models.PositiveIntegerField(_("fat"), null=True, blank=True)
     preparation_minutes = models.PositiveIntegerField(_("preparation time"), null=True, blank=True)
     position = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)

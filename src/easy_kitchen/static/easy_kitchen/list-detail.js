@@ -97,4 +97,32 @@ checkedItemsToggle?.addEventListener("click", () => {
   setCompletedItemsHidden(hidden);
   if (hideCompletedUrl) postJson(hideCompletedUrl, {hide: hidden});
 });
+function completedItemCount() {
+  return itemsContainer?.querySelectorAll(".shopping-item.checked").length ?? 0;
+}
+
+function syncDeleteCompletedControl() {
+  const count = completedItemCount();
+  const trigger = document.getElementById("delete-completed-trigger");
+  if (trigger) trigger.disabled = count === 0;
+  const body = document.getElementById("delete-completed-body");
+  if (!body) return;
+  if (count === 0) {
+    body.textContent = "";
+    return;
+  }
+  if (count === 1) {
+    body.textContent = body.dataset.messageOne ?? "";
+    return;
+  }
+  body.textContent = (body.dataset.messageMany ?? "").replaceAll("__COUNT__", String(count));
+}
+
+syncDeleteCompletedControl();
+document.body.addEventListener("htmx:afterSwap", (event) => {
+  if (event.target.closest?.("#items") || event.target.classList?.contains("shopping-item")) {
+    syncDeleteCompletedControl();
+  }
+});
+
 bindSortable(itemsContainer, {draggable: ".shopping-item", datasetKey: "itemId", field: "item_ids"});
