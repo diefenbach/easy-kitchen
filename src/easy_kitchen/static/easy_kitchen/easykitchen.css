@@ -166,15 +166,54 @@ body.editing .btn-group.edit-actions > .btn.edit-only:last-child {
   border-top-right-radius: var(--ek-action-btn-radius) !important;
   border-bottom-right-radius: var(--ek-action-btn-radius) !important;
 }
+@media (max-width: 575.98px) {
+  body.editing .detail-header-toolbar {
+    flex-wrap: wrap;
+    row-gap: .75rem;
+  }
+  body.editing .detail-header-toolbar > .edit-actions {
+    display: flex;
+    flex: 0 0 100%;
+    justify-content: flex-end;
+    max-width: 100%;
+  }
+  body.editing .edit-actions > .btn {
+    --bs-btn-padding-x: .55rem;
+  }
+  body.editing .shopping-item .item-title-toggle {
+    min-width: 0;
+  }
+  body.editing .shopping-item .item-name {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  body.editing .shopping-item .drag-handle {
+    --bs-btn-padding-x: .2rem;
+  }
+  body.editing .recipe-line .recipe-line-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  body.editing .recipe-line .drag-handle {
+    --bs-btn-padding-x: .2rem;
+  }
+}
 .list-card { transition: transform .15s ease, box-shadow .15s ease; }
 .list-card:hover { transform: translateY(-2px); box-shadow: 0 .6rem 1.2rem rgba(90, 62, 40, .1) !important; }
-.list-back-button { --bs-btn-padding-x: .625rem; }
+.list-back-button { --bs-btn-padding-x: .75rem; }
 .list-detail-header { background-color: #fffdfb; border-left: .35rem solid var(--ek-blush) !important; }
 .shopping-item.checked { opacity: .62; }
 .shopping-item.checked .item-name,
 .shopping-item.checked .item-quantity { text-decoration: line-through; }
 .item-title-toggle { background: transparent; border: 0; color: inherit; cursor: pointer; min-height: 2.75rem; padding: .25rem .5rem; text-align: start; }
 .article-field { position: relative; }
+.article-field:not(:focus-within) .article-suggestions {
+  display: none !important;
+}
 .article-suggestions {
   position: absolute;
   z-index: 30;
@@ -210,7 +249,24 @@ body.editing .btn-group.edit-actions > .btn.edit-only:last-child {
 .hide-completed .shopping-item.checked { display: none; }
 .drag-handle { cursor: grab; font-size: 1.1rem; line-height: 1; }
 .checkmark { font-size: 1.3rem; }
-input:not([type="radio"]):not([type="checkbox"]), select, textarea { display: block; width: 100%; padding: .375rem .75rem; border: 1px solid var(--ek-line); border-radius: .8rem; background: #fffdfb; color: var(--ek-ink); }
+input:not([type="radio"]):not([type="checkbox"]):not(.form-control),
+select:not(.form-select),
+textarea:not(.form-control) {
+  display: block;
+  width: 100%;
+  padding: .375rem .75rem;
+  border: 1px solid var(--ek-line);
+  border-radius: .8rem;
+  background: #fffdfb;
+  color: var(--ek-ink);
+}
+.form-control,
+.form-select {
+  border-color: var(--ek-line);
+  background-color: #fffdfb;
+  color: var(--ek-ink);
+  border-radius: .8rem;
+}
 .list-icon-choices { display: flex; flex-wrap: wrap; gap: .6rem; }
 .list-icon-choice { position: relative; margin: 0; cursor: pointer; }
 .list-icon-choice input {

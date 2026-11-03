@@ -274,8 +274,14 @@ class AddRecipeToListForm(forms.Form):
         queryset=ShoppingList.objects.none(),
         required=False,
         empty_label=_("Choose a list"),
+        widget=forms.Select(attrs={"class": "form-select"}),
     )
-    title = forms.CharField(label=_("New list"), max_length=255, required=False)
+    title = forms.CharField(
+        label=_("New list"),
+        max_length=255,
+        required=False,
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+    )
 
     def __init__(self, *args, user, **kwargs):
         super().__init__(*args, **kwargs)

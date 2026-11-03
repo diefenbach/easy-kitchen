@@ -62,6 +62,7 @@ def test_article_suggestions_open_at_the_start_of_the_input(authenticated_page):
     name.fill("Avocado")
     page.get_by_role("button", name="Add").click()
     expect(page.locator('#articles option[value="Avocado"]')).to_have_count(1)
+    expect(name).to_be_focused()
 
     name.click()
     suggestions = page.get_by_role("listbox", name="Articles")
