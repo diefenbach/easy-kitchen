@@ -274,6 +274,21 @@ class ExportForm(forms.Form):
         return cleaned
 
 
+class MealPlanDayForm(forms.Form):
+    """Pick a recipe for one day in the meal plan."""
+
+    date = forms.DateField(widget=forms.HiddenInput())
+    recipe = forms.ModelChoiceField(
+        label=_("Recipe"),
+        queryset=Recipe.objects.none(),
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+
+    def __init__(self, *args, user, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["recipe"].queryset = Recipe.objects.filter(user=user).order_by("title")
+
+
 class AddRecipeToListForm(forms.Form):
     """Choose one of the user's lists, or name a new list for the recipe's ingredients."""
 

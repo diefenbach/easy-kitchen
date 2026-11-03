@@ -1,6 +1,6 @@
 import re
 from collections.abc import Mapping, Sequence
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any, Literal
 
@@ -12,7 +12,15 @@ from django.db.models import F, Manager, Max, Model
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from .models import Article, Recipe, RecipeIngredient, RecipeStep, ShoppingItem, ShoppingList
+from .models import (
+    Article,
+    MealPlanEntry,
+    Recipe,
+    RecipeIngredient,
+    RecipeStep,
+    ShoppingItem,
+    ShoppingList,
+)
 
 _QUANTITY_AMOUNT = re.compile(r"^(\d+(?:[.,]\d+)?)\s*(.*)$")
 _INGREDIENT_AMOUNT = r"\d+(?:[.,]\d+)?(?:/\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?"
@@ -619,6 +627,87 @@ def recipe_export_data(recipe: Recipe) -> dict[str, Any]:
     if recipe.preparation_minutes is not None:
         data["preparation_minutes"] = recipe.preparation_minutes
     return data
+
+
+def week_start_for(day: date) -> date:
+    """Return the Monday on or before the given day."""
+    return day - timedelta(days=day.weekday())
+
+
+def week_dates(week_start: date) -> list[date]:
+    """Return Monday through Sunday for a week that starts on Monday."""
+    return [week_start + timedelta(days=offset) for offset in range(7)]
+
+
+def meal_plan_for_week(user: AbstractBaseUser, week_start: date) -> dict[date, MealPlanEntry | None]:
+    """Map each day in the week to a plan entry, if one exists."""
+    dates = week_dates(week_start)
+    entries = {
+        entry.date: entry
+        for entry in MealPlanEntry.objects.filter(user=user, date__in=dates).select_related(
+            "recipe"
+        )
+    }
+    return {day: entries.get(day) for day in dates}
+
+
+def set_meal_plan_recipe(user: AbstractBaseUser, day: date, recipe: Recipe) -> MealPlanEntry:
+    """Assign one recipe to a day for this user."""
+    if recipe.user_id != user.pk:
+        raise ValueError(_("Recipe not found."))
+    entry, _created = MealPlanEntry.objects.update_or_create(
+        user=user,
+        date=day,
+        defaults={"recipe": recipe},
+    )
+    if entry.recipe_id != recipe.pk:
+        entry.recipe = recipe
+        entry.save(update_fields=["recipe"])
+    return entry
+
+
+def clear_meal_plan_day(user: AbstractBaseUser, day: date) -> None:
+    """Remove the planned recipe for one day."""
+    MealPlanEntry.objects.filter(user=user, date=day).delete()
+
+
+def planned_recipe_count(user: AbstractBaseUser, week_start: date) -> int:
+    """Return how many days in the week have a planned recipe."""
+    plan = meal_plan_for_week(user, week_start)
+    return sum(1 for day in week_dates(week_start) if plan.get(day) and plan[day].recipe_id)
+
+
+def add_meal_plan_week_to_list(
+    user: AbstractBaseUser,
+    week_start: date,
+    *,
+    shopping_list: ShoppingList | None,
+    title: str = "",
+) -> ShoppingList:
+    """Copy planned recipes for the week onto one shopping list, merging quantities."""
+    if title:
+        target = create_shopping_list(user, title=title, date=timezone.localdate())
+    elif shopping_list is not None:
+        if shopping_list.user_id != user.pk:
+            raise ValueError(_("Invalid shopping list."))
+        target = shopping_list
+    else:
+        raise ValueError(_("Choose a list or enter a title for a new one."))
+
+    dates = week_dates(week_start)
+    entries = {
+        entry.date: entry
+        for entry in MealPlanEntry.objects.filter(
+            user=user, date__in=dates, recipe__isnull=False
+        ).select_related("recipe")
+    }
+    planned = [entries[day].recipe for day in dates if day in entries and entries[day].recipe]
+    if not planned:
+        raise ValueError(_("This week has no planned recipes yet."))
+
+    for recipe in planned:
+        add_recipe_ingredients_to_list(recipe, target)
+    return target
 
 
 def export_records(
