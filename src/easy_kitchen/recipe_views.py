@@ -2,16 +2,18 @@ import json
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponseBadRequest, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.text import slugify
 from django.utils.translation import gettext as _, ngettext
 from django.views import View
 from django.views.generic import CreateView, DeleteView, UpdateView
 
 from .forms import AddRecipeToListForm, RecipeForm, RecipeLineForm
 from .models import Recipe
+from .recipe_pdf import build_recipe_pdf
 from .services import (
     _normalized_name,
     add_recipe_ingredients_to_list,
@@ -107,6 +109,20 @@ class RecipeDeleteView(UserRecipeMixin, DeleteView):
 
     def get_success_url(self):
         return reverse("easy_kitchen:recipes")
+
+
+class RecipePdfView(UserRecipeMixin, View):
+    """Download one recipe as a PDF in the active UI language."""
+
+    def get(self, request, pk):
+        recipe = get_object_or_404(
+            self.get_queryset().prefetch_related("ingredients", "steps"), pk=pk
+        )
+        pdf_bytes = build_recipe_pdf(recipe)
+        filename = f"{slugify(recipe.title) or 'recipe'}.pdf"
+        response = HttpResponse(pdf_bytes, content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
 
 
 class RecipeDetailView(UserRecipeMixin, View):

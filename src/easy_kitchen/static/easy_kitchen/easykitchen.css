@@ -145,7 +145,10 @@ h1, h2, .navbar-brand { color: var(--ek-sage-dark); font-family: Fraunces, Georg
 .list-card { overflow: hidden; }
 .badge.text-bg-light { background: #f3ece4 !important; color: var(--ek-ink); }
 body:not(.editing) .edit-only { display: none !important; }
-body:not(.editing) .edit-actions > .btn { border-radius: var(--bs-border-radius) !important; }
+body.editing .view-only { display: none !important; }
+body:not(.editing) .btn-group.edit-actions:not(:has(.view-only)) > .btn[data-edit-toggle] {
+  border-radius: var(--bs-border-radius) !important;
+}
 .list-card { transition: transform .15s ease, box-shadow .15s ease; }
 .list-card:hover { transform: translateY(-2px); box-shadow: 0 .6rem 1.2rem rgba(90, 62, 40, .1) !important; }
 .list-back-button { --bs-btn-padding-x: .625rem; }

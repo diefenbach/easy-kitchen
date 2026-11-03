@@ -491,3 +491,72 @@ def test_api_hides_a_foreign_recipe_and_can_reorder_steps(client, user, other_us
 
     assert reordered.status_code == 200
     assert [step["id"] for step in reordered.json()["steps"]] == step_ids
+
+
+@pytest.mark.django_db
+def test_recipe_detail_offers_pdf_download(client, user):
+    recipe = create_recipe(
+        user,
+        title="Pancakes",
+        ingredients=[{"name": "Flour", "quantity": "200 g"}],
+        steps=["Mix and bake"],
+    )
+    client.force_login(user)
+
+    content = client.get(reverse("easy_kitchen:recipe-detail", args=[recipe.pk])).content.decode()
+
+    assert 'class="btn-group edit-actions' in content
+    assert 'class="btn btn-outline-secondary view-only"' in content
+    assert 'aria-label="Download PDF"' in content
+    assert reverse("easy_kitchen:recipe-pdf", args=[recipe.pk]) in content
+    assert 'class="bi bi-file-earmark-pdf"' in content
+
+
+@pytest.mark.django_db
+def test_recipe_pdf_download_is_private_and_returns_pdf(client, user, other_user):
+    recipe = create_recipe(
+        user,
+        title="Pancakes",
+        description="Fluffy",
+        ingredients=[{"name": "Flour", "quantity": "200 g"}],
+        steps=["Mix"],
+    )
+    recipe.calories = 450
+    recipe.save(update_fields=["calories"])
+    client.force_login(user)
+
+    response = client.get(reverse("easy_kitchen:recipe-pdf", args=[recipe.pk]))
+
+    assert response.status_code == 200
+    assert response["Content-Type"] == "application/pdf"
+    assert response.content.startswith(b"%PDF")
+    assert 'filename="pancakes.pdf"' in response["Content-Disposition"]
+
+    client.force_login(other_user)
+    assert client.get(reverse("easy_kitchen:recipe-pdf", args=[recipe.pk])).status_code == 404
+
+
+@pytest.mark.django_db
+def test_recipe_pdf_omits_external_image_url(client, user):
+    recipe = create_recipe(user, title="Soup", steps=["Simmer"])
+    recipe.image_url = "https://example.com/soup.jpg"
+    recipe.save(update_fields=["image_url"])
+    client.force_login(user)
+
+    response = client.get(reverse("easy_kitchen:recipe-pdf", args=[recipe.pk]))
+
+    assert response.status_code == 200
+    assert response.content.startswith(b"%PDF")
+
+
+@pytest.mark.django_db
+def test_recipe_pdf_download_respects_active_ui_language(client, user):
+    recipe = create_recipe(user, title="Pancakes", ingredients=[{"name": "Flour"}])
+    client.force_login(user)
+
+    with translation.override("de"):
+        detail = client.get(reverse("easy_kitchen:recipe-detail", args=[recipe.pk])).content.decode()
+        response = client.get(reverse("easy_kitchen:recipe-pdf", args=[recipe.pk]))
+
+    assert "PDF herunterladen" in detail
+    assert response.status_code == 200
