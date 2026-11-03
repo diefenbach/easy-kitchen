@@ -1,6 +1,29 @@
 import importlib
 
 
+def test_build_settings_collect_static_without_production_secrets(monkeypatch):
+    for name in (
+        "DJANGO_SECRET_KEY",
+        "DJANGO_ALLOWED_HOSTS",
+        "DJANGO_CSRF_TRUSTED_ORIGINS",
+        "POSTGRES_DB",
+        "POSTGRES_USER",
+        "POSTGRES_PASSWORD",
+        "POSTGRES_HOST",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+    build = importlib.import_module("project.settings.build")
+    build = importlib.reload(build)
+
+    assert build.DEBUG is False
+    assert build.STATIC_ROOT == build.SRC_DIR / "staticfiles"
+    assert "whitenoise.middleware.WhiteNoiseMiddleware" in build.MIDDLEWARE
+    assert build.STORAGES["staticfiles"]["BACKEND"] == (
+        "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    )
+
+
 def test_development_settings_read_hosts_from_environment(monkeypatch):
     monkeypatch.setenv("POSTGRES_DB", "easykitchen")
     monkeypatch.setenv("POSTGRES_USER", "easykitchen")
