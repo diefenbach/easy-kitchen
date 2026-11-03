@@ -11,7 +11,7 @@ Tools have no user argument. Records belong to the owner of the DRF token in `Au
 | `list_shopping_lists` | Read the token owner's lists and items. |
 | `list_recipes` | Read the token owner's recipes, ingredients, and steps. |
 | `create_shopping_list` | Create a list. Confirm `title`, an ISO `date`, and `items` first. |
-| `create_recipe` | Create a recipe. Confirm `title`, `ingredients`, and `steps` first. `image_url`, `calories`, `protein`, and `preparation_minutes` are optional. |
+| `create_recipe` | Create a recipe. Confirm `title`, `ingredients`, and `steps` first. `image_url`, `calories`, `protein`, `carbohydrates`, `fat`, and `preparation_minutes` are optional. |
 | `set_item_checked` | Mark an item completed. Pass `list_id` when the name is on more than one list. `checked` defaults to `true`. |
 | `add_item_to_list` | Add an item. Pass `list_id` or `list_title`. Omit the list to use today's list, or create one titled Today. |
 | `add_recipe_to_list` | Copy a recipe's ingredients onto a list. Omit the list to use today's list, or create one titled Today. |

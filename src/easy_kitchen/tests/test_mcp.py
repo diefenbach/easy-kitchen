@@ -105,6 +105,8 @@ def test_mcp_creates_a_recipe_for_the_token_owner(user, other_user):
         image_url="https://example.com/pancakes.jpg",
         calories=450,
         protein=12,
+        carbohydrates=55,
+        fat=18,
         preparation_minutes=25,
         ingredients=[{"name": "Flour", "quantity": "200 g"}],
         steps=[{"text": "Fry"}],
@@ -116,6 +118,8 @@ def test_mcp_creates_a_recipe_for_the_token_owner(user, other_user):
     assert result["image_url"] == "https://example.com/pancakes.jpg"
     assert result["calories"] == 450
     assert result["protein"] == 12
+    assert result["carbohydrates"] == 55
+    assert result["fat"] == 18
     assert result["preparation_minutes"] == 25
     assert result["ingredients"][0]["name"] == "Flour"
     assert result["ingredients"][0]["quantity"] == "200 g"
@@ -131,6 +135,8 @@ def test_mcp_recipe_tool_does_not_accept_a_user_argument():
         "image_url",
         "calories",
         "protein",
+        "carbohydrates",
+        "fat",
         "preparation_minutes",
         "ingredients",
         "steps",

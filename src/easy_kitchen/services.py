@@ -275,6 +275,8 @@ def create_recipe(
     image_url: str = "",
     calories: int | None = None,
     protein: int | None = None,
+    carbohydrates: int | None = None,
+    fat: int | None = None,
     preparation_minutes: int | None = None,
     ingredients: Sequence[Mapping[str, Any]] | None = None,
     steps: Sequence[str | Mapping[str, Any]] | None = None,
@@ -289,6 +291,8 @@ def create_recipe(
     image_url = _clean_image_url(image_url)
     calories = _optional_count(calories)
     protein = _optional_count(protein)
+    carbohydrates = _optional_count(carbohydrates)
+    fat = _optional_count(fat)
     preparation_minutes = _optional_count(preparation_minutes)
     if recipe is None:
         recipe = user.recipes.create(
@@ -297,6 +301,8 @@ def create_recipe(
             image_url=image_url,
             calories=calories,
             protein=protein,
+            carbohydrates=carbohydrates,
+            fat=fat,
             preparation_minutes=preparation_minutes,
             position=position,
         )
@@ -306,6 +312,8 @@ def create_recipe(
         recipe.image_url = image_url
         recipe.calories = calories
         recipe.protein = protein
+        recipe.carbohydrates = carbohydrates
+        recipe.fat = fat
         recipe.preparation_minutes = preparation_minutes
         recipe.save(
             update_fields=[
@@ -314,6 +322,8 @@ def create_recipe(
                 "image_url",
                 "calories",
                 "protein",
+                "carbohydrates",
+                "fat",
                 "preparation_minutes",
                 "updated_at",
             ]
@@ -602,6 +612,10 @@ def recipe_export_data(recipe: Recipe) -> dict[str, Any]:
         data["calories"] = recipe.calories
     if recipe.protein is not None:
         data["protein"] = recipe.protein
+    if recipe.carbohydrates is not None:
+        data["carbohydrates"] = recipe.carbohydrates
+    if recipe.fat is not None:
+        data["fat"] = recipe.fat
     if recipe.preparation_minutes is not None:
         data["preparation_minutes"] = recipe.preparation_minutes
     return data

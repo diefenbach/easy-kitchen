@@ -1,7 +1,7 @@
 {% load i18n %}
-{% if recipe.calories is not None or recipe.protein is not None or recipe.preparation_minutes is not None %}
+{% if recipe.calories is not None or recipe.protein is not None or recipe.carbohydrates is not None or recipe.fat is not None or recipe.preparation_minutes is not None %}
 <div class="{{ facts_class }}">
-  <p class="recipe-facts d-flex flex-wrap gap-3 mb-0">
+  <p class="recipe-facts d-flex flex-wrap gap-3 mb-0{% if not compact %} w-100{% endif %}">
     {% if recipe.calories is not None %}
       <span>
         <i class="bi bi-fire" aria-hidden="true"></i>
@@ -14,8 +14,20 @@
         {% blocktranslate with protein=recipe.protein %}{{ protein }} g protein{% endblocktranslate %}
       </span>
     {% endif %}
-    {% if recipe.preparation_minutes is not None %}
+    {% if not compact and recipe.carbohydrates is not None %}
       <span>
+        <i class="bi bi-circle-half" aria-hidden="true"></i>
+        {% blocktranslate with carbohydrates=recipe.carbohydrates %}{{ carbohydrates }} g carbohydrates{% endblocktranslate %}
+      </span>
+    {% endif %}
+    {% if not compact and recipe.fat is not None %}
+      <span>
+        <i class="bi bi-droplet" aria-hidden="true"></i>
+        {% blocktranslate with fat=recipe.fat %}{{ fat }} g fat{% endblocktranslate %}
+      </span>
+    {% endif %}
+    {% if recipe.preparation_minutes is not None %}
+      <span{% if not compact %} class="ms-auto"{% endif %}>
         <i class="bi bi-clock" aria-hidden="true"></i>
         {% blocktranslate with minutes=recipe.preparation_minutes %}{{ minutes }} min{% endblocktranslate %}
       </span>

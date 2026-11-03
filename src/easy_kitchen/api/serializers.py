@@ -108,6 +108,8 @@ class RecipeSerializer(serializers.ModelSerializer):
             "picture_url",
             "calories",
             "protein",
+            "carbohydrates",
+            "fat",
             "preparation_minutes",
             "position",
             "ingredients",
@@ -119,6 +121,8 @@ class RecipeSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "calories": {"required": False, "allow_null": True},
             "protein": {"required": False, "allow_null": True},
+            "carbohydrates": {"required": False, "allow_null": True},
+            "fat": {"required": False, "allow_null": True},
             "preparation_minutes": {"required": False, "allow_null": True},
         }
 
@@ -160,6 +164,10 @@ class RecipeSerializer(serializers.ModelSerializer):
             "image_url": validated_data.get("image_url", instance.image_url if instance else ""),
             "calories": validated_data.get("calories", instance.calories if instance else None),
             "protein": validated_data.get("protein", instance.protein if instance else None),
+            "carbohydrates": validated_data.get(
+                "carbohydrates", instance.carbohydrates if instance else None
+            ),
+            "fat": validated_data.get("fat", instance.fat if instance else None),
             "preparation_minutes": validated_data.get(
                 "preparation_minutes", instance.preparation_minutes if instance else None
             ),

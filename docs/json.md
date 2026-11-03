@@ -54,6 +54,8 @@ The body is either an object with a `recipes` array or the array itself. Every r
       "image_url": "https://example.com/pancakes.jpg",
       "calories": 450,
       "protein": 12,
+      "carbohydrates": 55,
+      "fat": 18,
       "preparation_minutes": 25,
       "ingredients": [
         {"name": "flour", "quantity": "200 g"},
@@ -75,6 +77,8 @@ The body is either an object with a `recipes` array or the array itself. Every r
 | `image_url` | no | `http` or `https` address of a picture. Shown when no file has been uploaded. |
 | `calories` | no | Whole number of kilocalories. Omit it or send `null` when unknown. |
 | `protein` | no | Whole number of grams of protein. Omit it or send `null` when unknown. |
+| `carbohydrates` | no | Whole number of grams of carbohydrates. Omit it or send `null` when unknown. |
+| `fat` | no | Whole number of grams of fat. Omit it or send `null` when unknown. |
 | `preparation_minutes` | no | Whole number of minutes. Omit it or send `null` when unknown. |
 | `ingredients` | no | Ordered ingredients. Omit it for a recipe without ingredients. |
 | `ingredients[].name` | yes | Ingredient name |

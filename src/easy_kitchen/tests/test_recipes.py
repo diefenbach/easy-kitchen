@@ -35,6 +35,8 @@ def test_recipe_belongs_to_its_user_and_keeps_line_order(user, other_user):
     assert recipe.picture_url == "https://example.com/pancakes.jpg"
     assert recipe.calories is None
     assert recipe.protein is None
+    assert recipe.carbohydrates is None
+    assert recipe.fat is None
     assert recipe.preparation_minutes is None
     assert Recipe.objects.filter(user=other_user).count() == 0
 
@@ -76,6 +78,8 @@ def test_recipe_stores_calories_protein_and_preparation_time(client, user):
             "image_url": "",
             "calories": "450",
             "protein": "12",
+            "carbohydrates": "55",
+            "fat": "18",
             "preparation_minutes": "25",
         },
     )
@@ -84,15 +88,21 @@ def test_recipe_stores_calories_protein_and_preparation_time(client, user):
     assert response.status_code == 302
     assert recipe.calories == 450
     assert recipe.protein == 12
+    assert recipe.carbohydrates == 55
+    assert recipe.fat == 18
     assert recipe.preparation_minutes == 25
     detail = client.get(reverse("easy_kitchen:recipe-detail", args=[recipe.pk])).content.decode()
     assert "450 kcal" in detail
     assert "12 g protein" in detail
+    assert "55 g carbohydrates" in detail
+    assert "18 g fat" in detail
     assert "25 min" in detail
     overview = client.get(reverse("easy_kitchen:recipes")).content.decode()
     assert "450 kcal" in overview
     assert "12 g protein" in overview
     assert "25 min" in overview
+    assert "55 g carbohydrates" not in overview
+    assert "18 g fat" not in overview
     assert 'class="card-footer list-card-date"' in overview
     assert 'class="recipe-card-facts mb-0"' in overview
     assert "recipe-card-facts" not in detail
@@ -102,9 +112,13 @@ def test_recipe_stores_calories_protein_and_preparation_time(client, user):
         german = client.get(reverse("easy_kitchen:recipe-detail", args=[recipe.pk])).content.decode()
         form = client.get(reverse("easy_kitchen:recipe-update", args=[recipe.pk])).content.decode()
     assert "12 g Proteine" in german
+    assert "55 g Kohlenhydrate" in german
+    assert "18 g Fett" in german
     assert "25 Min." in german
     assert "Kalorien (kcal)" in form
     assert "Proteine (g)" in form
+    assert "Kohlenhydrate (g)" in form
+    assert "Fett (g)" in form
     assert "Zubereitungszeit (Min.)" in form
 
     plain = create_recipe(user, title="Soup")
@@ -308,6 +322,8 @@ def test_recipe_json_import_accepts_an_image_url(client, user):
                 "image_url": "https://example.com/pancakes.jpg",
                 "calories": 450,
                 "protein": 12,
+                "carbohydrates": 55,
+                "fat": 18,
                 "preparation_minutes": 25,
                 "ingredients": [{"name": "Flour", "quantity": "200 g"}],
                 "steps": [{"text": "Fry"}],
@@ -320,6 +336,8 @@ def test_recipe_json_import_accepts_an_image_url(client, user):
     assert recipe.image_url == "https://example.com/pancakes.jpg"
     assert recipe.calories == 450
     assert recipe.protein == 12
+    assert recipe.carbohydrates == 55
+    assert recipe.fat == 18
     assert recipe.preparation_minutes == 25
     ingredient = recipe.ingredients.get()
     assert ingredient.name == "Flour"
@@ -338,6 +356,8 @@ def test_api_recipes_stay_with_the_token_owner(client, user, other_user):
             "image_url": "https://example.com/pancakes.jpg",
             "calories": 450,
             "protein": 12,
+            "carbohydrates": 55,
+            "fat": 18,
             "preparation_minutes": 25,
             "ingredients": [{"name": "Flour", "quantity": "200 g"}, {"name": "Eggs", "quantity": "2"}],
             "steps": [{"text": "Mix"}],
@@ -350,6 +370,8 @@ def test_api_recipes_stay_with_the_token_owner(client, user, other_user):
     assert body["picture_url"] == "https://example.com/pancakes.jpg"
     assert body["calories"] == 450
     assert body["protein"] == 12
+    assert body["carbohydrates"] == 55
+    assert body["fat"] == 18
     assert body["preparation_minutes"] == 25
     assert [(line["name"], line["quantity"]) for line in body["ingredients"]] == [("Flour", "200 g"), ("Eggs", "2")]
     assert Recipe.objects.get(pk=body["id"]).user == user

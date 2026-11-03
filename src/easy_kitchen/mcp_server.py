@@ -125,6 +125,8 @@ def _recipe_payload(recipe: Recipe) -> dict:
         "image_url": recipe.image_url,
         "calories": recipe.calories,
         "protein": recipe.protein,
+        "carbohydrates": recipe.carbohydrates,
+        "fat": recipe.fat,
         "preparation_minutes": recipe.preparation_minutes,
         "ingredients": [
             {"name": line.name, "quantity": line.quantity} for line in recipe.ingredients.all()
@@ -194,11 +196,13 @@ def create_recipe(
     image_url: Annotated[str, Field(max_length=500)] = "",
     calories: Annotated[int, Field(ge=0)] | None = None,
     protein: Annotated[int, Field(ge=0)] | None = None,
+    carbohydrates: Annotated[int, Field(ge=0)] | None = None,
+    fat: Annotated[int, Field(ge=0)] | None = None,
     preparation_minutes: Annotated[int, Field(ge=0)] | None = None,
     ingredients: list[IngredientInput] | None = None,
     steps: list[StepInput] | None = None,
 ) -> dict:
-    """Create a recipe for the authenticated user. image_url, calories, protein, and preparation_minutes are optional."""
+    """Create a recipe for the authenticated user. image_url, calories, protein, carbohydrates, fat, and preparation_minutes are optional."""
     user = user_from_authorization(_authorization(ctx))
     try:
         recipe = save_recipe(
@@ -208,6 +212,8 @@ def create_recipe(
             image_url=image_url,
             calories=calories,
             protein=protein,
+            carbohydrates=carbohydrates,
+            fat=fat,
             preparation_minutes=preparation_minutes,
             ingredients=[
                 IngredientInput.model_validate(item).model_dump() for item in ingredients or []

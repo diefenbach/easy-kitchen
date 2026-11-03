@@ -1,5 +1,5 @@
 {% if recipe.calories is not None or recipe.protein is not None or recipe.preparation_minutes is not None %}
 <div class="card-footer list-card-date">
-  {% include "easy_kitchen/recipes/partials/facts.html" with facts_class="recipe-card-facts mb-0" %}
+  {% include "easy_kitchen/recipes/partials/facts.html" with facts_class="recipe-card-facts mb-0" compact=True %}
 </div>
 {% endif %}

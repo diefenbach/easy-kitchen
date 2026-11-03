@@ -38,6 +38,10 @@ def _fact_lines(recipe: Recipe) -> list[str]:
         facts.append(_("%(calories)s kcal") % {"calories": recipe.calories})
     if recipe.protein is not None:
         facts.append(_("%(protein)s g protein") % {"protein": recipe.protein})
+    if recipe.carbohydrates is not None:
+        facts.append(_("%(carbohydrates)s g carbohydrates") % {"carbohydrates": recipe.carbohydrates})
+    if recipe.fat is not None:
+        facts.append(_("%(fat)s g fat") % {"fat": recipe.fat})
     if recipe.preparation_minutes is not None:
         facts.append(_("%(minutes)s min") % {"minutes": recipe.preparation_minutes})
     return facts

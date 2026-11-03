@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: django-easy-kitchen\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-03 10:43+0100\n"
+"POT-Creation-Date: 2026-11-03 16:50+0100\n"
 "PO-Revision-Date: 2026-10-30 16:11+0100\n"
 "Last-Translator: EasyKitchen\n"
 "Language-Team: German\n"
@@ -13,357 +13,592 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#: src/easy_kitchen/api/views.py:53 src/easy_kitchen/api/views.py:65
+#: src/easy_kitchen/api/views.py:117 src/easy_kitchen/api/views.py:127
+#: src/easy_kitchen/recipe_views.py:50 src/easy_kitchen/recipe_views.py:280
+#: src/easy_kitchen/services.py:555 src/easy_kitchen/services.py:566
+#: src/easy_kitchen/services.py:581 src/easy_kitchen/views.py:76
+#: src/easy_kitchen/views.py:359
 msgid "Invalid order."
 msgstr "Ungültige Reihenfolge."
 
+#: src/easy_kitchen/api/views.py:93
 msgid "Expected a list or {'lists': [...]}."
 msgstr "Erwartet wird eine Liste oder {'lists': [...]}."
 
+#: src/easy_kitchen/api/views.py:165
 msgid "Expected a list or {'recipes': [...]}."
 msgstr "Erwartet wird eine Liste oder {'recipes': [...]}."
 
+#: src/easy_kitchen/forms.py:20
 msgid "Icon"
 msgstr "Symbol"
 
+#: src/easy_kitchen/forms.py:60
 msgid "Article"
 msgstr "Artikel"
 
+#: src/easy_kitchen/forms.py:71
 msgid "Enter an article name."
 msgstr "Gib einen Artikelnamen ein."
 
+#: src/easy_kitchen/forms.py:76
 msgid "An article with this name already exists."
 msgstr "Ein Artikel mit diesem Namen existiert bereits."
 
+#: src/easy_kitchen/forms.py:143
 msgid "JSON"
 msgstr "JSON"
 
+#: src/easy_kitchen/forms.py:152
 msgid "Enter valid JSON."
 msgstr "Gib gültiges JSON ein."
 
+#: src/easy_kitchen/forms.py:157
 msgid "Could not tell whether this is a shopping list or a recipe."
 msgstr "Es ist nicht erkennbar, ob das eine Einkaufsliste oder ein Rezept ist."
 
+#: src/easy_kitchen/forms.py:174
 msgid "The JSON does not match the EasyKitchen format."
 msgstr "Das JSON entspricht nicht dem EasyKitchen-Format."
 
+#: src/easy_kitchen/forms.py:183
 msgid "Image URL"
 msgstr "Bild-URL"
 
+#: src/easy_kitchen/forms.py:204
 msgid "Title"
 msgstr "Titel"
 
+#: src/easy_kitchen/forms.py:205
 msgid "Description"
 msgstr "Beschreibung"
 
+#: src/easy_kitchen/forms.py:206
 msgid "Calories (kcal)"
 msgstr "Kalorien (kcal)"
 
+#: src/easy_kitchen/forms.py:207
 msgid "Protein (g)"
 msgstr "Proteine (g)"
 
+#: src/easy_kitchen/forms.py:208
+msgid "Carbohydrates (g)"
+msgstr "Kohlenhydrate (g)"
+
+#: src/easy_kitchen/forms.py:209
+msgid "Fat (g)"
+msgstr "Fett (g)"
+
+#: src/easy_kitchen/forms.py:210
 msgid "Preparation time (min)"
 msgstr "Zubereitungszeit (Min.)"
 
+#: src/easy_kitchen/forms.py:211
 msgid "Image"
 msgstr "Bild"
 
+#: src/easy_kitchen/forms.py:229
 msgid "Ingredient"
 msgstr "Zutat"
 
+#: src/easy_kitchen/forms.py:231 src/easy_kitchen/models.py:93
+#: src/easy_kitchen/models.py:182
 msgid "quantity"
 msgstr "Menge"
 
+#: src/easy_kitchen/forms.py:235
 msgid "Step"
 msgstr "Schritt"
 
+#: src/easy_kitchen/forms.py:252
+#: src/easy_kitchen/templates/easy_kitchen/base.html:32
+#: src/easy_kitchen/templates/easy_kitchen/base.html:34
+#: src/easy_kitchen/templates/easy_kitchen/export.html:21
+#: src/easy_kitchen/templates/easy_kitchen/home.html:6
+#: src/easy_kitchen/templates/easy_kitchen/lists/articles.html:5
+#: src/easy_kitchen/templates/easy_kitchen/lists/articles.html:7
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:5
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:7
+#: src/easy_kitchen/templates/easy_kitchen/lists/overview.html:3
+#: src/easy_kitchen/templates/easy_kitchen/lists/overview.html:6
 msgid "Shopping lists"
 msgstr "Einkaufslisten"
 
+#: src/easy_kitchen/forms.py:258
+#: src/easy_kitchen/templates/easy_kitchen/base.html:36
+#: src/easy_kitchen/templates/easy_kitchen/base.html:38
+#: src/easy_kitchen/templates/easy_kitchen/export.html:34
+#: src/easy_kitchen/templates/easy_kitchen/home.html:40
+#: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:5
+#: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:7
+#: src/easy_kitchen/templates/easy_kitchen/recipes/overview.html:3
+#: src/easy_kitchen/templates/easy_kitchen/recipes/overview.html:6
 msgid "Recipes"
 msgstr "Rezepte"
 
+#: src/easy_kitchen/forms.py:273
 msgid "Choose at least one shopping list or recipe."
 msgstr "Wähle mindestens eine Einkaufsliste oder ein Rezept."
 
+#: src/easy_kitchen/forms.py:281
+#: src/easy_kitchen/templates/easy_kitchen/import.html:14
 msgid "Shopping list"
 msgstr "Einkaufsliste"
 
+#: src/easy_kitchen/forms.py:284
 msgid "Choose a list"
 msgstr "Liste auswählen"
 
+#: src/easy_kitchen/forms.py:288
+#: src/easy_kitchen/templates/easy_kitchen/home.html:33
+#: src/easy_kitchen/templates/easy_kitchen/home.html:35
+#: src/easy_kitchen/templates/easy_kitchen/lists/form.html:6
+#: src/easy_kitchen/templates/easy_kitchen/lists/overview.html:9
+#: src/easy_kitchen/templates/easy_kitchen/lists/overview.html:11
 msgid "New list"
 msgstr "Neue Liste"
 
+#: src/easy_kitchen/forms.py:304
 msgid "Choose a list or enter a title for a new one."
 msgstr "Wähle eine Liste oder gib einen Titel für eine neue ein."
 
+#: src/easy_kitchen/models.py:24
 msgid "Basket"
 msgstr "Warenkorb"
 
+#: src/easy_kitchen/models.py:25
 msgid "Cart"
 msgstr "Wagen"
 
+#: src/easy_kitchen/models.py:26
 msgid "Bag"
 msgstr "Tasche"
 
+#: src/easy_kitchen/models.py:27
 msgid "Fried egg"
 msgstr "Spiegelei"
 
+#: src/easy_kitchen/models.py:28
 msgid "Drink"
 msgstr "Getränk"
 
+#: src/easy_kitchen/models.py:29
 msgid "Apple"
 msgstr "Apfel"
 
+#: src/easy_kitchen/models.py:30
 msgid "Cookie"
 msgstr "Keks"
 
+#: src/easy_kitchen/models.py:31
 msgid "Cake"
 msgstr "Kuchen"
 
+#: src/easy_kitchen/models.py:32
 msgid "Drop"
 msgstr "Tropfen"
 
+#: src/easy_kitchen/models.py:33
 msgid "Flower"
 msgstr "Blume"
 
+#: src/easy_kitchen/models.py:34
 msgid "Flame"
 msgstr "Flamme"
 
+#: src/easy_kitchen/models.py:35
 msgid "Frozen"
 msgstr "Tiefgekühlt"
 
+#: src/easy_kitchen/models.py:36
 msgid "Home"
 msgstr "Zuhause"
 
+#: src/easy_kitchen/models.py:37
 msgid "Gift"
 msgstr "Geschenk"
 
+#: src/easy_kitchen/models.py:38
 msgid "Heart"
 msgstr "Herz"
 
+#: src/easy_kitchen/models.py:61 src/easy_kitchen/models.py:138
 msgid "title"
 msgstr "Titel"
 
+#: src/easy_kitchen/models.py:62
 msgid "icon"
 msgstr "Symbol"
 
+#: src/easy_kitchen/models.py:63
 msgid "date"
 msgstr "Datum"
 
+#: src/easy_kitchen/models.py:64
 msgid "hide completed items"
 msgstr "Erledigte ausblenden"
 
+#: src/easy_kitchen/models.py:71
 msgid "shopping list"
 msgstr "Einkaufsliste"
 
+#: src/easy_kitchen/models.py:72
 msgid "shopping lists"
 msgstr "Einkaufslisten"
 
+#: src/easy_kitchen/models.py:92
 msgid "item"
 msgstr "Artikel"
 
+#: src/easy_kitchen/models.py:94
 msgid "completed"
 msgstr "Erledigt"
 
+#: src/easy_kitchen/models.py:101
 msgid "shopping item"
 msgstr "Artikel"
 
+#: src/easy_kitchen/models.py:102
 msgid "shopping items"
 msgstr "Artikel"
 
+#: src/easy_kitchen/models.py:114 src/easy_kitchen/models.py:120
 msgid "article"
 msgstr "Artikel"
 
+#: src/easy_kitchen/models.py:121
 msgid "articles"
 msgstr "Artikel"
 
+#: src/easy_kitchen/models.py:139
 msgid "description"
 msgstr "Beschreibung"
 
+#: src/easy_kitchen/models.py:140
 msgid "image"
 msgstr "Bild"
 
+#: src/easy_kitchen/models.py:142
 msgid "image URL"
 msgstr "Bild-URL"
 
+#: src/easy_kitchen/models.py:147
 msgid "calories"
 msgstr "Kalorien"
 
+#: src/easy_kitchen/models.py:148
 msgid "protein"
 msgstr "Proteine"
 
+#: src/easy_kitchen/models.py:149
+msgid "carbohydrates"
+msgstr "Kohlenhydrate"
+
+#: src/easy_kitchen/models.py:150
+msgid "fat"
+msgstr "Fett"
+
+#: src/easy_kitchen/models.py:151
 msgid "preparation time"
 msgstr "Zubereitungszeit"
 
+#: src/easy_kitchen/models.py:158
 msgid "recipe"
 msgstr "Rezept"
 
+#: src/easy_kitchen/models.py:159
 msgid "recipes"
 msgstr "Rezepte"
 
+#: src/easy_kitchen/models.py:181 src/easy_kitchen/models.py:187
 msgid "ingredient"
 msgstr "Zutat"
 
+#: src/easy_kitchen/models.py:188
 msgid "ingredients"
 msgstr "Zutaten"
 
+#: src/easy_kitchen/models.py:198 src/easy_kitchen/models.py:203
 msgid "step"
 msgstr "Schritt"
 
+#: src/easy_kitchen/models.py:204
 msgid "steps"
 msgstr "Schritte"
 
+#: src/easy_kitchen/recipe_pdf.py:38
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/facts.html:8
 #, python-format
 msgid "%(calories)s kcal"
 msgstr "%(calories)s kcal"
 
+#: src/easy_kitchen/recipe_pdf.py:40
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/facts.html:14
 #, python-format
 msgid "%(protein)s g protein"
 msgstr "%(protein)s g Proteine"
 
+#: src/easy_kitchen/recipe_pdf.py:42
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/facts.html:20
+#, python-format
+msgid "%(carbohydrates)s g carbohydrates"
+msgstr "%(carbohydrates)s g Kohlenhydrate"
+
+#: src/easy_kitchen/recipe_pdf.py:44
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/facts.html:26
+#, python-format
+msgid "%(fat)s g fat"
+msgstr "%(fat)s g Fett"
+
+#: src/easy_kitchen/recipe_pdf.py:46
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/facts.html:32
 #, python-format
 msgid "%(minutes)s min"
 msgstr "%(minutes)s Min."
 
+#: src/easy_kitchen/recipe_pdf.py:108
+#: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:37
 msgid "Ingredients"
 msgstr "Zutaten"
 
+#: src/easy_kitchen/recipe_pdf.py:117
+#: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:40
 msgid "No ingredients yet."
 msgstr "Noch keine Zutaten."
 
+#: src/easy_kitchen/recipe_pdf.py:119
+#: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:54
 msgid "Steps"
 msgstr "Schritte"
 
+#: src/easy_kitchen/recipe_pdf.py:125
+#: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:57
 msgid "No steps yet."
 msgstr "Noch keine Schritte."
 
+#: src/easy_kitchen/recipe_views.py:64
 msgid "Recipe created."
 msgstr "Rezept erstellt."
 
+#: src/easy_kitchen/recipe_views.py:85
 msgid "Recipe updated."
 msgstr "Rezept aktualisiert."
 
+#: src/easy_kitchen/recipe_views.py:107
 msgid "Recipe deleted."
 msgstr "Rezept gelöscht."
 
+#: src/easy_kitchen/recipe_views.py:348
 msgid "This recipe has no ingredients."
 msgstr "Dieses Rezept hat keine Zutaten."
 
+#: src/easy_kitchen/recipe_views.py:368
 #, python-format
 msgid "Added %(count)d ingredient to \"%(title)s\"."
 msgid_plural "Added %(count)d ingredients to \"%(title)s\"."
 msgstr[0] "%(count)d Zutat zu „%(title)s“ hinzugefügt."
 msgstr[1] "%(count)d Zutaten zu „%(title)s“ hinzugefügt."
 
+#: src/easy_kitchen/services.py:154
 msgid "Choose an icon."
 msgstr "Wähle ein Symbol."
 
+#: src/easy_kitchen/services.py:206
 msgid "Invalid item order."
 msgstr "Ungültige Elementreihenfolge."
 
+#: src/easy_kitchen/services.py:251
 msgid "Enter a valid image URL."
 msgstr "Gib eine gültige Bild-URL ein."
 
+#: src/easy_kitchen/services.py:260 src/easy_kitchen/services.py:264
+#: src/easy_kitchen/services.py:266
 msgid "Enter zero or a positive whole number."
 msgstr "Gib null oder eine positive ganze Zahl ein."
 
+#: src/easy_kitchen/services.py:289
 msgid "Enter a title."
 msgstr "Gib einen Titel ein."
 
+#: src/easy_kitchen/services.py:419
 msgid "Invalid shopping list."
 msgstr "Ungültige Einkaufsliste."
 
+#: src/easy_kitchen/services.py:432 src/easy_kitchen/services.py:443
 msgid "Recipe not found."
 msgstr "Rezept nicht gefunden."
 
+#: src/easy_kitchen/services.py:436
 msgid "Choose a recipe."
 msgstr "Wähle ein Rezept."
 
+#: src/easy_kitchen/services.py:445
 msgid "That title matches more than one recipe."
 msgstr "Dieser Titel passt zu mehr als einem Rezept."
 
+#: src/easy_kitchen/services.py:456 src/easy_kitchen/services.py:493
 msgid "Shopping list not found."
 msgstr "Einkaufsliste nicht gefunden."
 
+#: src/easy_kitchen/services.py:466
 msgid "That title matches more than one shopping list."
 msgstr "Dieser Titel passt zu mehr als einer Einkaufsliste."
 
+#: src/easy_kitchen/services.py:473
 msgid "There is more than one list for today. Say which list."
 msgstr "Es gibt mehr als eine Liste für heute. Sag, welche."
 
+#: src/easy_kitchen/services.py:476
 msgid "Today"
 msgstr "Heute"
 
+#: src/easy_kitchen/services.py:489 src/easy_kitchen/services.py:544
 msgid "Enter an item name."
 msgstr "Gib einen Artikelnamen ein."
 
+#: src/easy_kitchen/services.py:501
 msgid "Item not found."
 msgstr "Artikel nicht gefunden."
 
+#: src/easy_kitchen/services.py:503
 msgid "That item is on more than one list. Say which list."
 msgstr "Dieser Artikel steht auf mehr als einer Liste. Sag, welche."
 
+#: src/easy_kitchen/templates/easy_kitchen/base.html:28
+#: src/easy_kitchen/templates/easy_kitchen/base.html:30
 msgid "Overview"
 msgstr "Übersicht"
 
+#: src/easy_kitchen/templates/easy_kitchen/base.html:47
+#: src/easy_kitchen/templates/easy_kitchen/base.html:49
+#: src/easy_kitchen/templates/easy_kitchen/import.html:3
+#: src/easy_kitchen/templates/easy_kitchen/import.html:9
 msgid "Import JSON"
 msgstr "JSON importieren"
 
+#: src/easy_kitchen/templates/easy_kitchen/base.html:53
+#: src/easy_kitchen/templates/easy_kitchen/base.html:55
+#: src/easy_kitchen/templates/easy_kitchen/export.html:3
+#: src/easy_kitchen/templates/easy_kitchen/export.html:9
 msgid "Export JSON"
 msgstr "JSON exportieren"
 
+#: src/easy_kitchen/templates/easy_kitchen/base.html:59
+#: src/easy_kitchen/templates/easy_kitchen/base.html:61
 msgid "Edit articles"
 msgstr "Artikel bearbeiten"
 
+#: src/easy_kitchen/templates/easy_kitchen/base.html:67
+#: src/easy_kitchen/templates/easy_kitchen/base.html:69
 msgid "Log out"
 msgstr "Abmelden"
 
+#: src/easy_kitchen/templates/easy_kitchen/base.html:85
+#: src/easy_kitchen/templates/easy_kitchen/lists/articles.html:57
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:56
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:91
+#: src/easy_kitchen/templates/easy_kitchen/lists/overview.html:55
+#: src/easy_kitchen/templates/easy_kitchen/lists/partials/item.html:30
+#: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:104
+#: src/easy_kitchen/templates/easy_kitchen/recipes/overview.html:48
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/line.html:32
 msgid "Close"
 msgstr "Schließen"
 
+#: src/easy_kitchen/templates/easy_kitchen/export.html:10
 msgid "Choose the shopping lists and recipes to download as JSON."
 msgstr ""
 "Wähle die Einkaufslisten und Rezepte, die du als JSON herunterladen willst."
 
+#: src/easy_kitchen/templates/easy_kitchen/export.html:11
 msgid "You can import the file later on the import page."
 msgstr "Die Datei kannst du später auf der Import-Seite wieder einlesen."
 
+#: src/easy_kitchen/templates/easy_kitchen/export.html:30
+#: src/easy_kitchen/templates/easy_kitchen/home.html:31
+#: src/easy_kitchen/templates/easy_kitchen/lists/overview.html:77
 msgid "No shopping list yet"
 msgstr "Noch keine Einkaufsliste"
 
+#: src/easy_kitchen/templates/easy_kitchen/export.html:43
+#: src/easy_kitchen/templates/easy_kitchen/home.html:58
+#: src/easy_kitchen/templates/easy_kitchen/recipes/overview.html:70
 msgid "No recipes yet"
 msgstr "Noch keine Rezepte"
 
+#: src/easy_kitchen/templates/easy_kitchen/export.html:48
+#: src/easy_kitchen/templates/easy_kitchen/export.html:50
 msgid "Export"
 msgstr "Exportieren"
 
+#: src/easy_kitchen/templates/easy_kitchen/export.html:52
+#: src/easy_kitchen/templates/easy_kitchen/export.html:54
+#: src/easy_kitchen/templates/easy_kitchen/import.html:49
+#: src/easy_kitchen/templates/easy_kitchen/import.html:51
+#: src/easy_kitchen/templates/easy_kitchen/lists/articles.html:61
+#: src/easy_kitchen/templates/easy_kitchen/lists/articles.html:63
+#: src/easy_kitchen/templates/easy_kitchen/lists/confirm_delete.html:16
+#: src/easy_kitchen/templates/easy_kitchen/lists/confirm_delete.html:18
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:71
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:73
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:95
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:97
+#: src/easy_kitchen/templates/easy_kitchen/lists/form.html:39
+#: src/easy_kitchen/templates/easy_kitchen/lists/form.html:41
+#: src/easy_kitchen/templates/easy_kitchen/lists/overview.html:59
+#: src/easy_kitchen/templates/easy_kitchen/lists/overview.html:61
+#: src/easy_kitchen/templates/easy_kitchen/lists/partials/item.html:34
+#: src/easy_kitchen/templates/easy_kitchen/lists/partials/item.html:36
+#: src/easy_kitchen/templates/easy_kitchen/recipes/confirm_delete.html:16
+#: src/easy_kitchen/templates/easy_kitchen/recipes/confirm_delete.html:18
+#: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:108
+#: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:110
+#: src/easy_kitchen/templates/easy_kitchen/recipes/form.html:27
+#: src/easy_kitchen/templates/easy_kitchen/recipes/form.html:29
+#: src/easy_kitchen/templates/easy_kitchen/recipes/overview.html:52
+#: src/easy_kitchen/templates/easy_kitchen/recipes/overview.html:54
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/line.html:42
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/line.html:44
 msgid "Cancel"
 msgstr "Abbrechen"
 
+#: src/easy_kitchen/templates/easy_kitchen/home.html:7
 msgid "See all lists"
 msgstr "Alle Listen ansehen"
 
+#: src/easy_kitchen/templates/easy_kitchen/home.html:41
 msgid "See all recipes"
 msgstr "Alle Rezepte ansehen"
 
+#: src/easy_kitchen/templates/easy_kitchen/home.html:60
+#: src/easy_kitchen/templates/easy_kitchen/home.html:62
+#: src/easy_kitchen/templates/easy_kitchen/recipes/form.html:3
+#: src/easy_kitchen/templates/easy_kitchen/recipes/form.html:7
+#: src/easy_kitchen/templates/easy_kitchen/recipes/overview.html:9
+#: src/easy_kitchen/templates/easy_kitchen/recipes/overview.html:11
 msgid "New recipe"
 msgstr "Neues Rezept"
 
+#: src/easy_kitchen/templates/easy_kitchen/import.html:10
 msgid "Paste one shopping list, one recipe, or several of either."
 msgstr "Füge eine Einkaufsliste, ein Rezept oder mehrere davon ein."
 
+#: src/easy_kitchen/templates/easy_kitchen/import.html:15
 msgid "A title, a date, and items. Each item has a name and a quantity."
 msgstr ""
 "Ein Titel, ein Datum und Artikel. Jeder Artikel hat einen Namen und eine "
 "Menge."
 
+#: src/easy_kitchen/templates/easy_kitchen/import.html:25
 msgid "Recipe"
 msgstr "Rezept"
 
+#: src/easy_kitchen/templates/easy_kitchen/import.html:26
 msgid "A title. Add ingredients, steps, or nutrition when you have them."
 msgstr "Ein Titel. Zutaten, Schritte oder Nährwerte kannst du ergänzen."
 
+#: src/easy_kitchen/templates/easy_kitchen/import.html:34
 msgid ""
 "One entry is enough. Several entries go in a list, or grouped under lists "
 "and recipes."
@@ -371,12 +606,19 @@ msgstr ""
 "Ein Eintrag genügt. Mehrere Einträge kommen in eine Liste oder gruppiert "
 "unter lists und recipes."
 
+#: src/easy_kitchen/templates/easy_kitchen/import.html:45
+#: src/easy_kitchen/templates/easy_kitchen/import.html:47
 msgid "Import"
 msgstr "Importieren"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/articles.html:3
+#: src/easy_kitchen/templates/easy_kitchen/lists/articles.html:10
+#: src/easy_kitchen/templates/easy_kitchen/lists/partials/item_edit_form.html:8
+#: src/easy_kitchen/templates/easy_kitchen/lists/partials/item_form.html:8
 msgid "Articles"
 msgstr "Artikel"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/articles.html:11
 msgid ""
 "These articles are offered in the dropdown when you add an item to a "
 "shopping list."
@@ -384,22 +626,45 @@ msgstr ""
 "Diese Artikel werden im Dropdown angeboten, wenn du einer Einkaufsliste "
 "einen Eintrag hinzufügst."
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/articles.html:22
+#: src/easy_kitchen/templates/easy_kitchen/lists/articles.html:24
+#: src/easy_kitchen/templates/easy_kitchen/lists/partials/item_form.html:17
+#: src/easy_kitchen/templates/easy_kitchen/lists/partials/item_form.html:19
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/line_form.html:23
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/line_form.html:25
 msgid "Add"
 msgstr "Hinzufügen"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/articles.html:36
 #, python-format
 msgid "Edit %(name)s"
 msgstr "%(name)s bearbeiten"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/articles.html:43
+#: src/easy_kitchen/templates/easy_kitchen/lists/form.html:35
+#: src/easy_kitchen/templates/easy_kitchen/lists/form.html:37
+#: src/easy_kitchen/templates/easy_kitchen/lists/partials/item_edit_form.html:13
+#: src/easy_kitchen/templates/easy_kitchen/lists/partials/item_edit_form.html:15
+#: src/easy_kitchen/templates/easy_kitchen/recipes/form.html:23
+#: src/easy_kitchen/templates/easy_kitchen/recipes/form.html:25
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/line_edit_form.html:24
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/line_edit_form.html:26
 msgid "Save"
 msgstr "Speichern"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/articles.html:47
+#: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:25
+#: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:27
+#: src/easy_kitchen/templates/easy_kitchen/recipes/overview.html:33
+#: src/easy_kitchen/templates/easy_kitchen/recipes/overview.html:35
 msgid "Delete"
 msgstr "Löschen"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/articles.html:56
 msgid "Delete article?"
 msgstr "Artikel löschen?"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/articles.html:59
 #, python-format
 msgid ""
 "\"%(name)s\" will be removed from suggestions. Items already on a list stay "
@@ -408,182 +673,293 @@ msgstr ""
 "„%(name)s“ wird aus den Vorschlägen entfernt. Artikel auf einer Liste "
 "bleiben unverändert."
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/articles.html:68
+#: src/easy_kitchen/templates/easy_kitchen/lists/articles.html:70
+#: src/easy_kitchen/templates/easy_kitchen/lists/confirm_delete.html:12
+#: src/easy_kitchen/templates/easy_kitchen/lists/confirm_delete.html:14
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:77
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:79
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:101
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:103
+#: src/easy_kitchen/templates/easy_kitchen/lists/overview.html:65
+#: src/easy_kitchen/templates/easy_kitchen/lists/overview.html:67
+#: src/easy_kitchen/templates/easy_kitchen/lists/partials/item.html:40
+#: src/easy_kitchen/templates/easy_kitchen/lists/partials/item.html:42
+#: src/easy_kitchen/templates/easy_kitchen/recipes/confirm_delete.html:12
+#: src/easy_kitchen/templates/easy_kitchen/recipes/confirm_delete.html:14
+#: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:114
+#: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:116
+#: src/easy_kitchen/templates/easy_kitchen/recipes/overview.html:58
+#: src/easy_kitchen/templates/easy_kitchen/recipes/overview.html:60
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/line.html:48
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/line.html:50
 msgid "Delete permanently"
 msgstr "Endgültig löschen"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/articles.html:81
 msgid "No articles yet"
 msgstr "Noch keine Artikel"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/articles.html:82
 msgid "Articles you add to a list are saved here."
 msgstr "Artikel, die du einer Liste hinzufügst, werden hier gespeichert."
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/confirm_delete.html:8
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:90
+#: src/easy_kitchen/templates/easy_kitchen/lists/overview.html:54
 msgid "Delete list?"
 msgstr "Liste löschen?"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/confirm_delete.html:9
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:93
+#: src/easy_kitchen/templates/easy_kitchen/lists/overview.html:57
 #, python-format
 msgid "\"%(title)s\" and all items will be permanently deleted."
 msgstr "„%(title)s“ und alle Artikel werden dauerhaft gelöscht."
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:17
 msgid "List actions"
 msgstr "Listenaktionen"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:19
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:21
+#: src/easy_kitchen/templates/easy_kitchen/lists/form.html:6
 msgid "Edit list"
 msgstr "Liste bearbeiten"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:23
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:25
+#: src/easy_kitchen/templates/easy_kitchen/lists/overview.html:40
+#: src/easy_kitchen/templates/easy_kitchen/lists/overview.html:42
 msgid "Delete list"
 msgstr "Liste löschen"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:35
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:37
 msgid "Show completed"
 msgstr "Erledigte anzeigen"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:35
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:37
 msgid "Hide completed"
 msgstr "Erledigte ausblenden"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:39
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:41
 msgid "Delete completed"
 msgstr "Erledigte löschen"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:48
 msgid "No items yet."
 msgstr "Noch keine Artikel."
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:55
 msgid "Delete completed items?"
 msgstr "Erledigte Artikel löschen?"
 
-#, python-format
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:61
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:65
 msgid "The completed item on this list will be permanently deleted."
-msgid_plural ""
+msgstr "Der erledigte Artikel auf dieser Liste wird dauerhaft gelöscht."
+
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:62
+#: src/easy_kitchen/templates/easy_kitchen/lists/detail.html:67
+#, python-format
+msgid ""
 "All %(counter)s completed items on this list will be permanently deleted."
-msgstr[0] "Der erledigte Artikel auf dieser Liste wird dauerhaft gelöscht."
-msgstr[1] ""
+msgstr ""
 "Alle %(counter)s erledigten Artikel auf dieser Liste werden dauerhaft "
 "gelöscht."
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/overview.html:33
+#: src/easy_kitchen/templates/easy_kitchen/lists/partials/item.html:4
+#: src/easy_kitchen/templates/easy_kitchen/recipes/overview.html:26
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/line.html:4
 msgid "Move"
 msgstr "Verschieben"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/overview.html:36
+#: src/easy_kitchen/templates/easy_kitchen/lists/overview.html:38
+#: src/easy_kitchen/templates/easy_kitchen/partials/edit_mode_button.html:2
+#: src/easy_kitchen/templates/easy_kitchen/partials/edit_mode_button.html:4
+#: src/easy_kitchen/templates/easy_kitchen/recipes/overview.html:29
+#: src/easy_kitchen/templates/easy_kitchen/recipes/overview.html:31
 msgid "Edit"
 msgstr "Bearbeiten"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/overview.html:78
 msgid "Create your first list."
 msgstr "Erstelle deine erste Liste."
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/overview.html:79
+#: src/easy_kitchen/templates/easy_kitchen/lists/overview.html:81
 msgid "Create list"
 msgstr "Liste erstellen"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/partials/card_date.html:7
 #, python-format
 msgid "%(counter)s item"
 msgid_plural "%(counter)s items"
 msgstr[0] "%(counter)s Artikel"
 msgstr[1] "%(counter)s Artikel"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/partials/item.html:7
 msgid "Toggle completed"
 msgstr "Erledigt umschalten"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/partials/item.html:14
 msgid "Item actions"
 msgstr "Artikelaktionen"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/partials/item.html:15
 msgid "Edit item"
 msgstr "Artikel bearbeiten"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/partials/item.html:18
 msgid "Delete item"
 msgstr "Artikel löschen"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/partials/item.html:29
 msgid "Delete item?"
 msgstr "Artikel löschen?"
 
+#: src/easy_kitchen/templates/easy_kitchen/lists/partials/item.html:32
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/line.html:36
 #, python-format
 msgid "\"%(name)s\" will be permanently deleted."
 msgstr "„%(name)s“ wird dauerhaft gelöscht."
 
+#: src/easy_kitchen/templates/easy_kitchen/partials/edit_mode_button.html:2
 msgid "Done"
 msgstr "Fertig"
 
+#: src/easy_kitchen/templates/easy_kitchen/recipes/confirm_delete.html:8
+#: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:103
+#: src/easy_kitchen/templates/easy_kitchen/recipes/overview.html:47
 msgid "Delete recipe?"
 msgstr "Rezept löschen?"
 
+#: src/easy_kitchen/templates/easy_kitchen/recipes/confirm_delete.html:9
+#: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:106
+#: src/easy_kitchen/templates/easy_kitchen/recipes/overview.html:50
 #, python-format
 msgid ""
 "\"%(title)s\" and its ingredients and steps will be permanently deleted."
 msgstr "„%(title)s“ wird mit Zutaten und Schritten dauerhaft gelöscht."
 
+#: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:15
 msgid "Recipe actions"
 msgstr "Rezeptaktionen"
 
+#: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:17
+#: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:19
 msgid "Download PDF"
 msgstr "PDF herunterladen"
 
+#: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:21
+#: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:23
+#: src/easy_kitchen/templates/easy_kitchen/recipes/form.html:3
+#: src/easy_kitchen/templates/easy_kitchen/recipes/form.html:7
 msgid "Edit recipe"
 msgstr "Rezept bearbeiten"
 
+#: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:71
 msgid "Add to a shopping list"
 msgstr "Auf eine Einkaufsliste setzen"
 
+#: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:89
+#: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:91
 msgid "Add to list"
 msgstr "Zur Liste hinzufügen"
 
+#: src/easy_kitchen/templates/easy_kitchen/recipes/form.html:16
 msgid "Used when no image file is uploaded."
 msgstr "Wird verwendet, wenn keine Bilddatei hochgeladen ist."
 
+#: src/easy_kitchen/templates/easy_kitchen/recipes/overview.html:71
 msgid "Save a recipe with ingredients and steps."
 msgstr "Speichere ein Rezept mit Zutaten und Schritten."
 
+#: src/easy_kitchen/templates/easy_kitchen/recipes/overview.html:72
+#: src/easy_kitchen/templates/easy_kitchen/recipes/overview.html:74
 msgid "Create recipe"
 msgstr "Rezept erstellen"
 
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/line.html:16
 msgid "Ingredient actions"
 msgstr "Zutatenaktionen"
 
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/line.html:16
 msgid "Step actions"
 msgstr "Schrittaktionen"
 
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/line.html:17
 msgid "Edit ingredient"
 msgstr "Zutat bearbeiten"
 
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/line.html:17
 msgid "Edit step"
 msgstr "Schritt bearbeiten"
 
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/line.html:20
 msgid "Delete ingredient"
 msgstr "Zutat löschen"
 
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/line.html:20
 msgid "Delete step"
 msgstr "Schritt löschen"
 
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/line.html:31
 msgid "Delete ingredient?"
 msgstr "Zutat löschen?"
 
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/line.html:31
 msgid "Delete step?"
 msgstr "Schritt löschen?"
 
+#: src/easy_kitchen/templates/easy_kitchen/recipes/partials/line.html:38
 #, python-format
 msgid "\"%(text)s\" will be permanently deleted."
 msgstr "„%(text)s“ wird dauerhaft gelöscht."
 
+#: src/easy_kitchen/templates/registration/login.html:3
+#: src/easy_kitchen/templates/registration/login.html:9
+#: src/easy_kitchen/templates/registration/login.html:22
+#: src/easy_kitchen/templates/registration/login.html:24
 msgid "Sign in"
 msgstr "Anmelden"
 
+#: src/easy_kitchen/views.py:88
 msgid "Invalid request."
 msgstr "Ungültige Anfrage."
 
+#: src/easy_kitchen/views.py:119
 msgid "Shopping list created."
 msgstr "Einkaufsliste erstellt."
 
+#: src/easy_kitchen/views.py:152
 #, python-format
 msgid "Imported %(count)d shopping list."
 msgid_plural "Imported %(count)d shopping lists."
 msgstr[0] "%(count)d Einkaufsliste wurde importiert."
 msgstr[1] "%(count)d Einkaufslisten wurden importiert."
 
+#: src/easy_kitchen/views.py:160
 #, python-format
 msgid "Imported %(count)d recipe."
 msgid_plural "Imported %(count)d recipes."
 msgstr[0] "%(count)d Rezept importiert."
 msgstr[1] "%(count)d Rezepte importiert."
 
+#: src/easy_kitchen/views.py:210
 msgid "Shopping list updated."
 msgstr "Einkaufsliste aktualisiert."
 
+#: src/easy_kitchen/views.py:233
 msgid "Shopping list deleted."
 msgstr "Einkaufsliste gelöscht."
 
+#: src/easy_kitchen/views.py:440
 #, python-format
 msgid "Deleted one completed item."
 msgid_plural "Deleted %(count)s completed items."

@@ -22,7 +22,7 @@ Open **Edit articles** from the account menu to rename or delete an article. Del
 
 ## Recipes
 
-A recipe has a title, a description, one picture, optional calories, protein, and preparation time, ordered ingredients, and ordered cooking steps.
+A recipe has a title, a description, one picture, optional calories, protein, carbohydrates, fat, and preparation time, ordered ingredients, and ordered cooking steps.
 
 - The picture is a file uploaded in the app, or an image URL from the API, MCP, or JSON import. The uploaded file is shown when both are present.
 - An ingredient has a name and a quantity, in the same way a shopping-list item does.

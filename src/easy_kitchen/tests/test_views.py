@@ -410,14 +410,15 @@ def test_list_detail_shows_delete_completed_when_items_are_checked(client, user,
 
 
 @pytest.mark.django_db
-def test_list_detail_hides_delete_completed_without_checked_items(client, user, shopping_list):
+def test_list_detail_keeps_delete_completed_disabled_without_checked_items(client, user, shopping_list):
     ShoppingItem.objects.create(shopping_list=shopping_list, name="Tofu")
     client.force_login(user)
 
     content = client.get(reverse("easy_kitchen:detail", args=[shopping_list.pk])).content.decode()
 
-    assert "Delete completed" not in content
-    assert "delete-completed-modal" not in content
+    assert 'id="delete-completed-trigger"' in content
+    assert 'id="delete-completed-trigger"' in content and " disabled" in content.split('id="delete-completed-trigger"', 1)[1].split(">", 1)[0]
+    assert 'id="delete-completed-modal"' in content
 
 
 @pytest.mark.django_db
