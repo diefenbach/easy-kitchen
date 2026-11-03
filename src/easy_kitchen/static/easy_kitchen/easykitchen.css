@@ -146,8 +146,25 @@ h1, h2, .navbar-brand { color: var(--ek-sage-dark); font-family: Fraunces, Georg
 .badge.text-bg-light { background: #f3ece4 !important; color: var(--ek-ink); }
 body:not(.editing) .edit-only { display: none !important; }
 body.editing .view-only { display: none !important; }
+.btn-group.edit-actions { --ek-action-btn-radius: 999px; }
 body:not(.editing) .btn-group.edit-actions:not(:has(.view-only)) > .btn[data-edit-toggle] {
-  border-radius: var(--bs-border-radius) !important;
+  border-radius: var(--ek-action-btn-radius) !important;
+}
+body:not(.editing) .btn-group.edit-actions:has(.view-only) > .btn[data-edit-toggle] {
+  border-top-left-radius: var(--ek-action-btn-radius) !important;
+  border-bottom-left-radius: var(--ek-action-btn-radius) !important;
+}
+body:not(.editing) .btn-group.edit-actions > .btn.view-only {
+  border-top-right-radius: var(--ek-action-btn-radius) !important;
+  border-bottom-right-radius: var(--ek-action-btn-radius) !important;
+}
+body.editing .btn-group.edit-actions > .btn[data-edit-toggle] {
+  border-top-left-radius: var(--ek-action-btn-radius) !important;
+  border-bottom-left-radius: var(--ek-action-btn-radius) !important;
+}
+body.editing .btn-group.edit-actions > .btn.edit-only:last-child {
+  border-top-right-radius: var(--ek-action-btn-radius) !important;
+  border-bottom-right-radius: var(--ek-action-btn-radius) !important;
 }
 .list-card { transition: transform .15s ease, box-shadow .15s ease; }
 .list-card:hover { transform: translateY(-2px); box-shadow: 0 .6rem 1.2rem rgba(90, 62, 40, .1) !important; }
