@@ -1,9 +1,20 @@
 import {bindSortable, postJson} from "./easykitchen.js";
 
+function hideArticleSuggestions(field) {
+  const list = field?.querySelector(".article-suggestions");
+  const input = field?.querySelector("input[name=name]");
+  if (list) list.hidden = true;
+  if (input) input.setAttribute("aria-expanded", "false");
+}
+
 function showArticleSuggestions(input) {
   const field = input.closest(".article-field");
   const list = field?.querySelector(".article-suggestions");
   if (!list) return;
+  if (document.activeElement !== input) {
+    hideArticleSuggestions(field);
+    return;
+  }
   const query = input.value.trim().toLocaleLowerCase();
   const names = [...document.querySelectorAll("#articles option")]
     .map((option) => option.value)
@@ -32,9 +43,7 @@ document.addEventListener("input", (event) => {
 document.addEventListener("focusout", (event) => {
   const field = event.target.closest?.(".article-field");
   if (!field || field.contains(event.relatedTarget)) return;
-  const list = field.querySelector(".article-suggestions");
-  if (list) list.hidden = true;
-  if (event.target.matches?.("input[name=name]")) event.target.setAttribute("aria-expanded", "false");
+  hideArticleSuggestions(field);
 });
 document.addEventListener("mousedown", (event) => {
   const button = event.target.closest?.(".article-suggestion");
@@ -55,8 +64,11 @@ document.addEventListener("keydown", (event) => {
   event.target.setAttribute("aria-expanded", "false");
 });
 document.addEventListener("reset", (event) => {
-  const input = event.target.querySelector?.(".article-field input[name=name]");
-  if (input) requestAnimationFrame(() => showArticleSuggestions(input));
+  const form = event.target;
+  form.querySelectorAll?.(".article-field").forEach(hideArticleSuggestions);
+  const nameInput = form.querySelector?.(".article-field input[name=name]");
+  if (!nameInput || !form.closest("#item-form")) return;
+  requestAnimationFrame(() => nameInput.focus());
 }, true);
 
 const itemsContainer = document.getElementById("items");

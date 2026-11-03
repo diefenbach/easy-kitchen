@@ -411,6 +411,19 @@ def test_recipe_line_row_actions_are_icon_only(client, user):
 
 
 @pytest.mark.django_db
+def test_recipe_add_to_list_form_uses_bootstrap_fields(client, user):
+    client.force_login(user)
+    recipe = create_recipe(user, title="Soup")
+
+    content = client.get(reverse("easy_kitchen:recipe-detail", args=[recipe.pk])).content.decode()
+
+    assert 'name="shopping_list"' in content
+    assert 'class="form-select"' in content
+    assert 'name="title"' in content
+    assert 'class="form-control"' in content
+
+
+@pytest.mark.django_db
 def test_recipe_line_edit_form_vertically_centers_save_button(client, user):
     client.force_login(user)
     recipe = create_recipe(user, title="Pancakes", ingredients=[{"name": "Flour", "quantity": "200 g"}])
