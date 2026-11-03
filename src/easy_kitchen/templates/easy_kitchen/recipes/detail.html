@@ -14,6 +14,10 @@
     </div>
     <div class="btn-group edit-actions flex-shrink-0 align-self-start" role="group" aria-label="{% translate 'Recipe actions' %}">
       {% include "easy_kitchen/partials/edit_mode_button.html" %}
+      <a href="{% url 'easy_kitchen:recipe-pdf' recipe.pk %}" class="btn btn-outline-secondary view-only" aria-label="{% translate 'Download PDF' %}">
+        <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+        <span class="d-none d-md-inline">{% translate "Download PDF" %}</span>
+      </a>
       <a href="{% url 'easy_kitchen:recipe-update' recipe.pk %}" class="btn btn-outline-secondary edit-only" aria-label="{% translate 'Edit recipe' %}">
         <i class="bi bi-pencil" aria-hidden="true"></i>
         <span class="d-none d-md-inline">{% translate "Edit recipe" %}</span>

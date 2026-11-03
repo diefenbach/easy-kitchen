@@ -12,6 +12,7 @@ dependencies = [
   "mcp>=2.3,<2.4",
   "pillow>=11,<12",
   "psycopg[binary]>=3.2,<4",
+  "reportlab>=4.2,<5",
 ]
 
 [dependency-groups]

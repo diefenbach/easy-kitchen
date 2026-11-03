@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: django-easy-kitchen\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-02 15:28+0100\n"
+"POT-Creation-Date: 2026-11-03 10:43+0100\n"
 "PO-Revision-Date: 2026-10-30 16:11+0100\n"
 "Last-Translator: EasyKitchen\n"
 "Language-Team: German\n"
@@ -151,6 +151,9 @@ msgstr "Symbol"
 msgid "date"
 msgstr "Datum"
 
+msgid "hide completed items"
+msgstr "Erledigte ausblenden"
+
 msgid "shopping list"
 msgstr "Einkaufsliste"
 
@@ -184,20 +187,14 @@ msgstr "Bild"
 msgid "image URL"
 msgstr "Bild-URL"
 
-#, fuzzy
-#| msgid "%(calories)s kcal"
 msgid "calories"
-msgstr "%(calories)s kcal"
+msgstr "Kalorien"
 
-#, fuzzy
-#| msgid "Protein (g)"
 msgid "protein"
-msgstr "Proteine (g)"
+msgstr "Proteine"
 
-#, fuzzy
-#| msgid "Preparation time (min)"
 msgid "preparation time"
-msgstr "Zubereitungszeit (Min.)"
+msgstr "Zubereitungszeit"
 
 msgid "recipe"
 msgstr "Rezept"
@@ -216,6 +213,30 @@ msgstr "Schritt"
 
 msgid "steps"
 msgstr "Schritte"
+
+#, python-format
+msgid "%(calories)s kcal"
+msgstr "%(calories)s kcal"
+
+#, python-format
+msgid "%(protein)s g protein"
+msgstr "%(protein)s g Proteine"
+
+#, python-format
+msgid "%(minutes)s min"
+msgstr "%(minutes)s Min."
+
+msgid "Ingredients"
+msgstr "Zutaten"
+
+msgid "No ingredients yet."
+msgstr "Noch keine Zutaten."
+
+msgid "Steps"
+msgstr "Schritte"
+
+msgid "No steps yet."
+msgstr "Noch keine Schritte."
 
 msgid "Recipe created."
 msgstr "Rezept erstellt."
@@ -412,11 +433,11 @@ msgstr "Liste bearbeiten"
 msgid "Delete list"
 msgstr "Liste löschen"
 
-msgid "Hide completed"
-msgstr "Erledigte ausblenden"
-
 msgid "Show completed"
 msgstr "Erledigte anzeigen"
+
+msgid "Hide completed"
+msgstr "Erledigte ausblenden"
 
 msgid "Delete completed"
 msgstr "Erledigte löschen"
@@ -429,9 +450,12 @@ msgstr "Erledigte Artikel löschen?"
 
 #, python-format
 msgid "The completed item on this list will be permanently deleted."
-msgid_plural "All %(counter)s completed items on this list will be permanently deleted."
+msgid_plural ""
+"All %(counter)s completed items on this list will be permanently deleted."
 msgstr[0] "Der erledigte Artikel auf dieser Liste wird dauerhaft gelöscht."
-msgstr[1] "Alle %(counter)s erledigten Artikel auf dieser Liste werden dauerhaft gelöscht."
+msgstr[1] ""
+"Alle %(counter)s erledigten Artikel auf dieser Liste werden dauerhaft "
+"gelöscht."
 
 msgid "Move"
 msgstr "Verschieben"
@@ -484,20 +508,11 @@ msgstr "„%(title)s“ wird mit Zutaten und Schritten dauerhaft gelöscht."
 msgid "Recipe actions"
 msgstr "Rezeptaktionen"
 
+msgid "Download PDF"
+msgstr "PDF herunterladen"
+
 msgid "Edit recipe"
 msgstr "Rezept bearbeiten"
-
-msgid "Ingredients"
-msgstr "Zutaten"
-
-msgid "No ingredients yet."
-msgstr "Noch keine Zutaten."
-
-msgid "Steps"
-msgstr "Schritte"
-
-msgid "No steps yet."
-msgstr "Noch keine Schritte."
 
 msgid "Add to a shopping list"
 msgstr "Auf eine Einkaufsliste setzen"
@@ -513,18 +528,6 @@ msgstr "Speichere ein Rezept mit Zutaten und Schritten."
 
 msgid "Create recipe"
 msgstr "Rezept erstellen"
-
-#, python-format
-msgid "%(calories)s kcal"
-msgstr "%(calories)s kcal"
-
-#, python-format
-msgid "%(protein)s g protein"
-msgstr "%(protein)s g Proteine"
-
-#, python-format
-msgid "%(minutes)s min"
-msgstr "%(minutes)s Min."
 
 msgid "Ingredient actions"
 msgstr "Zutatenaktionen"
@@ -556,6 +559,9 @@ msgstr "„%(text)s“ wird dauerhaft gelöscht."
 
 msgid "Sign in"
 msgstr "Anmelden"
+
+msgid "Invalid request."
+msgstr "Ungültige Anfrage."
 
 msgid "Shopping list created."
 msgstr "Einkaufsliste erstellt."
