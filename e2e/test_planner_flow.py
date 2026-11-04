@@ -190,3 +190,41 @@ def test_planner_searches_all_recipe_text_and_combines_terms(authenticated_page,
     day.get_by_role("button", name="Save plan", exact=True).click()
     expect(day.get_by_role("link", name=recipe.title, exact=True)).to_be_visible()
     assert MealPlanEntry.objects.get(user=user).recipe_id == recipe.pk
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.parametrize("width", [1280, 390])
+def test_recipe_suggestions_show_pictures_on_the_left(authenticated_page, user, live_server, width):
+    picture_url = f"{live_server.url}/static/easy_kitchen/logo.png"
+    title = "Soup with a picture and a long title for a relaxed weekday dinner"
+    create_recipe(user, title=title, image_url=picture_url)
+    create_recipe(user, title="Soup without a picture")
+    create_recipe(user, title="Soup with a missing picture", image_url=f"{live_server.url}/missing.png")
+    page = authenticated_page
+    page.set_viewport_size({"width": width, "height": 844})
+    page.get_by_role("link", name="Meal planner", exact=True).click()
+    day = page.locator(".planner-day").first
+    search = day.get_by_role("combobox", name="Recipe")
+    search.fill("soup")
+    pictured = day.get_by_role("option", name=title, exact=True)
+    picture = pictured.locator("img")
+    expect(picture).to_be_visible()
+    expect(picture).to_have_attribute("src", picture_url)
+    expect(picture).to_have_js_property("complete", True)
+    assert picture.evaluate("image => image.naturalWidth > 0")
+    picture_box = picture.bounding_box()
+    title_box = pictured.get_by_text(title, exact=True).bounding_box()
+    assert picture_box["x"] + picture_box["width"] < title_box["x"]
+
+    for name in ("Soup without a picture", "Soup with a missing picture"):
+        fallback = day.get_by_role("option", name=name, exact=True).locator("img")
+        expect(fallback).to_have_attribute("src", "/static/easy_kitchen/recipe-placeholder.svg")
+        expect(fallback).to_have_js_property("complete", True)
+        assert fallback.evaluate("image => image.naturalWidth > 0")
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+
+    picture.click()
+    expect(search).to_have_value(title)
+    day.get_by_role("button", name="Save plan", exact=True).click()
+    expect(day.get_by_role("link", name=title, exact=True)).to_be_visible()

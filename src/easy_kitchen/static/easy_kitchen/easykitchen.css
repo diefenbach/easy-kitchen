@@ -250,6 +250,16 @@ body.editing .btn-group.edit-actions > .btn.edit-only:last-child {
 .recipe-suggestion:hover,
 .recipe-suggestion[aria-selected="true"] { background: var(--ek-blush); }
 .recipe-suggestions { width: 100%; overflow-wrap: anywhere; }
+.recipe-suggestion { display: flex; align-items: center; gap: .75rem; }
+.recipe-suggestion-picture {
+  width: 3rem;
+  height: 3rem;
+  flex: 0 0 3rem;
+  object-fit: cover;
+  border-radius: .375rem;
+  background-color: #f3ece4;
+}
+.recipe-suggestion-title { min-width: 0; }
 .recipe-field [hidden] { display: none !important; }
 .planner-day a { overflow-wrap: anywhere; }
 .article-row,

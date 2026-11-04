@@ -299,18 +299,26 @@ def test_planner_uses_german_translations(client, user):
 
 
 @pytest.mark.django_db
-def test_planner_search_data_includes_owned_recipe_text_and_escapes_html(client, user, other_user):
+@pytest.mark.parametrize("uploaded_picture", [False, True])
+def test_planner_search_data_includes_owned_recipe_text_and_pictures_safely(
+    client, user, other_user, uploaded_picture
+):
     recipe = create_recipe(
         user,
         title="Soup",
         description='Fresh </script><script>alert("recipe")</script>',
+        image_url="https://example.com/soup.jpg",
         ingredients=[{"name": "Onion", "quantity": "200 g"}],
         steps=[{"text": "Simmer slowly."}],
     )
+    if uploaded_picture:
+        recipe.image = "recipes/uploaded-soup.png"
+        recipe.save(update_fields=["image"])
     create_recipe(
         other_user,
         title="Private recipe",
         description="Private description",
+        image_url="https://example.com/private-recipe.jpg",
         ingredients=[{"name": "Private ingredient"}],
         steps=[{"text": "Private instructions"}],
     )
@@ -325,8 +333,13 @@ def test_planner_search_data_includes_owned_recipe_text_and_escapes_html(client,
     assert "</script>" not in data.group(1)
     documents = json.loads(data.group(1))
     assert set(documents) == {str(recipe.pk)}
-    text = documents[str(recipe.pk)]
+    document = documents[str(recipe.pk)]
+    assert document["picture_url"] == (
+        "/media/recipes/uploaded-soup.png" if uploaded_picture else "https://example.com/soup.jpg"
+    )
+    text = document["text"]
     for term in ("Soup", recipe.description, "Onion", "200 g", "Simmer slowly."):
         assert term in text
     for term in ("Private recipe", "Private description", "Private ingredient", "Private instructions"):
         assert term not in content
+    assert "https://example.com/private-recipe.jpg" not in content

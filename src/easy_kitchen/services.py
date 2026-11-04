@@ -629,18 +629,24 @@ def recipe_export_data(recipe: Recipe) -> dict[str, Any]:
     return data
 
 
-def recipe_search_documents(user: AbstractBaseUser) -> dict[str, str]:
-    """Provide the user's complete recipe text once for planner autocomplete."""
+def recipe_search_documents(user: AbstractBaseUser) -> dict[str, dict[str, str]]:
+    """Provide the user's recipe text and pictures once for planner autocomplete."""
     recipes = user.recipes.prefetch_related("ingredients", "steps")
     return {
-        str(recipe.pk): "\n".join(
-            [
-                recipe.title,
-                recipe.description,
-                *(f"{ingredient.name} {ingredient.quantity}" for ingredient in recipe.ingredients.all()),
-                *(step.text for step in recipe.steps.all()),
-            ]
-        )
+        str(recipe.pk): {
+            "text": "\n".join(
+                [
+                    recipe.title,
+                    recipe.description,
+                    *(
+                        f"{ingredient.name} {ingredient.quantity}"
+                        for ingredient in recipe.ingredients.all()
+                    ),
+                    *(step.text for step in recipe.steps.all()),
+                ]
+            ),
+            "picture_url": recipe.picture_url,
+        }
         for recipe in recipes
     }
 

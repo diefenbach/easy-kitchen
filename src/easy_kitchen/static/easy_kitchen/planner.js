@@ -1,13 +1,17 @@
 // Enhance the server-validated recipe selects with a keyboard-accessible autocomplete.
-const searchTextById = new Map(
+const recipeDataById = new Map(
   Object.entries(JSON.parse(document.getElementById("recipe-search-data").textContent))
-    .map(([id, text]) => [id, text.toLocaleLowerCase()])
+    .map(([id, recipe]) => [id, {
+      text: recipe.text.toLocaleLowerCase(),
+      pictureUrl: recipe.picture_url,
+    }])
 );
 
 document.querySelectorAll(".recipe-field").forEach((field) => {
   const select = field.querySelector("select");
   const input = field.querySelector(".recipe-search");
   const list = field.querySelector(".recipe-suggestions");
+  const placeholderPicture = list.dataset.placeholderPicture;
   const recipes = [...select.options].filter((option) => option.value);
   let active = -1;
 
@@ -29,7 +33,7 @@ document.querySelectorAll(".recipe-field").forEach((field) => {
   function show() {
     const terms = input.value.toLocaleLowerCase().split(/\s+/).filter(Boolean);
     const matches = recipes.filter((option) => {
-      const text = searchTextById.get(option.value);
+      const text = recipeDataById.get(option.value).text;
       return terms.every((term) => text.includes(term));
     });
     active = -1;
@@ -44,7 +48,20 @@ document.querySelectorAll(".recipe-field").forEach((field) => {
       button.className = "recipe-suggestion";
       button.setAttribute("role", "option");
       button.setAttribute("aria-selected", "false");
-      button.textContent = option.textContent;
+      const picture = document.createElement("img");
+      picture.className = "recipe-suggestion-picture";
+      picture.alt = "";
+      picture.width = 48;
+      picture.height = 48;
+      picture.loading = "lazy";
+      picture.addEventListener("error", () => {
+        picture.src = placeholderPicture;
+      }, {once: true});
+      picture.src = recipeDataById.get(option.value).pictureUrl || placeholderPicture;
+      const title = document.createElement("span");
+      title.className = "recipe-suggestion-title";
+      title.textContent = option.textContent;
+      button.append(picture, title);
       button.addEventListener("mousedown", (event) => event.preventDefault());
       button.addEventListener("click", () => choose(option.value));
       item.append(button);

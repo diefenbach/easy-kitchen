@@ -45,7 +45,7 @@
               {{ day.form.recipe }}
               <label class="form-label visually-hidden" for="{{ day.form.recipe.id_for_label }}-search">{{ day.form.recipe.label }}</label>
               <input type="text" id="{{ day.form.recipe.id_for_label }}-search" class="form-control recipe-search" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="{{ day.form.recipe.id_for_label }}-suggestions" aria-describedby="recipe-search-help" placeholder="{% translate 'Search recipes' %}" data-selection-message="{% translate 'Choose a recipe from the suggestions.' %}" hidden>
-              <ul id="{{ day.form.recipe.id_for_label }}-suggestions" class="recipe-suggestions" role="listbox" aria-label="{% translate 'Recipe suggestions' %}" hidden></ul>
+              <ul id="{{ day.form.recipe.id_for_label }}-suggestions" class="recipe-suggestions" role="listbox" aria-label="{% translate 'Recipe suggestions' %}" data-placeholder-picture="{% static 'easy_kitchen/recipe-placeholder.svg' %}" hidden></ul>
             </div>
             <button type="submit" class="btn btn-primary btn-sm" aria-label="{% translate 'Save plan' %}">
               <i class="bi bi-check-lg" aria-hidden="true"></i>
