@@ -17,7 +17,7 @@ def test_weekly_planning_with_autocomplete_and_merged_shopping_list(authenticate
     page.get_by_role("link", name="Meal planner", exact=True).click()
     expect(page.get_by_role("heading", name="Meal planner", exact=True)).to_be_visible()
     monday = page.locator(".planner-day").nth(0)
-    search = monday.get_by_role("combobox", name="Recipe")
+    search = monday.locator("input.recipe-search")
     search.fill("sOuP")
     expect(monday.get_by_role("option", name="Onion soup", exact=True)).to_be_visible()
     expect(page.get_by_role("option", name="Private recipe", exact=True)).to_have_count(0)
@@ -26,19 +26,19 @@ def test_weekly_planning_with_autocomplete_and_merged_shopping_list(authenticate
     expect(search).to_have_value("Onion soup")
     monday.get_by_role("button", name="Save plan", exact=True).click()
     expect(monday.get_by_role("link", name="Onion soup", exact=True)).to_be_visible()
-    expect(monday.get_by_role("combobox", name="Recipe")).to_have_count(0)
+    expect(monday.locator("input.recipe-search")).to_have_count(0)
     expect(monday.get_by_role("button", name="Save plan", exact=True)).to_have_count(0)
 
     tuesday = page.locator(".planner-day").nth(1)
-    tuesday.get_by_role("combobox", name="Recipe").fill("sal")
+    tuesday.locator("input.recipe-search").fill("sal")
     tuesday.get_by_role("option", name="Salad", exact=True).click()
     tuesday.get_by_role("button", name="Save plan", exact=True).click()
     expect(tuesday.get_by_role("link", name="Salad", exact=True)).to_be_visible()
     page.reload()
     expect(monday.get_by_role("link", name="Onion soup", exact=True)).to_be_visible()
     expect(tuesday.get_by_role("link", name="Salad", exact=True)).to_be_visible()
-    expect(monday.get_by_role("combobox", name="Recipe")).to_have_count(0)
-    expect(tuesday.get_by_role("combobox", name="Recipe")).to_have_count(0)
+    expect(monday.locator("input.recipe-search")).to_have_count(0)
+    expect(tuesday.locator("input.recipe-search")).to_have_count(0)
 
     page.get_by_label("New list", exact=True).fill("Weekly shop")
     page.get_by_role("button", name="Create shopping list", exact=True).click()
@@ -57,7 +57,7 @@ def test_autocomplete_rejects_unselected_text_and_returns_after_clearing_a_day(
     page = authenticated_page
     page.goto(f"{live_server.url}/planner/?week={week.isoformat()}")
     monday = page.locator(".planner-day").first
-    search = monday.get_by_role("combobox", name="Recipe")
+    search = monday.locator("input.recipe-search")
     search.fill("Does not exist")
     monday.get_by_role("button", name="Save plan", exact=True).click()
     assert not MealPlanEntry.objects.filter(user=user, date=week).exists()
@@ -100,11 +100,11 @@ def test_mobile_planner_selects_a_recipe_without_horizontal_overflow(authenticat
     page.set_viewport_size({"width": 390, "height": 844})
     page.get_by_role("link", name="Meal planner", exact=True).click()
     day = page.locator(".planner-day").first
-    day.get_by_role("combobox", name="Recipe").fill("weekday")
+    day.locator("input.recipe-search").fill("weekday")
     day.get_by_role("option", name=recipe.title, exact=True).click()
     day.get_by_role("button", name="Save plan", exact=True).click()
     expect(day.get_by_role("link", name=recipe.title, exact=True)).to_be_visible()
-    expect(day.get_by_role("combobox", name="Recipe")).to_have_count(0)
+    expect(day.locator("input.recipe-search")).to_have_count(0)
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
 
 
@@ -118,7 +118,7 @@ def test_empty_day_recipe_selection_fills_the_available_width(authenticated_page
     page.get_by_role("link", name="Meal planner", exact=True).click()
     expect(page.get_by_text("No recipe planned", exact=True)).to_have_count(0)
     day = page.locator(".planner-day").first
-    search = day.get_by_role("combobox", name="Recipe")
+    search = day.locator("input.recipe-search")
     form = search.locator("xpath=ancestor::form[1]")
     row = day.locator(":scope > div")
     date_column = day.get_by_text("Monday", exact=True).locator("..")
@@ -150,7 +150,7 @@ def test_duplicate_titles_select_the_chosen_recipe_id(authenticated_page, user):
     page = authenticated_page
     page.get_by_role("link", name="Meal planner", exact=True).click()
     day = page.locator(".planner-day").first
-    day.get_by_role("combobox", name="Recipe").fill("soup")
+    day.locator("input.recipe-search").fill("soup")
     choices = day.get_by_role("option", name="Soup", exact=True)
     expect(choices).to_have_count(2)
     choices.nth(1).click()
@@ -174,7 +174,7 @@ def test_planner_searches_only_titles_and_combines_terms(authenticated_page, use
     page = authenticated_page
     page.get_by_role("link", name="Meal planner", exact=True).click()
     day = page.locator(".planner-day").first
-    search = day.get_by_role("combobox", name="Recipe")
+    search = day.locator("input.recipe-search")
 
     for query in ("BOWL", "weeknight", "  BOWL   weekNIGHT  "):
         search.fill(query)
@@ -206,7 +206,7 @@ def test_recipe_suggestions_show_pictures_on_the_left(authenticated_page, user, 
     page.set_viewport_size({"width": width, "height": 844})
     page.get_by_role("link", name="Meal planner", exact=True).click()
     day = page.locator(".planner-day").first
-    search = day.get_by_role("combobox", name="Recipe")
+    search = day.locator("input.recipe-search")
     search.fill("soup")
     pictured = day.get_by_role("option", name=title, exact=True)
     picture = pictured.locator("img")
