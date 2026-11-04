@@ -33,7 +33,7 @@ A recipe has a title, a description, one picture, optional calories, protein, ca
 
 Open **Meal planner** in the navigation to plan one recipe per day from Monday through Sunday. The arrows switch weeks; **Current week** returns to this week. Empty days are allowed.
 
-Search across titles, descriptions, ingredients (including quantities), and cooking steps. All search terms must occur somewhere in the same recipe; their order and capitalization do not matter. For example, `chickpeas roast` finds a recipe with chickpeas among its ingredients and roasting in its instructions. Choose a suggestion, then **Save**. You can also select a suggestion with the arrow keys and Enter. After saving, the day shows only the linked recipe title and **Remove**. **Remove** clears the day and brings back the recipe selection so you can choose another recipe.
+Search recipe titles. All search terms must occur in the title; their order and capitalization do not matter. Descriptions, ingredients, and cooking steps are excluded. Choose a suggestion, then **Save**. You can also select a suggestion with the arrow keys and Enter. After saving, the day shows only the linked recipe title and **Remove**. **Remove** clears the day and brings back the recipe selection so you can choose another recipe.
 
 Under **Create shopping list from plan**, choose an existing shopping list or enter a new list title. All ingredients from the selected week are copied to that list using the usual quantity-merging rules. Planning a recipe twice adds its ingredients twice. Empty days contribute nothing. An entirely empty week cannot create a list. Creating the list again adds the ingredients again.
 

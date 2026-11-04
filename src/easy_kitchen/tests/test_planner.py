@@ -294,19 +294,19 @@ def test_planner_uses_german_translations(client, user):
     assert "Wochenplaner" in content
     assert "Rezept suchen" in content
     assert "Kein Rezept geplant" not in content
-    assert "Suche in Titeln, Beschreibungen, Zutaten und Zubereitungsschritten." in content
+    assert "Suche in Rezepttiteln." in content
     assert "Einkaufsliste aus Plan erstellen" in content
 
 
 @pytest.mark.django_db
 @pytest.mark.parametrize("uploaded_picture", [False, True])
-def test_planner_search_data_includes_owned_recipe_text_and_pictures_safely(
+def test_planner_search_data_only_includes_owned_titles_and_pictures(
     client, user, other_user, uploaded_picture
 ):
     recipe = create_recipe(
         user,
-        title="Soup",
-        description='Fresh </script><script>alert("recipe")</script>',
+        title='Soup </script><script>alert("recipe")</script>',
+        description="Fresh vegetables",
         image_url="https://example.com/soup.jpg",
         ingredients=[{"name": "Onion", "quantity": "200 g"}],
         steps=[{"text": "Simmer slowly."}],
@@ -338,8 +338,9 @@ def test_planner_search_data_includes_owned_recipe_text_and_pictures_safely(
         "/media/recipes/uploaded-soup.png" if uploaded_picture else "https://example.com/soup.jpg"
     )
     text = document["text"]
-    for term in ("Soup", recipe.description, "Onion", "200 g", "Simmer slowly."):
-        assert term in text
+    assert text == recipe.title
+    for term in (recipe.description, "Onion", "200 g", "Simmer slowly."):
+        assert term not in text
     for term in ("Private recipe", "Private description", "Private ingredient", "Private instructions"):
         assert term not in content
     assert "https://example.com/private-recipe.jpg" not in content
