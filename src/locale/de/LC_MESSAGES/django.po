@@ -1131,3 +1131,9 @@ msgstr "Datum"
 
 msgid "Use recipe"
 msgstr "Rezept verwenden"
+
+msgid "Choose a complete calendar week."
+msgstr "Wähle eine vollständige Kalenderwoche."
+
+msgid "Choose exactly one shopping list or a title for a new one."
+msgstr "Wähle entweder eine Einkaufsliste oder einen Titel für eine neue Liste."

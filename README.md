@@ -55,6 +55,7 @@ The recipe overview also offers cart and calendar buttons in the top-right corne
 - The view set creates, reads, updates, and deletes lists with nested items.
 - `POST /api/v1/shopping-lists/{id}/reorder/` accepts `{"item_ids": [3, 1, 2]}`.
 - `POST /api/v1/shopping-lists/import_json/` accepts `{"lists": [...]}` or a bare list. Each list needs `title`, `date` (`YYYY-MM-DD`), and `items` with `name` and optional `quantity`.
+- The weekly planner lives at `/api/v1/meal-planner/`: read a week, PUT or DELETE a dated day, and POST `add-to-list/` to copy ingredients to a new or existing owned list. See `docs/api.md` for request formats.
 - Recipes live at `/api/v1/recipes/` with the same token and the same user scope.
 - `POST /api/v1/recipes/{id}/reorder-ingredients/` and `POST /api/v1/recipes/{id}/reorder-steps/` accept `{"line_ids": [3, 1, 2]}`.
 - `POST /api/v1/recipes/import_json/` accepts `{"recipes": [...]}` or a bare list. The fields are described under [Recipe JSON](#recipe-json). An image file is not part of the JSON; send `image_url` or upload the file in the app.
@@ -66,6 +67,7 @@ The recipe overview also offers cart and calendar buttons in the top-right corne
 - A second process of the same image serves streamable HTTP at `/mcp` on port `8001`.
 - It authenticates the same DRF token. The tools have no user argument; records belong to the token owner.
 - `list_shopping_lists` and `list_recipes` read the token owner's lists and recipes.
+- `get_meal_plan_week`, `set_meal_plan_recipe`, `clear_meal_plan_day`, and `add_meal_plan_week_to_list` expose the same weekly planner through MCP. Week copying requires exactly one existing `list_id` or a new list `title`; repeated calls add quantities again.
 - `set_item_checked` marks an item completed. Pass `list_id` when the name is on more than one list. `checked` defaults to `true`.
 - `add_item_to_list` adds an item. Pass `list_id` or `list_title` to choose the list. Omit the list to use today's list, or create one titled Today.
 - `add_recipe_to_list` copies a recipe's ingredients onto a list. Omit the list to use today's list, or create one titled Today.
