@@ -252,9 +252,9 @@ body.editing .btn-group.edit-actions > .btn.edit-only:last-child {
 .recipe-suggestions { width: 100%; overflow-wrap: anywhere; }
 .recipe-suggestion { display: flex; align-items: center; gap: .75rem; }
 .recipe-suggestion-picture {
-  width: 3rem;
-  height: 3rem;
-  flex: 0 0 3rem;
+  width: 6rem;
+  height: 6rem;
+  flex: 0 0 6rem;
   object-fit: cover;
   border-radius: .375rem;
   background-color: #f3ece4;

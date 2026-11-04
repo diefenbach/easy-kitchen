@@ -128,6 +128,7 @@ def test_empty_day_recipe_selection_fills_the_available_width(authenticated_page
     form_box = form.bounding_box()
     search_box = search.bounding_box()
     save_box = save.bounding_box()
+    assert abs(save_box["height"] - search_box["height"]) <= 1
 
     if width >= 768:
         assert 0 <= form_box["x"] - (date_box["x"] + date_box["width"]) <= 20
@@ -214,6 +215,8 @@ def test_recipe_suggestions_show_pictures_on_the_left(authenticated_page, user, 
     expect(picture).to_have_js_property("complete", True)
     assert picture.evaluate("image => image.naturalWidth > 0")
     picture_box = picture.bounding_box()
+    assert abs(picture_box["width"] - 96) <= 1
+    assert abs(picture_box["height"] - 96) <= 1
     title_box = pictured.get_by_text(title, exact=True).bounding_box()
     assert picture_box["x"] + picture_box["width"] < title_box["x"]
 

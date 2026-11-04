@@ -36,7 +36,7 @@
             </div>
           {% endif %}
           {% if not day.entry or not day.entry.recipe %}
-          <form method="post" action="{% url 'easy_kitchen:planner-assign' %}" class="d-flex flex-wrap gap-2 align-items-end flex-grow-1">
+          <form method="post" action="{% url 'easy_kitchen:planner-assign' %}" class="d-flex flex-wrap gap-2 align-items-stretch flex-grow-1">
             {% csrf_token %}
             <input type="hidden" name="week_start" value="{{ week_start|date:'Y-m-d' }}">
             {{ day.form.date }}
