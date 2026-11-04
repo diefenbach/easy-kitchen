@@ -167,6 +167,7 @@ body.editing .btn-group.edit-actions > .btn.edit-only:last-child {
   border-bottom-right-radius: var(--ek-action-btn-radius) !important;
 }
 @media (max-width: 575.98px) {
+  .navbar-brand .brand-word { display: none; }
   body.editing .detail-header-toolbar {
     flex-wrap: wrap;
     row-gap: .75rem;
@@ -210,11 +211,13 @@ body.editing .btn-group.edit-actions > .btn.edit-only:last-child {
 .shopping-item.checked .item-name,
 .shopping-item.checked .item-quantity { text-decoration: line-through; }
 .item-title-toggle { background: transparent; border: 0; color: inherit; cursor: pointer; min-height: 2.75rem; padding: .25rem .5rem; text-align: start; }
-.article-field { position: relative; }
+.article-field,
+.recipe-field { position: relative; }
 .article-field:not(:focus-within) .article-suggestions {
   display: none !important;
 }
-.article-suggestions {
+.article-suggestions,
+.recipe-suggestions {
   position: absolute;
   z-index: 30;
   inset-inline-start: 0;
@@ -231,7 +234,8 @@ body.editing .btn-group.edit-actions > .btn.edit-only:last-child {
   border-radius: .375rem;
   box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .12);
 }
-.article-suggestion {
+.article-suggestion,
+.recipe-suggestion {
   display: block;
   width: 100%;
   border: 0;
@@ -242,7 +246,22 @@ body.editing .btn-group.edit-actions > .btn.edit-only:last-child {
   text-align: start;
 }
 .article-suggestion:hover,
-.article-suggestion:focus { background: var(--ek-blush); }
+.article-suggestion:focus,
+.recipe-suggestion:hover,
+.recipe-suggestion[aria-selected="true"] { background: var(--ek-blush); }
+.recipe-suggestions { width: 100%; overflow-wrap: anywhere; }
+.recipe-suggestion { display: flex; align-items: center; gap: .75rem; }
+.recipe-suggestion-picture {
+  width: 6rem;
+  height: 6rem;
+  flex: 0 0 6rem;
+  object-fit: cover;
+  border-radius: .375rem;
+  background-color: #f3ece4;
+}
+.recipe-suggestion-title { min-width: 0; }
+.recipe-field [hidden] { display: none !important; }
+.planner-day a { overflow-wrap: anywhere; }
 .article-row,
 .article-name-form { min-width: 0; }
 .article-name-form input { flex: 1 1 auto; min-width: 0; width: auto; }

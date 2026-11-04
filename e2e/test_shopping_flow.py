@@ -217,14 +217,18 @@ def test_hide_completed_persists_after_reload(authenticated_page, user):
     page.goto(f"{page.url.rstrip('/')}/lists/{shopping_list.pk}/")
 
     completed_item = page.locator(f'.shopping-item[data-item-id="{completed.pk}"]')
-    page.get_by_role("button", name="Hide completed").click()
+    with page.expect_response(f"**/lists/{shopping_list.pk}/hide-completed/") as saved:
+        page.get_by_role("button", name="Hide completed").click()
+    assert saved.value.status == 204
     expect(completed_item).to_be_hidden()
 
     page.reload()
     expect(completed_item).to_be_hidden()
     expect(page.get_by_role("button", name="Show completed")).to_be_visible()
 
-    page.get_by_role("button", name="Show completed").click()
+    with page.expect_response(f"**/lists/{shopping_list.pk}/hide-completed/") as saved:
+        page.get_by_role("button", name="Show completed").click()
+    assert saved.value.status == 204
     expect(completed_item).to_be_visible()
 
     page.reload()

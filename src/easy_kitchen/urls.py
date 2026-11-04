@@ -1,10 +1,22 @@
 from django.urls import path
-from . import recipe_views, views
+from . import planner_views, recipe_views, views
 
 app_name = "easy_kitchen"
 urlpatterns = [
     path("", views.HomeView.as_view(), name="home"),
     path("lists/", views.ShoppingListListView.as_view(), name="list"),
+    path("planner/", planner_views.MealPlanView.as_view(), name="planner"),
+    path("planner/assign/", planner_views.MealPlanAssignView.as_view(), name="planner-assign"),
+    path(
+        "planner/<str:day>/clear/",
+        planner_views.MealPlanClearView.as_view(),
+        name="planner-clear",
+    ),
+    path(
+        "planner/add-to-list/",
+        planner_views.MealPlanAddToListView.as_view(),
+        name="planner-add-to-list",
+    ),
     path("recipes/", recipe_views.RecipeListView.as_view(), name="recipes"),
     path("recipes/reorder/", recipe_views.RecipeReorderView.as_view(), name="recipe-reorder"),
     path("recipes/new/", recipe_views.RecipeCreateView.as_view(), name="recipe-create"),

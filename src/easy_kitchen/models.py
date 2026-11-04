@@ -174,6 +174,35 @@ class Recipe(models.Model):
         return self.image_url
 
 
+class MealPlanEntry(models.Model):
+    """One recipe assigned to a calendar day for meal planning."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="meal_plan_entries"
+    )
+    date = models.DateField(_("date"))
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name="meal_plan_entries",
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        ordering = ("date",)
+        verbose_name = _("meal plan entry")
+        verbose_name_plural = _("meal plan entries")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("user", "date"), name="shopping_mealplanentry_unique_user_date"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.date}: {self.recipe_id}"
+
+
 class RecipeIngredient(models.Model):
     """One ingredient line of a recipe."""
 
