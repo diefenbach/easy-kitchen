@@ -22,7 +22,15 @@ from pydantic import BaseModel, Field
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 from easy_kitchen.models import Recipe, ShoppingList
-from easy_kitchen.services import add_item_to_owned_list, add_recipe_to_owned_list
+from easy_kitchen.services import (
+    add_item_to_owned_list,
+    add_meal_plan_to_owned_list,
+    add_recipe_to_owned_list,
+    clear_meal_plan_day as clear_planned_day,
+    meal_plan_day_data,
+    meal_plan_week_data,
+    plan_owned_recipe,
+)
 from easy_kitchen.services import create_recipe as save_recipe
 from easy_kitchen.services import create_shopping_list as save_shopping_list
 from easy_kitchen.services import set_item_checked as mark_item_checked
@@ -36,7 +44,10 @@ mcp = MCPServer(
         "Confirm the title, ingredients, and steps before creating a recipe. "
         "When checking an item off, use the list the user named, or today's list. "
         "When adding an item, use the named list or today's list; create today's list if none exists. "
-        "When adding a recipe to a list, use the named list or today's list; create today's list if none exists."
+        "When adding a recipe to a list, use the named list or today's list; create today's list if none exists. "
+        "The meal planner uses one recipe per date; setting a recipe replaces that day's plan. "
+        "Use ISO dates. When copying a planned week, provide exactly one existing list_id or "
+        "a title for a new list. Copying the week again adds the ingredients again."
     ),
 )
 
@@ -352,6 +363,71 @@ def add_recipe_to_list(
     except ValueError as error:
         raise ToolError(str(error)) from None
     return _shopping_list_payload(shopping_list)
+
+
+@mcp.tool(
+    annotations=ToolAnnotations(
+        read_only_hint=True, destructive_hint=False, idempotent_hint=True, open_world_hint=False,
+    )
+)
+def get_meal_plan_week(ctx: Context, week: Date | None = None) -> dict:
+    """Read a Monday–Sunday plan with seven days. Omit week for the current local week."""
+    user = user_from_authorization(_authorization(ctx))
+    try:
+        return meal_plan_week_data(user, week)
+    except ValueError as error:
+        raise ToolError(str(error)) from None
+
+
+@mcp.tool(
+    annotations=ToolAnnotations(
+        read_only_hint=False, destructive_hint=True, idempotent_hint=True, open_world_hint=False,
+    )
+)
+def set_meal_plan_recipe(
+    date: Date,
+    ctx: Context,
+    recipe_id: Annotated[int, Field(ge=1)] | None = None,
+    recipe_title: Annotated[str, Field(max_length=255)] = "",
+) -> dict:
+    """Plan an owned recipe by id or unique title. Replaces any existing recipe on this date."""
+    user = user_from_authorization(_authorization(ctx))
+    try:
+        return plan_owned_recipe(user, date, recipe_id=recipe_id, recipe_title=recipe_title)
+    except ValueError as error:
+        raise ToolError(str(error)) from None
+
+
+@mcp.tool(
+    annotations=ToolAnnotations(
+        read_only_hint=False, destructive_hint=True, idempotent_hint=True, open_world_hint=False,
+    )
+)
+def clear_meal_plan_day(date: Date, ctx: Context) -> dict:
+    """Remove the authenticated user's planned recipe for a date. An empty day is unchanged."""
+    user = user_from_authorization(_authorization(ctx))
+    clear_planned_day(user, date)
+    return meal_plan_day_data(date)
+
+
+@mcp.tool(
+    annotations=ToolAnnotations(
+        read_only_hint=False, destructive_hint=False, idempotent_hint=False, open_world_hint=False,
+    )
+)
+def add_meal_plan_week_to_list(
+    week: Date,
+    ctx: Context,
+    list_id: Annotated[int, Field(ge=1)] | None = None,
+    title: Annotated[str, Field(max_length=255)] = "",
+) -> dict:
+    """Copy a week's ingredients to list_id OR a new list named title. Repeated calls add quantities again."""
+    user = user_from_authorization(_authorization(ctx))
+    try:
+        target = add_meal_plan_to_owned_list(user, week, list_id=list_id, title=title)
+    except ValueError as error:
+        raise ToolError(str(error)) from None
+    return _shopping_list_payload(target)
 
 
 def main() -> None:
