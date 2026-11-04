@@ -236,11 +236,21 @@ def test_recipe_suggestions_show_pictures_on_the_left(authenticated_page, user, 
     selected_picture = day.locator(".planner-recipe-picture")
     expect(selected_picture).to_be_visible()
     expect(selected_picture).to_have_attribute("src", picture_url)
-    link = day.get_by_role("link", name=title, exact=True)
+    link = day.locator(".planner-recipe-title")
     expect(link).to_have_css("text-decoration-line", "none")
+    assert abs(link.bounding_box()["y"] - selected_picture.bounding_box()["y"]) <= 1
+    if width >= 768:
+        picture_top = selected_picture.bounding_box()["y"]
+        date_column = day.get_by_text("Monday", exact=True).locator("..")
+        remove = day.get_by_role("button", name="Remove recipe from this day")
+        assert abs(date_column.bounding_box()["y"] - picture_top) <= 1
+        assert abs(remove.bounding_box()["y"] - picture_top) <= 1
     assert link.evaluate("element => getComputedStyle(element).color === getComputedStyle(element.closest('.planner-day')).color")
     link.hover()
     expect(link).to_have_css("text-decoration-line", "none")
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
-    link.click()
+    selected_picture.click()
+    expect(page.get_by_role("heading", name=title, exact=True)).to_be_visible()
+    page.go_back()
+    day.locator(".planner-recipe-title").click()
     expect(page.get_by_role("heading", name=title, exact=True)).to_be_visible()

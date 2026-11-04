@@ -25,14 +25,16 @@
   <div class="list-group list-group-flush">
     {% for day in days %}
       <div class="list-group-item planner-day py-3">
-        <div class="d-flex flex-column flex-md-row gap-3 align-items-md-center">
+        <div class="d-flex flex-column flex-md-row gap-3 align-items-md-start">
           <div class="flex-shrink-0" style="min-width: 8rem;">
             <div class="fw-bold">{{ day.date|date:"l" }}</div>
             <div class="text-secondary small">{{ day.date|date:"SHORT_DATE_FORMAT" }}</div>
           </div>
           {% if day.entry and day.entry.recipe %}
             <div class="planner-recipe flex-grow-1">
-              <img class="planner-recipe-picture" src="{% if day.entry.recipe.picture_url %}{{ day.entry.recipe.picture_url }}{% else %}{% static 'easy_kitchen/recipe-placeholder.svg' %}{% endif %}" alt="" width="96" height="96">
+              <a class="planner-recipe-picture-link" href="{% url 'easy_kitchen:recipe-detail' day.entry.recipe.pk %}" aria-hidden="true" tabindex="-1">
+                <img class="planner-recipe-picture" src="{% if day.entry.recipe.picture_url %}{{ day.entry.recipe.picture_url }}{% else %}{% static 'easy_kitchen/recipe-placeholder.svg' %}{% endif %}" alt="" width="96" height="96">
+              </a>
               <a class="planner-recipe-title" href="{% url 'easy_kitchen:recipe-detail' day.entry.recipe.pk %}">{{ day.entry.recipe.title }}</a>
             </div>
           {% endif %}
