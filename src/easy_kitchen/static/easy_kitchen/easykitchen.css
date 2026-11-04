@@ -203,8 +203,8 @@ body.editing .btn-group.edit-actions > .btn.edit-only:last-child {
     --bs-btn-padding-x: .2rem;
   }
 }
-.list-card { transition: transform .15s ease, box-shadow .15s ease; }
-.list-card:hover { transform: translateY(-2px); box-shadow: 0 .6rem 1.2rem rgba(90, 62, 40, .1) !important; }
+.list-card { transition: box-shadow .15s ease; }
+.list-card:hover { box-shadow: 0 .6rem 1.2rem rgba(90, 62, 40, .1) !important; }
 .list-back-button { --bs-btn-padding-x: .75rem; }
 .list-detail-header { background-color: #fffdfb; border-left: .35rem solid var(--ek-blush) !important; }
 .shopping-item.checked { opacity: .62; }
