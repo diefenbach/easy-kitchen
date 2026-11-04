@@ -124,6 +124,38 @@ def test_planner_fields_have_unique_ids_and_only_offer_owned_recipes(client, use
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize("delete_recipe", [False, True])
+def test_planner_only_shows_recipe_selection_for_empty_days(client, user, delete_recipe):
+    week = date(2026, 11, 2)
+    recipe = create_recipe(user, title="Soup")
+    set_meal_plan_recipe(user, week, recipe)
+    client.force_login(user)
+    url = reverse("easy_kitchen:planner")
+    selection_id = f'id="plan-{week.isoformat()}_recipe"'
+    search_id = f'id="plan-{week.isoformat()}_recipe-search"'
+
+    content = client.get(url, {"week": week.isoformat()}).content.decode()
+
+    assert selection_id not in content
+    assert search_id not in content
+    assert content.count('name="recipe"') == 6
+    assert f'href="{reverse("easy_kitchen:recipe-detail", args=[recipe.pk])}">Soup</a>' in content
+
+    if delete_recipe:
+        recipe.delete()
+    else:
+        client.post(
+            reverse("easy_kitchen:planner-clear", args=[week.isoformat()]),
+            {"week_start": week.isoformat()},
+        )
+    content = client.get(url, {"week": week.isoformat()}).content.decode()
+
+    assert selection_id in content
+    assert search_id in content
+    assert content.count('name="recipe"') == 7
+
+
+@pytest.mark.django_db
 def test_assigning_another_recipe_replaces_the_day_and_rejects_foreign_ids(client, user, other_user):
     day = date(2026, 11, 2)
     soup = create_recipe(user, title="Soup")

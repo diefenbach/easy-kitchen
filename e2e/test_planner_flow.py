@@ -4,7 +4,7 @@ import pytest
 from playwright.sync_api import expect
 
 from easy_kitchen.models import MealPlanEntry
-from easy_kitchen.services import create_recipe, set_meal_plan_recipe
+from easy_kitchen.services import create_recipe
 
 
 @pytest.mark.e2e
@@ -26,6 +26,8 @@ def test_weekly_planning_with_autocomplete_and_merged_shopping_list(authenticate
     expect(search).to_have_value("Onion soup")
     monday.get_by_role("button", name="Save plan", exact=True).click()
     expect(monday.get_by_role("link", name="Onion soup", exact=True)).to_be_visible()
+    expect(monday.get_by_role("combobox", name="Recipe")).to_have_count(0)
+    expect(monday.get_by_role("button", name="Save plan", exact=True)).to_have_count(0)
 
     tuesday = page.locator(".planner-day").nth(1)
     tuesday.get_by_role("combobox", name="Recipe").fill("sal")
@@ -33,8 +35,10 @@ def test_weekly_planning_with_autocomplete_and_merged_shopping_list(authenticate
     tuesday.get_by_role("button", name="Save plan", exact=True).click()
     expect(tuesday.get_by_role("link", name="Salad", exact=True)).to_be_visible()
     page.reload()
-    expect(monday.get_by_role("combobox", name="Recipe")).to_have_value("Onion soup")
-    expect(tuesday.get_by_role("combobox", name="Recipe")).to_have_value("Salad")
+    expect(monday.get_by_role("link", name="Onion soup", exact=True)).to_be_visible()
+    expect(tuesday.get_by_role("link", name="Salad", exact=True)).to_be_visible()
+    expect(monday.get_by_role("combobox", name="Recipe")).to_have_count(0)
+    expect(tuesday.get_by_role("combobox", name="Recipe")).to_have_count(0)
 
     page.get_by_label("New list", exact=True).fill("Weekly shop")
     page.get_by_role("button", name="Create shopping list", exact=True).click()
@@ -44,32 +48,43 @@ def test_weekly_planning_with_autocomplete_and_merged_shopping_list(authenticate
 
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
-def test_autocomplete_rejects_unselected_text_and_supports_replace_clear_and_week_navigation(
+def test_autocomplete_rejects_unselected_text_and_returns_after_clearing_a_day(
     authenticated_page, user, live_server
 ):
     week = date(2026, 12, 28)
-    soup = create_recipe(user, title="Soup")
+    create_recipe(user, title="Soup")
     create_recipe(user, title="Salad")
-    set_meal_plan_recipe(user, week, soup)
     page = authenticated_page
     page.goto(f"{live_server.url}/planner/?week={week.isoformat()}")
     monday = page.locator(".planner-day").first
     search = monday.get_by_role("combobox", name="Recipe")
     search.fill("Does not exist")
     monday.get_by_role("button", name="Save plan", exact=True).click()
-    assert MealPlanEntry.objects.get(user=user, date=week).recipe_id == soup.pk
+    assert not MealPlanEntry.objects.filter(user=user, date=week).exists()
     expect(search).to_have_value("Does not exist")
 
-    search.fill("sal")
+    search.fill("sou")
     search.press("Escape")
     expect(monday.get_by_role("listbox")).to_be_hidden()
     search.press("ArrowDown")
     search.press("Enter")
     monday.get_by_role("button", name="Save plan", exact=True).click()
-    expect(monday.get_by_role("link", name="Salad", exact=True)).to_be_visible()
+    expect(monday.get_by_role("link", name="Soup", exact=True)).to_be_visible()
+    expect(search).to_have_count(0)
+    expect(monday.get_by_role("button", name="Save plan", exact=True)).to_have_count(0)
+    page.reload()
+    expect(monday.get_by_role("link", name="Soup", exact=True)).to_be_visible()
+    expect(search).to_have_count(0)
     monday.get_by_role("button", name="Remove recipe from this day").click()
     expect(monday.get_by_text("No recipe planned", exact=True)).to_be_visible()
+    expect(search).to_be_visible()
+    expect(search).to_have_value("")
     assert not MealPlanEntry.objects.filter(user=user, date=week).exists()
+    search.fill("sal")
+    monday.get_by_role("option", name="Salad", exact=True).click()
+    monday.get_by_role("button", name="Save plan", exact=True).click()
+    expect(monday.get_by_role("link", name="Salad", exact=True)).to_be_visible()
+    expect(search).to_have_count(0)
 
     page.get_by_role("link", name="Next week", exact=True).click()
     expect(page).to_have_url(f"{live_server.url}/planner/?week=2027-01-04")
@@ -89,6 +104,7 @@ def test_mobile_planner_selects_a_recipe_without_horizontal_overflow(authenticat
     day.get_by_role("option", name=recipe.title, exact=True).click()
     day.get_by_role("button", name="Save plan", exact=True).click()
     expect(day.get_by_role("link", name=recipe.title, exact=True)).to_be_visible()
+    expect(day.get_by_role("combobox", name="Recipe")).to_have_count(0)
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
 
 

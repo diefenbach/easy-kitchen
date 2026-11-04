@@ -37,6 +37,7 @@
               <span class="text-secondary">{% translate "No recipe planned" %}</span>
             {% endif %}
           </div>
+          {% if not day.entry or not day.entry.recipe %}
           <form method="post" action="{% url 'easy_kitchen:planner-assign' %}" class="d-flex flex-wrap gap-2 align-items-end flex-grow-1 flex-md-grow-0">
             {% csrf_token %}
             <input type="hidden" name="week_start" value="{{ week_start|date:'Y-m-d' }}">
@@ -53,6 +54,7 @@
               <span class="d-none d-md-inline">{% translate "Save" %}</span>
             </button>
           </form>
+          {% endif %}
           {% if day.entry and day.entry.recipe %}
             <form method="post" action="{% url 'easy_kitchen:planner-clear' day.date|date:'Y-m-d' %}">
               {% csrf_token %}
