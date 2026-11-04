@@ -26,9 +26,13 @@ A private, responsive shopping list application built with Django 5.2 LTS. It us
 - Each user has their own recipes. A recipe has a title, a description, one picture, optional calories, protein, carbohydrates, fat, and preparation time, ordered ingredients, and ordered cooking steps.
 - The picture is a file uploaded in the app, or an image URL supplied by the API, MCP, or JSON import. The uploaded file is shown when both are present.
 - An ingredient has a name and a quantity, in the same way a shopping-list item does. A step is one block of text. Drag the handle to reorder either list.
-- **Add to list** copies those ingredients onto a shopping list that belongs to the same user. Choose an existing list, or enter a title to create one for today. The ingredient name and quantity are copied onto the new item.
+- **Add to a shopping list** beside the back button opens a modal to choose an existing list or name a new one. **Add to list** copies the ingredients onto a shopping list that belongs to the same user. Choose an existing list, or enter a title to create one for today. The ingredient name and quantity are copied onto the new item.
 
 ### Meal planner
+
+The recipe overview also offers cart and calendar buttons in the top-right corner of each recipe picture. They open the shopping-list and planner dialogs for that recipe.
+
+- Beside the back button on a recipe’s detail page, **Plan recipe** opens a modal with the native datepicker. Choose a date and **Add to planner** to open that week. An existing recipe on the chosen day is replaced.
 
 - Open **Meal planner** to plan one recipe per day, Monday through Sunday. Use the arrows to change weeks, or **Current week** to return to this week.
 - Search recipe titles. All terms must occur in the title, regardless of order or capitalization. Choose a suggestion, then **Save**. Suggestions only include your own recipes. Use the arrow keys and Enter to select with the keyboard.

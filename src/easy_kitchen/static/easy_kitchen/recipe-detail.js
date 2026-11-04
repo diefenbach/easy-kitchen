@@ -1,3 +1,4 @@
+import "./recipe-actions.js";
 import {bindSortable} from "./easykitchen.js";
 
 for (const id of ["ingredients", "steps"]) {

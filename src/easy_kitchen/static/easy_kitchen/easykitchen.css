@@ -154,7 +154,7 @@ body:not(.editing) .btn-group.edit-actions:has(.view-only) > .btn[data-edit-togg
   border-top-left-radius: var(--ek-action-btn-radius) !important;
   border-bottom-left-radius: var(--ek-action-btn-radius) !important;
 }
-body:not(.editing) .btn-group.edit-actions > .btn.view-only {
+body:not(.editing) .btn-group.edit-actions > .btn.view-only:not(:has(~ .view-only)) {
   border-top-right-radius: var(--ek-action-btn-radius) !important;
   border-bottom-right-radius: var(--ek-action-btn-radius) !important;
 }
@@ -372,3 +372,22 @@ textarea:not(.form-control) {
     border-width: 0;
   }
 }
+
+.recipe-card-actions {
+  position: absolute;
+  top: .75rem;
+  right: .75rem;
+  z-index: 3;
+  display: flex;
+  gap: .5rem;
+}
+.recipe-card-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  background: #fffdfb;
+  box-shadow: 0 .15rem .5rem rgba(0, 0, 0, .15);
+}
+.recipe-card-actions .btn:hover { background: #f3ece4; }

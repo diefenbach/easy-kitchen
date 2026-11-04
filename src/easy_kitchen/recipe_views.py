@@ -11,7 +11,7 @@ from django.utils.translation import gettext as _, ngettext
 from django.views import View
 from django.views.generic import CreateView, DeleteView, UpdateView
 
-from .forms import AddRecipeToListForm, RecipeForm, RecipeLineForm
+from .forms import AddRecipeToListForm, AddRecipeToPlannerForm, RecipeForm, RecipeLineForm
 from .models import Recipe
 from .recipe_pdf import build_recipe_pdf
 from .services import (
@@ -21,6 +21,8 @@ from .services import (
     create_shopping_list,
     reorder_recipe_lines,
     reorder_recipes,
+    set_meal_plan_recipe,
+    week_start_for,
 )
 
 
@@ -36,7 +38,15 @@ class RecipeListView(LoginRequiredMixin, View):
 
     def get(self, request):
         recipes = Recipe.objects.filter(user=request.user).prefetch_related("ingredients")
-        return render(request, "easy_kitchen/recipes/overview.html", {"recipes": recipes})
+        return render(
+            request,
+            "easy_kitchen/recipes/overview.html",
+            {
+                "recipes": recipes,
+                "add_to_list_form": AddRecipeToListForm(user=request.user),
+                "add_to_planner_form": AddRecipeToPlannerForm(auto_id="planner_%s"),
+            },
+        )
 
 
 class RecipeReorderView(LoginRequiredMixin, View):
@@ -134,13 +144,40 @@ class RecipeDetailView(UserRecipeMixin, View):
         )
         return render(request, "easy_kitchen/recipes/detail.html", self._context(request, recipe))
 
-    def _context(self, request, recipe, add_to_list_form=None):
+    def _context(self, request, recipe, add_to_list_form=None, add_to_planner_form=None):
         return {
             "recipe": recipe,
+            "add_to_planner_form": (
+                add_to_planner_form if add_to_planner_form is not None
+                else AddRecipeToPlannerForm(auto_id="planner_%s")
+            ),
             "ingredient_form": RecipeLineForm(kind="ingredient", auto_id="ingredient_%s"),
             "step_form": RecipeLineForm(kind="step", auto_id="step_%s"),
-            "add_to_list_form": add_to_list_form or AddRecipeToListForm(user=request.user),
+            "add_to_list_form": (
+                add_to_list_form if add_to_list_form is not None
+                else AddRecipeToListForm(user=request.user)
+            ),
         }
+
+
+class RecipeAddToPlannerView(UserRecipeMixin, View):
+    """Plan an owned recipe for the chosen date and show that week."""
+
+    def post(self, request, pk):
+        recipe = get_object_or_404(
+            self.get_queryset().prefetch_related("ingredients", "steps"), pk=pk
+        )
+        form = AddRecipeToPlannerForm(request.POST, auto_id="planner_%s")
+        if not form.is_valid():
+            return render(
+                request,
+                "easy_kitchen/recipes/detail.html",
+                RecipeDetailView()._context(request, recipe, add_to_planner_form=form),
+                status=422,
+            )
+        day = form.cleaned_data["date"]
+        set_meal_plan_recipe(request.user, day, recipe)
+        return redirect(f"{reverse('easy_kitchen:planner')}?week={week_start_for(day).isoformat()}")
 
 
 class RecipeLineView(LoginRequiredMixin, View):

@@ -2,10 +2,26 @@
 {% load i18n static %}
 {% block title %}{{ recipe.title }} · EasyKitchen{% endblock %}
 {% block content %}
-<a class="btn btn-outline-secondary btn-sm list-back-button mb-3" href="{% url 'easy_kitchen:recipes' %}" aria-label="{% translate 'Recipes' %}">
+<div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+<a class="btn btn-outline-secondary btn-sm list-back-button" href="{% url 'easy_kitchen:recipes' %}" aria-label="{% translate 'Recipes' %}">
   <i class="bi bi-arrow-left" aria-hidden="true"></i>
   <span>{% translate "Recipes" %}</span>
 </a>
+<div id="recipe-actions" class="d-flex flex-row flex-wrap gap-2 ms-auto" role="group" aria-label="{% translate 'Use recipe' %}">
+  <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#add-to-planner-modal" aria-label="{% translate 'Plan recipe' %}">
+    <i class="bi bi-calendar-plus" aria-hidden="true"></i>
+    <span class="d-none d-md-inline">{% translate "Plan recipe" %}</span>
+  </button>
+  <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#add-to-list-modal" aria-label="{% translate 'Add to a shopping list' %}">
+    <i class="bi bi-cart-plus" aria-hidden="true"></i>
+    <span class="d-none d-md-inline">{% translate "Add to a shopping list" %}</span>
+  </button>
+  <a href="{% url 'easy_kitchen:recipe-pdf' recipe.pk %}" class="btn btn-outline-secondary" aria-label="{% translate 'Download PDF' %}">
+    <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+    <span class="d-none d-md-inline">{% translate "Download PDF" %}</span>
+  </a>
+</div>
+</div>
 <header class="list-detail-header card border-0 mb-4">
   <div class="card-body p-4 detail-header-toolbar d-flex flex-row gap-2 gap-sm-3 align-items-start justify-content-between">
     <div class="flex-grow-1 min-w-0">
@@ -14,10 +30,6 @@
     </div>
     <div class="btn-group edit-actions flex-shrink-0 align-self-start" role="group" aria-label="{% translate 'Recipe actions' %}">
       {% include "easy_kitchen/partials/edit_mode_button.html" %}
-      <a href="{% url 'easy_kitchen:recipe-pdf' recipe.pk %}" class="btn btn-outline-secondary view-only" aria-label="{% translate 'Download PDF' %}">
-        <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
-        <span class="d-none d-md-inline">{% translate "Download PDF" %}</span>
-      </a>
       <a href="{% url 'easy_kitchen:recipe-update' recipe.pk %}" class="btn btn-outline-secondary edit-only" aria-label="{% translate 'Edit recipe' %}">
         <i class="bi bi-pencil" aria-hidden="true"></i>
         <span class="d-none d-md-inline">{% translate "Edit recipe" %}</span>
@@ -66,35 +78,11 @@
   </div>
 </section>
 
-<section class="card shadow-sm">
-  <div class="card-body">
-    <h2 class="h4">{% translate "Add to a shopping list" %}</h2>
-    <form method="post" action="{% url 'easy_kitchen:recipe-add-to-list' recipe.pk %}">
-      {% csrf_token %}
-      {% for error in add_to_list_form.non_field_errors %}
-        <div class="alert alert-danger">{{ error }}</div>
-      {% endfor %}
-      <div class="row g-2 align-items-end">
-        <div class="col-12 col-md">
-          <label class="form-label" for="{{ add_to_list_form.shopping_list.id_for_label }}">{{ add_to_list_form.shopping_list.label }}</label>
-          {{ add_to_list_form.shopping_list }}
-          {{ add_to_list_form.shopping_list.errors }}
-        </div>
-        <div class="col-12 col-md">
-          <label class="form-label" for="{{ add_to_list_form.title.id_for_label }}">{{ add_to_list_form.title.label }}</label>
-          {{ add_to_list_form.title }}
-          {{ add_to_list_form.title.errors }}
-        </div>
-        <div class="col-12 col-md-auto">
-          <button class="btn btn-primary" aria-label="{% translate 'Add to list' %}">
-            <i class="bi bi-cart-plus" aria-hidden="true"></i>
-            <span class="d-none d-md-inline">{% translate "Add to list" %}</span>
-          </button>
-        </div>
-      </div>
-    </form>
-  </div>
-</section>
+{% url 'easy_kitchen:recipe-add-to-list' recipe.pk as list_modal_action %}
+{% include 'easy_kitchen/recipes/partials/add_to_list_modal.html' with modal_action=list_modal_action %}
+
+{% url 'easy_kitchen:recipe-add-to-planner' recipe.pk as planner_modal_action %}
+{% include 'easy_kitchen/recipes/partials/add_to_planner_modal.html' with modal_action=planner_modal_action %}
 
 <div class="modal fade" id="delete-recipe-modal" tabindex="-1" aria-labelledby="delete-recipe-title" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">

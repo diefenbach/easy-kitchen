@@ -289,6 +289,18 @@ class MealPlanDayForm(forms.Form):
         self.fields["recipe"].queryset = Recipe.objects.filter(user=user).order_by("title", "pk")
 
 
+class AddRecipeToPlannerForm(forms.Form):
+    """Choose a required calendar date using the same native picker as list forms."""
+
+    date = forms.DateField(
+        label=_("Date"),
+        input_formats=["%Y-%m-%d"],
+        widget=forms.DateInput(
+            format="%Y-%m-%d", attrs={"type": "date", "class": "form-control"}
+        ),
+    )
+
+
 class AddRecipeToListForm(forms.Form):
     """Choose one of the user's lists, or name a new list for the recipe's ingredients."""
 

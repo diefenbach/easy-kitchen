@@ -292,7 +292,7 @@ def test_edit_mode_starts_off_and_resets_when_the_page_reloads(authenticated_pag
     step_add = page.locator("#step-form").get_by_role("button", name="Add", include_hidden=True)
     expect(ingredient_add).to_be_hidden()
     expect(step_add).to_be_hidden()
-    expect(page.get_by_role("button", name="Add to list")).to_be_visible()
+    expect(page.get_by_role("button", name="Add to a shopping list", exact=True)).to_be_visible()
     page.set_viewport_size({"width": 768, "height": 900})
     show_edit_actions(page)
     expect(line.get_by_role("button", name="Move")).to_be_visible()
@@ -578,7 +578,8 @@ def test_recipe_ingredients_can_be_added_to_a_new_list(authenticated_page):
     page.locator("#step-form").get_by_role("button", name="Add").click()
     expect(page.locator("#steps")).to_contain_text("Mix the batter")
 
-    page.get_by_label("New list").fill("Weekend")
+    page.get_by_role("button", name="Add to a shopping list", exact=True).click()
+    page.get_by_role("dialog", name="Add to a shopping list", exact=True).get_by_label("New list").fill("Weekend")
     page.get_by_role("button", name="Add to list").click()
     expect(page.get_by_role("heading", name="Weekend")).to_be_visible()
     item = page.locator(".shopping-item", has_text="Flour")
