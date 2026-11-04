@@ -251,7 +251,8 @@ body.editing .btn-group.edit-actions > .btn.edit-only:last-child {
 .recipe-suggestion[aria-selected="true"] { background: var(--ek-blush); }
 .recipe-suggestions { width: 100%; overflow-wrap: anywhere; }
 .recipe-suggestion { display: flex; align-items: center; gap: .75rem; }
-.recipe-suggestion-picture {
+.recipe-suggestion-picture,
+.planner-recipe-picture {
   width: 6rem;
   height: 6rem;
   flex: 0 0 6rem;
@@ -262,6 +263,11 @@ body.editing .btn-group.edit-actions > .btn.edit-only:last-child {
 .recipe-suggestion-title { min-width: 0; }
 .recipe-field [hidden] { display: none !important; }
 .planner-day a { overflow-wrap: anywhere; }
+.planner-recipe { display: flex; align-items: flex-start; gap: .75rem; min-width: 0; }
+.planner-recipe-picture-link { flex: 0 0 6rem; }
+.planner-recipe-title,
+.planner-recipe-title:hover,
+.planner-recipe-title:focus { color: inherit; text-decoration: none; min-width: 0; }
 .article-row,
 .article-name-form { min-width: 0; }
 .article-name-form input { flex: 1 1 auto; min-width: 0; width: auto; }

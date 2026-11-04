@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect, render
 from django.urls import reverse
-from django.utils import formats, timezone
+from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.utils.translation import ngettext
 from django.views import View
@@ -90,11 +90,6 @@ class MealPlanAssignView(LoginRequiredMixin, View):
             return redirect(f"{reverse('easy_kitchen:planner')}?week={week_start.isoformat()}")
         day = form.cleaned_data["date"]
         set_meal_plan_recipe(request.user, day, form.cleaned_data["recipe"])
-        messages.success(
-            request,
-            _("Recipe planned for %(date)s.")
-            % {"date": formats.date_format(day, "SHORT_DATE_FORMAT")},
-        )
         return redirect(f"{reverse('easy_kitchen:planner')}?week={week_start.isoformat()}")
 
 
@@ -109,11 +104,6 @@ class MealPlanClearView(LoginRequiredMixin, View):
             messages.error(request, _("Invalid date."))
             return redirect(reverse("easy_kitchen:planner"))
         clear_meal_plan_day(request.user, planned_day)
-        messages.success(
-            request,
-            _("Removed the recipe from %(date)s.")
-            % {"date": formats.date_format(planned_day, "SHORT_DATE_FORMAT")},
-        )
         return redirect(f"{reverse('easy_kitchen:planner')}?week={week_start.isoformat()}")
 
 
