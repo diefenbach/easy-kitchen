@@ -344,3 +344,34 @@ def test_planner_search_data_only_includes_owned_titles_and_pictures(
     for term in ("Private recipe", "Private description", "Private ingredient", "Private instructions"):
         assert term not in content
     assert "https://example.com/private-recipe.jpg" not in content
+
+
+@pytest.mark.django_db
+def test_assigning_a_recipe_does_not_show_a_status_message(client, user):
+    week = date(2026, 11, 2)
+    recipe = create_recipe(user, title="Soup")
+    client.force_login(user)
+    response = client.post(
+        reverse("easy_kitchen:planner-assign"),
+        {"week_start": week.isoformat(), "date": week.isoformat(), "recipe": recipe.pk},
+        follow=True,
+    )
+    assert response.status_code == 200
+    assert MealPlanEntry.objects.filter(user=user, date=week, recipe=recipe).exists()
+    assert not list(response.context["messages"])
+
+
+@pytest.mark.django_db
+def test_clearing_a_planned_recipe_does_not_show_a_status_message(client, user):
+    week = date(2026, 11, 2)
+    recipe = create_recipe(user, title="Soup")
+    set_meal_plan_recipe(user, week, recipe)
+    client.force_login(user)
+    response = client.post(
+        reverse("easy_kitchen:planner-clear", args=[week.isoformat()]),
+        {"week_start": week.isoformat()},
+        follow=True,
+    )
+    assert response.status_code == 200
+    assert not MealPlanEntry.objects.filter(user=user, date=week).exists()
+    assert not list(response.context["messages"])
