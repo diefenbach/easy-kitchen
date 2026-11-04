@@ -18,6 +18,14 @@
       <div class="col-12 col-lg-6 col-xxl-4" data-list-id="{{ recipe.pk }}">
         <article class="card h-100 shadow-sm list-card position-relative">
           <img class="card-img-top recipe-card-picture" src="{% if recipe.picture_url %}{{ recipe.picture_url }}{% else %}{% static 'easy_kitchen/recipe-placeholder.svg' %}{% endif %}" alt="">
+          <div class="recipe-card-actions" role="group" aria-label="{% translate 'Use recipe' %}: {{ recipe.title }}">
+            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#add-to-list-modal" data-recipe-action="{% url 'easy_kitchen:recipe-add-to-list' recipe.pk %}" data-recipe-title="{{ recipe.title }}" aria-label="{% translate 'Add to a shopping list' %}" title="{% translate 'Add to a shopping list' %}">
+              <i class="bi bi-cart-plus" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#add-to-planner-modal" data-recipe-action="{% url 'easy_kitchen:recipe-add-to-planner' recipe.pk %}" data-recipe-title="{{ recipe.title }}" aria-label="{% translate 'Plan recipe' %}" title="{% translate 'Plan recipe' %}">
+              <i class="bi bi-calendar-plus" aria-hidden="true"></i>
+            </button>
+          </div>
           <div class="card-body">
             <h2 class="h5 mb-0"><a class="stretched-link text-decoration-none link-dark" href="{% url 'easy_kitchen:recipe-detail' recipe.pk %}">{{ recipe.title }}</a></h2>
           </div>
@@ -39,6 +47,8 @@
       </div>
     {% endfor %}
   </div>
+  {% include 'easy_kitchen/recipes/partials/add_to_list_modal.html' with modal_action="" %}
+  {% include 'easy_kitchen/recipes/partials/add_to_planner_modal.html' with modal_action="" %}
   {% for recipe in recipes %}
       <div class="modal fade" id="delete-recipe-modal-{{ recipe.pk }}" tabindex="-1" aria-labelledby="delete-recipe-title-{{ recipe.pk }}" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -75,4 +85,8 @@
     </a>
   </div>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="{% static 'easy_kitchen/recipe-actions.js' %}"></script>
 {% endblock %}

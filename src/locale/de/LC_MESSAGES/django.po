@@ -974,7 +974,7 @@ msgstr "Rezept bearbeiten"
 
 #: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:71
 msgid "Add to a shopping list"
-msgstr "Auf eine Einkaufsliste setzen"
+msgstr "Auf Einkaufsliste setzen"
 
 #: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:89
 #: src/easy_kitchen/templates/easy_kitchen/recipes/detail.html:91
@@ -1113,3 +1113,21 @@ msgstr[1] "%(count)s erledigte Artikel wurden gelöscht."
 
 #~ msgid "Language"
 #~ msgstr "Sprache"
+
+msgid "Plan recipe"
+msgstr "Rezept planen"
+
+msgid "Add to meal planner"
+msgstr "Zum Wochenplaner hinzufügen"
+
+msgid "Add to planner"
+msgstr "Zum Planer hinzufügen"
+
+msgid "An existing recipe on this date will be replaced."
+msgstr "Ein bereits für dieses Datum geplantes Rezept wird ersetzt."
+
+msgid "Date"
+msgstr "Datum"
+
+msgid "Use recipe"
+msgstr "Rezept verwenden"

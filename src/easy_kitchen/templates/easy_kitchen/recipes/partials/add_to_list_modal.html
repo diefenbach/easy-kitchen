@@ -1,0 +1,29 @@
+{% load i18n %}
+<div class="modal fade" id="add-to-list-modal" tabindex="-1" aria-labelledby="add-to-list-title" aria-hidden="true" data-open-on-error="{% if add_to_list_form.errors %}true{% else %}false{% endif %}">
+  <div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" method="post" action="{{ modal_action }}">
+      {% csrf_token %}
+      <div class="modal-header">
+        <h2 class="modal-title fs-5" id="add-to-list-title">{% translate "Add to a shopping list" %}</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate 'Close' %}"></button>
+      </div>
+      <div class="modal-body">
+        <p class="fw-bold" data-recipe-title>{{ recipe.title }}</p>
+        {% for error in add_to_list_form.non_field_errors %}
+          <div class="alert alert-danger">{{ error }}</div>
+        {% endfor %}
+        {% for field in add_to_list_form %}
+          <div class="mb-3">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {{ field.errors }}
+          </div>
+        {% endfor %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Cancel" %}</button>
+        <button type="submit" class="btn btn-primary"{% if not modal_action %} disabled{% endif %}>{% translate "Add to list" %}</button>
+      </div>
+    </form>
+  </div>
+</div>

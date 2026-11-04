@@ -1,0 +1,23 @@
+{% load i18n %}
+<div class="modal fade" id="add-to-planner-modal" tabindex="-1" aria-labelledby="add-to-planner-title" aria-hidden="true" data-open-on-error="{% if add_to_planner_form.errors %}true{% else %}false{% endif %}">
+  <div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" method="post" action="{{ modal_action }}">
+      {% csrf_token %}
+      <div class="modal-header">
+        <h2 class="modal-title fs-5" id="add-to-planner-title">{% translate "Add to meal planner" %}</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate 'Close' %}"></button>
+      </div>
+      <div class="modal-body">
+        <p class="fw-bold" data-recipe-title>{{ recipe.title }}</p>
+        <label class="form-label" for="{{ add_to_planner_form.date.id_for_label }}">{{ add_to_planner_form.date.label }}</label>
+        {{ add_to_planner_form.date }}
+        {{ add_to_planner_form.date.errors }}
+        <p class="text-secondary small mt-2 mb-0">{% translate "An existing recipe on this date will be replaced." %}</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Cancel" %}</button>
+        <button type="submit" class="btn btn-primary"{% if not modal_action %} disabled{% endif %}>{% translate "Add to planner" %}</button>
+      </div>
+    </form>
+  </div>
+</div>

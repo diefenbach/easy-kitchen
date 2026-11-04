@@ -27,9 +27,13 @@ A recipe has a title, a description, one picture, optional calories, protein, ca
 - The picture is a file uploaded in the app, or an image URL from the API, MCP, or JSON import. The uploaded file is shown when both are present.
 - An ingredient has a name and a quantity, in the same way a shopping-list item does.
 - A step is one block of text. Drag the handle to reorder ingredients or steps.
-- **Add to list** copies those ingredients onto a shopping list that belongs to the same user. Choose an existing list, or enter a title to create one for today.
+- **Add to a shopping list** beside the back button opens a modal to choose an existing list or name a new one. **Add to list** copies the ingredients onto a shopping list that belongs to the same user. Choose an existing list, or enter a title to create one for today.
 
 ## Meal planner
+
+The recipe overview also offers cart and calendar buttons in the top-right corner of each recipe picture. They open the shopping-list and planner dialogs for that recipe.
+
+Beside the back button on a recipe’s detail page, **Plan recipe** opens a modal with the same native datepicker used for shopping lists. Select a date, then **Add to planner**. The selected week opens with the recipe planned for that day. An existing recipe on that date is replaced; the modal explains this before saving. **Cancel** leaves the plan unchanged.
 
 Open **Meal planner** in the navigation to plan one recipe per day from Monday through Sunday. The arrows switch weeks; **Current week** returns to this week. Empty days are allowed.
 

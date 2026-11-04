@@ -541,7 +541,8 @@ def test_recipe_detail_offers_pdf_download(client, user):
     content = client.get(reverse("easy_kitchen:recipe-detail", args=[recipe.pk])).content.decode()
 
     assert 'class="btn-group edit-actions' in content
-    assert 'class="btn btn-outline-secondary view-only"' in content
+    assert 'id="recipe-actions"' in content
+    assert content.index('id="recipe-actions"') < content.index('<header')
     assert 'aria-label="Download PDF"' in content
     assert reverse("easy_kitchen:recipe-pdf", args=[recipe.pk]) in content
     assert 'class="bi bi-file-earmark-pdf"' in content
