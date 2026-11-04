@@ -630,25 +630,12 @@ def recipe_export_data(recipe: Recipe) -> dict[str, Any]:
 
 
 def recipe_search_documents(user: AbstractBaseUser) -> dict[str, dict[str, str]]:
-    """Provide the user's recipe text and pictures once for planner autocomplete."""
-    recipes = user.recipes.prefetch_related("ingredients", "steps")
+    """Provide the user's recipe titles and pictures for planner autocomplete."""
     return {
-        str(recipe.pk): {
-            "text": "\n".join(
-                [
-                    recipe.title,
-                    recipe.description,
-                    *(
-                        f"{ingredient.name} {ingredient.quantity}"
-                        for ingredient in recipe.ingredients.all()
-                    ),
-                    *(step.text for step in recipe.steps.all()),
-                ]
-            ),
-            "picture_url": recipe.picture_url,
-        }
-        for recipe in recipes
+        str(recipe.pk): {"text": recipe.title, "picture_url": recipe.picture_url}
+        for recipe in user.recipes.all()
     }
+
 
 
 def week_start_for(day: date) -> date:

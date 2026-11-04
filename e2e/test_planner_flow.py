@@ -161,7 +161,7 @@ def test_duplicate_titles_select_the_chosen_recipe_id(authenticated_page, user):
 
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
-def test_planner_searches_all_recipe_text_and_combines_terms(authenticated_page, user, other_user):
+def test_planner_searches_only_titles_and_combines_terms(authenticated_page, user, other_user):
     recipe = create_recipe(
         user,
         title="Weeknight bowl",
@@ -176,16 +176,16 @@ def test_planner_searches_all_recipe_text_and_combines_terms(authenticated_page,
     day = page.locator(".planner-day").first
     search = day.get_by_role("combobox", name="Recipe")
 
-    for query in ("BOWL", "Sommer", "CHERERB", "pÜrieren", "200", "  RÖSTEN   sommer  kicher  "):
+    for query in ("BOWL", "weeknight", "  BOWL   weekNIGHT  "):
         search.fill(query)
         expect(day.get_by_role("option", name=recipe.title, exact=True)).to_be_visible()
 
     expect(day.get_by_role("option", name="Kichererbsen Suppe", exact=True)).to_have_count(0)
-    for query in ("bowl Erdbeeren", "Geheime Zutat"):
+    for query in ("Sommer", "pÜrieren", "200", "bowl Kichererbsen", "bowl Erdbeeren", "Geheime Zutat"):
         search.fill(query)
         expect(day.get_by_role("option")).to_have_count(0)
 
-    search.fill("kicher pürieren")
+    search.fill("bowl weeknight")
     search.press("ArrowDown")
     search.press("Enter")
     day.get_by_role("button", name="Save plan", exact=True).click()

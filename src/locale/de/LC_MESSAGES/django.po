@@ -529,8 +529,8 @@ msgid "Search recipes"
 msgstr "Rezept suchen"
 
 #: src/easy_kitchen/templates/easy_kitchen/planner/week.html
-msgid "Search titles, descriptions, ingredients, and instructions."
-msgstr "Suche in Titeln, Beschreibungen, Zutaten und Zubereitungsschritten."
+msgid "Search recipe titles."
+msgstr "Suche in Rezepttiteln."
 
 #: src/easy_kitchen/templates/easy_kitchen/planner/week.html
 msgid "Choose a recipe from the suggestions."
