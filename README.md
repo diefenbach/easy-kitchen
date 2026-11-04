@@ -31,7 +31,7 @@ A private, responsive shopping list application built with Django 5.2 LTS. It us
 ### Meal planner
 
 - Open **Meal planner** to plan one recipe per day, Monday through Sunday. Use the arrows to change weeks, or **Current week** to return to this week.
-- Type part of a recipe title and choose a suggestion, then **Save**. Suggestions only include your own recipes. Use the arrow keys and Enter to select with the keyboard.
+- Search across recipe titles, descriptions, ingredients, and cooking steps. Multiple terms can match different parts of the same recipe, regardless of order or capitalization. Choose a suggestion, then **Save**. Suggestions only include your own recipes. Use the arrow keys and Enter to select with the keyboard.
 - Replace a day's recipe by choosing another one, or **Remove** it to leave the day empty.
 - **Create shopping list from plan** copies the week's ingredients into an existing list or a new list for today. Matching ingredients and compatible quantities are merged using the normal shopping-list rules. A recipe planned on several days contributes its ingredients once per planned day.
 

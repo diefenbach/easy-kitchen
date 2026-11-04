@@ -1,3 +1,5 @@
+import json
+import re
 from datetime import date, timedelta
 from unittest.mock import patch
 
@@ -258,4 +260,39 @@ def test_planner_uses_german_translations(client, user):
 
     assert "Wochenplaner" in content
     assert "Rezept suchen" in content
+    assert "Suche in Titeln, Beschreibungen, Zutaten und Zubereitungsschritten." in content
     assert "Einkaufsliste aus Plan erstellen" in content
+
+
+@pytest.mark.django_db
+def test_planner_search_data_includes_owned_recipe_text_and_escapes_html(client, user, other_user):
+    recipe = create_recipe(
+        user,
+        title="Soup",
+        description='Fresh </script><script>alert("recipe")</script>',
+        ingredients=[{"name": "Onion", "quantity": "200 g"}],
+        steps=[{"text": "Simmer slowly."}],
+    )
+    create_recipe(
+        other_user,
+        title="Private recipe",
+        description="Private description",
+        ingredients=[{"name": "Private ingredient"}],
+        steps=[{"text": "Private instructions"}],
+    )
+    client.force_login(user)
+
+    content = client.get(reverse("easy_kitchen:planner")).content.decode()
+
+    data = re.search(
+        r'<script id="recipe-search-data" type="application/json">(.*?)</script>', content, re.S
+    )
+    assert data is not None
+    assert "</script>" not in data.group(1)
+    documents = json.loads(data.group(1))
+    assert set(documents) == {str(recipe.pk)}
+    text = documents[str(recipe.pk)]
+    for term in ("Soup", recipe.description, "Onion", "200 g", "Simmer slowly."):
+        assert term in text
+    for term in ("Private recipe", "Private description", "Private ingredient", "Private instructions"):
+        assert term not in content

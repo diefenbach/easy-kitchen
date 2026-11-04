@@ -107,3 +107,37 @@ def test_duplicate_titles_select_the_chosen_recipe_id(authenticated_page, user):
     day.get_by_role("button", name="Save plan", exact=True).click()
     entry = MealPlanEntry.objects.get(user=user)
     assert entry.recipe_id == max(first.pk, second.pk)
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
+def test_planner_searches_all_recipe_text_and_combines_terms(authenticated_page, user, other_user):
+    recipe = create_recipe(
+        user,
+        title="Weeknight bowl",
+        description="Cremiges Sommergericht",
+        ingredients=[{"name": "Kichererbsen", "quantity": "200 g"}],
+        steps=[{"text": "Zuerst rösten, danach pürieren."}],
+    )
+    create_recipe(user, title="Kichererbsen Suppe")
+    create_recipe(other_user, title="Private bowl", description="Geheime Zutat")
+    page = authenticated_page
+    page.get_by_role("link", name="Meal planner", exact=True).click()
+    day = page.locator(".planner-day").first
+    search = day.get_by_role("combobox", name="Recipe")
+
+    for query in ("BOWL", "Sommer", "CHERERB", "pÜrieren", "200", "  RÖSTEN   sommer  kicher  "):
+        search.fill(query)
+        expect(day.get_by_role("option", name=recipe.title, exact=True)).to_be_visible()
+
+    expect(day.get_by_role("option", name="Kichererbsen Suppe", exact=True)).to_have_count(0)
+    for query in ("bowl Erdbeeren", "Geheime Zutat"):
+        search.fill(query)
+        expect(day.get_by_role("option")).to_have_count(0)
+
+    search.fill("kicher pürieren")
+    search.press("ArrowDown")
+    search.press("Enter")
+    day.get_by_role("button", name="Save plan", exact=True).click()
+    expect(day.get_by_role("link", name=recipe.title, exact=True)).to_be_visible()
+    assert MealPlanEntry.objects.get(user=user).recipe_id == recipe.pk

@@ -16,6 +16,7 @@ from .services import (
     clear_meal_plan_day,
     meal_plan_for_week,
     planned_recipe_count,
+    recipe_search_documents,
     set_meal_plan_recipe,
     week_dates,
     week_start_for,
@@ -70,6 +71,7 @@ def _planner_context(request, *, add_to_list_form=None):
         "prev_week": week_start - timedelta(days=7),
         "next_week": week_start + timedelta(days=7),
         "days": days,
+        "recipe_search_data": recipe_search_documents(request.user),
         "add_to_list_form": (
             add_to_list_form if add_to_list_form is not None
             else AddRecipeToListForm(user=request.user)

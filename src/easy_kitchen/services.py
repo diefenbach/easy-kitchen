@@ -629,6 +629,22 @@ def recipe_export_data(recipe: Recipe) -> dict[str, Any]:
     return data
 
 
+def recipe_search_documents(user: AbstractBaseUser) -> dict[str, str]:
+    """Provide the user's complete recipe text once for planner autocomplete."""
+    recipes = user.recipes.prefetch_related("ingredients", "steps")
+    return {
+        str(recipe.pk): "\n".join(
+            [
+                recipe.title,
+                recipe.description,
+                *(f"{ingredient.name} {ingredient.quantity}" for ingredient in recipe.ingredients.all()),
+                *(step.text for step in recipe.steps.all()),
+            ]
+        )
+        for recipe in recipes
+    }
+
+
 def week_start_for(day: date) -> date:
     """Return the Monday on or before the given day."""
     return day - timedelta(days=day.weekday())

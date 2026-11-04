@@ -1,4 +1,9 @@
 // Enhance the server-validated recipe selects with a keyboard-accessible autocomplete.
+const searchTextById = new Map(
+  Object.entries(JSON.parse(document.getElementById("recipe-search-data").textContent))
+    .map(([id, text]) => [id, text.toLocaleLowerCase()])
+);
+
 document.querySelectorAll(".recipe-field").forEach((field) => {
   const select = field.querySelector("select");
   const input = field.querySelector(".recipe-search");
@@ -22,8 +27,11 @@ document.querySelectorAll(".recipe-field").forEach((field) => {
   }
 
   function show() {
-    const query = input.value.trim().toLocaleLowerCase();
-    const matches = recipes.filter((option) => option.textContent.toLocaleLowerCase().includes(query));
+    const terms = input.value.toLocaleLowerCase().split(/\s+/).filter(Boolean);
+    const matches = recipes.filter((option) => {
+      const text = searchTextById.get(option.value);
+      return terms.every((term) => text.includes(term));
+    });
     active = -1;
     input.removeAttribute("aria-activedescendant");
     list.replaceChildren(...matches.map((option, index) => {

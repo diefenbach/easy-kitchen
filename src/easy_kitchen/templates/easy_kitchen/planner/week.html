@@ -20,6 +20,7 @@
   </div>
 </div>
 
+<p id="recipe-search-help" class="text-secondary small">{% translate "Search titles, descriptions, ingredients, and instructions." %}</p>
 <section class="card shadow-sm mb-4">
   <div class="list-group list-group-flush">
     {% for day in days %}
@@ -44,7 +45,7 @@
               <label class="form-label visually-hidden recipe-select-label" for="{{ day.form.recipe.id_for_label }}">{{ day.form.recipe.label }}</label>
               {{ day.form.recipe }}
               <label class="form-label visually-hidden" for="{{ day.form.recipe.id_for_label }}-search">{{ day.form.recipe.label }}</label>
-              <input type="text" id="{{ day.form.recipe.id_for_label }}-search" class="form-control recipe-search" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="{{ day.form.recipe.id_for_label }}-suggestions" placeholder="{% translate 'Search recipes' %}" data-selection-message="{% translate 'Choose a recipe from the suggestions.' %}" hidden>
+              <input type="text" id="{{ day.form.recipe.id_for_label }}-search" class="form-control recipe-search" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="{{ day.form.recipe.id_for_label }}-suggestions" aria-describedby="recipe-search-help" placeholder="{% translate 'Search recipes' %}" data-selection-message="{% translate 'Choose a recipe from the suggestions.' %}" hidden>
               <ul id="{{ day.form.recipe.id_for_label }}-suggestions" class="recipe-suggestions" role="listbox" aria-label="{% translate 'Recipe suggestions' %}" hidden></ul>
             </div>
             <button type="submit" class="btn btn-primary btn-sm" aria-label="{% translate 'Save plan' %}">
@@ -101,5 +102,6 @@
 </section>
 {% endblock %}
 {% block scripts %}
+{{ recipe_search_data|json_script:"recipe-search-data" }}
 <script type="module" src="{% static 'easy_kitchen/planner.js' %}"></script>
 {% endblock %}
