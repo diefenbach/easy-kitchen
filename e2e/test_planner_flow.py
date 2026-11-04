@@ -26,6 +26,7 @@ def test_weekly_planning_with_autocomplete_and_merged_shopping_list(authenticate
     expect(search).to_have_value("Onion soup")
     monday.get_by_role("button", name="Save plan", exact=True).click()
     expect(monday.get_by_role("link", name="Onion soup", exact=True)).to_be_visible()
+    expect(monday.locator(".planner-recipe-picture")).to_have_attribute("src", "/static/easy_kitchen/recipe-placeholder.svg")
     expect(monday.locator("input.recipe-search")).to_have_count(0)
     expect(monday.get_by_role("button", name="Save plan", exact=True)).to_have_count(0)
 
@@ -231,3 +232,15 @@ def test_recipe_suggestions_show_pictures_on_the_left(authenticated_page, user, 
     expect(search).to_have_value(title)
     day.get_by_role("button", name="Save plan", exact=True).click()
     expect(day.get_by_role("link", name=title, exact=True)).to_be_visible()
+
+    selected_picture = day.locator(".planner-recipe-picture")
+    expect(selected_picture).to_be_visible()
+    expect(selected_picture).to_have_attribute("src", picture_url)
+    link = day.get_by_role("link", name=title, exact=True)
+    expect(link).to_have_css("text-decoration-line", "none")
+    assert link.evaluate("element => getComputedStyle(element).color === getComputedStyle(element.closest('.planner-day')).color")
+    link.hover()
+    expect(link).to_have_css("text-decoration-line", "none")
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    link.click()
+    expect(page.get_by_role("heading", name=title, exact=True)).to_be_visible()

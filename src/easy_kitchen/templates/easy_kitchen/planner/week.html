@@ -31,8 +31,9 @@
             <div class="text-secondary small">{{ day.date|date:"SHORT_DATE_FORMAT" }}</div>
           </div>
           {% if day.entry and day.entry.recipe %}
-            <div class="flex-grow-1 min-w-0">
-              <a href="{% url 'easy_kitchen:recipe-detail' day.entry.recipe.pk %}">{{ day.entry.recipe.title }}</a>
+            <div class="planner-recipe flex-grow-1">
+              <img class="planner-recipe-picture" src="{% if day.entry.recipe.picture_url %}{{ day.entry.recipe.picture_url }}{% else %}{% static 'easy_kitchen/recipe-placeholder.svg' %}{% endif %}" alt="" width="96" height="96">
+              <a class="planner-recipe-title" href="{% url 'easy_kitchen:recipe-detail' day.entry.recipe.pk %}">{{ day.entry.recipe.title }}</a>
             </div>
           {% endif %}
           {% if not day.entry or not day.entry.recipe %}
