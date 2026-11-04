@@ -76,7 +76,7 @@ def test_autocomplete_rejects_unselected_text_and_returns_after_clearing_a_day(
     expect(monday.get_by_role("link", name="Soup", exact=True)).to_be_visible()
     expect(search).to_have_count(0)
     monday.get_by_role("button", name="Remove recipe from this day").click()
-    expect(monday.get_by_text("No recipe planned", exact=True)).to_be_visible()
+    expect(monday.get_by_text("No recipe planned", exact=True)).to_have_count(0)
     expect(search).to_be_visible()
     expect(search).to_have_value("")
     assert not MealPlanEntry.objects.filter(user=user, date=week).exists()
@@ -106,6 +106,39 @@ def test_mobile_planner_selects_a_recipe_without_horizontal_overflow(authenticat
     expect(day.get_by_role("link", name=recipe.title, exact=True)).to_be_visible()
     expect(day.get_by_role("combobox", name="Recipe")).to_have_count(0)
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.parametrize("width", [1280, 390])
+def test_empty_day_recipe_selection_fills_the_available_width(authenticated_page, user, width):
+    create_recipe(user, title="Soup")
+    page = authenticated_page
+    page.set_viewport_size({"width": width, "height": 844})
+    page.get_by_role("link", name="Meal planner", exact=True).click()
+    expect(page.get_by_text("No recipe planned", exact=True)).to_have_count(0)
+    day = page.locator(".planner-day").first
+    search = day.get_by_role("combobox", name="Recipe")
+    form = search.locator("xpath=ancestor::form[1]")
+    row = day.locator(":scope > div")
+    date_column = day.get_by_text("Monday", exact=True).locator("..")
+    save = day.get_by_role("button", name="Save plan", exact=True)
+    row_box = row.bounding_box()
+    date_box = date_column.bounding_box()
+    form_box = form.bounding_box()
+    search_box = search.bounding_box()
+    save_box = save.bounding_box()
+
+    if width >= 768:
+        assert 0 <= form_box["x"] - (date_box["x"] + date_box["width"]) <= 20
+    else:
+        assert abs(form_box["x"] - row_box["x"]) <= 1
+    assert abs(form_box["x"] + form_box["width"] - row_box["x"] - row_box["width"]) <= 1
+    assert search_box["width"] >= form_box["width"] - save_box["width"] - 10
+
+    search.fill("sou")
+    expect(day.get_by_role("option", name="Soup", exact=True)).to_be_visible()
+    assert abs(day.get_by_role("listbox").bounding_box()["width"] - search_box["width"]) <= 1
 
 
 @pytest.mark.e2e

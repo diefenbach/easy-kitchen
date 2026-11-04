@@ -27,7 +27,8 @@ def test_planner_week_view_lists_seven_days(client, user):
 
     assert "Meal planner" in content
     assert "Create shopping list from plan" in content
-    assert content.count("No recipe planned") == 7
+    assert "No recipe planned" not in content
+    assert content.count('name="recipe"') == 7
 
 
 @pytest.mark.django_db
@@ -292,6 +293,7 @@ def test_planner_uses_german_translations(client, user):
 
     assert "Wochenplaner" in content
     assert "Rezept suchen" in content
+    assert "Kein Rezept geplant" not in content
     assert "Suche in Titeln, Beschreibungen, Zutaten und Zubereitungsschritten." in content
     assert "Einkaufsliste aus Plan erstellen" in content
 

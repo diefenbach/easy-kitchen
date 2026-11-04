@@ -30,15 +30,13 @@
             <div class="fw-bold">{{ day.date|date:"l" }}</div>
             <div class="text-secondary small">{{ day.date|date:"SHORT_DATE_FORMAT" }}</div>
           </div>
-          <div class="flex-grow-1 min-w-0">
-            {% if day.entry and day.entry.recipe %}
+          {% if day.entry and day.entry.recipe %}
+            <div class="flex-grow-1 min-w-0">
               <a href="{% url 'easy_kitchen:recipe-detail' day.entry.recipe.pk %}">{{ day.entry.recipe.title }}</a>
-            {% else %}
-              <span class="text-secondary">{% translate "No recipe planned" %}</span>
-            {% endif %}
-          </div>
+            </div>
+          {% endif %}
           {% if not day.entry or not day.entry.recipe %}
-          <form method="post" action="{% url 'easy_kitchen:planner-assign' %}" class="d-flex flex-wrap gap-2 align-items-end flex-grow-1 flex-md-grow-0">
+          <form method="post" action="{% url 'easy_kitchen:planner-assign' %}" class="d-flex flex-wrap gap-2 align-items-end flex-grow-1">
             {% csrf_token %}
             <input type="hidden" name="week_start" value="{{ week_start|date:'Y-m-d' }}">
             {{ day.form.date }}
