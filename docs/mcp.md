@@ -15,6 +15,20 @@ Tools have no user argument. Records belong to the owner of the DRF token in `Au
 | `set_item_checked` | Mark an item completed. Pass `list_id` when the name is on more than one list. `checked` defaults to `true`. |
 | `add_item_to_list` | Add an item. Pass `list_id` or `list_title`. Omit the list to use today's list, or create one titled Today. |
 | `add_recipe_to_list` | Copy a recipe's ingredients onto a list. Omit the list to use today's list, or create one titled Today. |
+| `get_meal_plan_week` | Read a seven-day Monday–Sunday plan. Pass an ISO `week` date, or omit it for the current local week. |
+| `set_meal_plan_recipe` | Plan one recipe for an ISO `date`, by owned `recipe_id` or unambiguous `recipe_title`. Replaces an occupied day. |
+| `clear_meal_plan_day` | Remove the planned recipe for an ISO `date`. Repeating the call leaves the day empty. |
+| `add_meal_plan_week_to_list` | Copy an ISO `week` to exactly one existing `list_id` or a new list named `title`. |
+
+## Meal planning
+
+Planner tools share the web planner's services and the token owner's data. A `week` can be any day in the desired week and is normalized to Monday. The read tool returns `week_start`, `week_end`, and seven `days`; each day has `date` and a nullable `recipe` summary with `id` and `title`.
+
+For example, call `set_meal_plan_recipe` with `{"date": "2027-01-01", "recipe_id": 12}`, then `get_meal_plan_week` with `{"week": "2027-01-01"}`. Clear that day with `clear_meal_plan_day` and `{"date": "2027-01-01"}`. No tool accepts a user id.
+
+Copy the week with `{"week": "2027-01-01", "title": "Weekly shop"}`, or use `list_id` instead of `title` for an existing owned list. A week with no planned recipes cannot create a list. Ingredients and compatible quantities merge; a repeated recipe counts once for each planned day. **Calling the copy tool again adds the ingredients again.** The plan itself is preserved.
+
+Setting and clearing a date are idempotent. Their annotations indicate that they can overwrite or remove existing plans. Week reads are read-only; copying ingredients is not idempotent.
 
 ## Production
 
