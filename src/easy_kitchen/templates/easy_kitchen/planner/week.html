@@ -1,10 +1,11 @@
 {% extends "easy_kitchen/base.html" %}
-{% load i18n %}
+{% load i18n static %}
 {% block title %}{% translate "Meal planner" %} · EasyKitchen{% endblock %}
 {% block content %}
 <div class="d-flex flex-column flex-sm-row flex-wrap gap-2 align-items-sm-center justify-content-between mb-4">
   <h1 class="h2 mb-0">{% translate "Meal planner" %}</h1>
   <div class="d-flex flex-wrap gap-2 align-items-center">
+    <a class="btn btn-outline-secondary btn-sm" href="{% url 'easy_kitchen:planner' %}">{% translate "Current week" %}</a>
     <a class="btn btn-outline-secondary btn-sm" href="{% url 'easy_kitchen:planner' %}?week={{ prev_week|date:'Y-m-d' }}" aria-label="{% translate 'Previous week' %}">
       <i class="bi bi-chevron-left" aria-hidden="true"></i>
       <span class="d-none d-md-inline">{% translate "Previous week" %}</span>
@@ -22,7 +23,7 @@
 <section class="card shadow-sm mb-4">
   <div class="list-group list-group-flush">
     {% for day in days %}
-      <div class="list-group-item py-3">
+      <div class="list-group-item planner-day py-3">
         <div class="d-flex flex-column flex-md-row gap-3 align-items-md-center">
           <div class="flex-shrink-0" style="min-width: 8rem;">
             <div class="fw-bold">{{ day.date|date:"l" }}</div>
@@ -39,9 +40,12 @@
             {% csrf_token %}
             <input type="hidden" name="week_start" value="{{ week_start|date:'Y-m-d' }}">
             {{ day.form.date }}
-            <div class="flex-grow-1" style="min-width: 12rem;">
-              <label class="form-label visually-hidden" for="{{ day.form.recipe.id_for_label }}">{{ day.form.recipe.label }}</label>
+            <div class="recipe-field flex-grow-1" style="min-width: 12rem;">
+              <label class="form-label visually-hidden recipe-select-label" for="{{ day.form.recipe.id_for_label }}">{{ day.form.recipe.label }}</label>
               {{ day.form.recipe }}
+              <label class="form-label visually-hidden" for="{{ day.form.recipe.id_for_label }}-search">{{ day.form.recipe.label }}</label>
+              <input type="text" id="{{ day.form.recipe.id_for_label }}-search" class="form-control recipe-search" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="{{ day.form.recipe.id_for_label }}-suggestions" placeholder="{% translate 'Search recipes' %}" data-selection-message="{% translate 'Choose a recipe from the suggestions.' %}" hidden>
+              <ul id="{{ day.form.recipe.id_for_label }}-suggestions" class="recipe-suggestions" role="listbox" aria-label="{% translate 'Recipe suggestions' %}" hidden></ul>
             </div>
             <button type="submit" class="btn btn-primary btn-sm" aria-label="{% translate 'Save plan' %}">
               <i class="bi bi-check-lg" aria-hidden="true"></i>
@@ -95,4 +99,7 @@
     </form>
   </div>
 </section>
+{% endblock %}
+{% block scripts %}
+<script type="module" src="{% static 'easy_kitchen/planner.js' %}"></script>
 {% endblock %}

@@ -28,6 +28,13 @@ A private, responsive shopping list application built with Django 5.2 LTS. It us
 - An ingredient has a name and a quantity, in the same way a shopping-list item does. A step is one block of text. Drag the handle to reorder either list.
 - **Add to list** copies those ingredients onto a shopping list that belongs to the same user. Choose an existing list, or enter a title to create one for today. The ingredient name and quantity are copied onto the new item.
 
+### Meal planner
+
+- Open **Meal planner** to plan one recipe per day, Monday through Sunday. Use the arrows to change weeks, or **Current week** to return to this week.
+- Type part of a recipe title and choose a suggestion, then **Save**. Suggestions only include your own recipes. Use the arrow keys and Enter to select with the keyboard.
+- Replace a day's recipe by choosing another one, or **Remove** it to leave the day empty.
+- **Create shopping list from plan** copies the week's ingredients into an existing list or a new list for today. Matching ingredients and compatible quantities are merged using the normal shopping-list rules. A recipe planned on several days contributes its ingredients once per planned day.
+
 ### Web application
 
 - Django 5.2 templates and class-based views. HTMX updates items in place. SortableJS is used only for reordering.

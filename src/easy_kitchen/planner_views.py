@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect, render
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import formats, timezone
 from django.utils.translation import gettext as _
 from django.utils.translation import ngettext
 from django.views import View
@@ -39,55 +39,42 @@ class MealPlanView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        week_start = _week_start_from_request(self.request)
-        week_end = week_dates(week_start)[-1]
-        plan = meal_plan_for_week(self.request.user, week_start)
-        days = []
-        for day in week_dates(week_start):
-            entry = plan.get(day)
-            days.append(
-                {
-                    "date": day,
-                    "entry": entry,
-                    "form": MealPlanDayForm(
-                        user=self.request.user,
-                        initial={
-                            "date": day,
-                            "recipe": entry.recipe_id if entry else None,
-                        },
-                    ),
-                }
-            )
-        context.update(
-            {
-                "week_start": week_start,
-                "week_end": week_end,
-                "prev_week": week_start - timedelta(days=7),
-                "next_week": week_start + timedelta(days=7),
-                "days": days,
-                "add_to_list_form": AddRecipeToListForm(user=self.request.user),
-            }
-        )
+        context.update(_planner_context(self.request))
         return context
 
 
-def _planner_context(request, *, week_start=None, add_to_list_form=None):
-    view = MealPlanView()
-    view.setup(request)
-    context = view.get_context_data()
-    if week_start is not None:
-        week_end = week_dates(week_start)[-1]
-        context.update(
+def _planner_context(request, *, add_to_list_form=None):
+    """Build all seven day forms for the requested week, including on form errors."""
+    week_start = _week_start_from_request(request)
+    plan = meal_plan_for_week(request.user, week_start)
+    days = []
+    for day in week_dates(week_start):
+        entry = plan.get(day)
+        days.append(
             {
-                "week_start": week_start,
-                "week_end": week_end,
-                "prev_week": week_start - timedelta(days=7),
-                "next_week": week_start + timedelta(days=7),
+                "date": day,
+                "entry": entry,
+                "form": MealPlanDayForm(
+                    user=request.user,
+                    auto_id=f"plan-{day.isoformat()}_%s",
+                    initial={
+                        "date": day,
+                        "recipe": entry.recipe_id if entry else None,
+                    },
+                ),
             }
         )
-    if add_to_list_form is not None:
-        context["add_to_list_form"] = add_to_list_form
-    return context
+    return {
+        "week_start": week_start,
+        "week_end": week_dates(week_start)[-1],
+        "prev_week": week_start - timedelta(days=7),
+        "next_week": week_start + timedelta(days=7),
+        "days": days,
+        "add_to_list_form": (
+            add_to_list_form if add_to_list_form is not None
+            else AddRecipeToListForm(user=request.user)
+        ),
+    }
 
 
 class MealPlanAssignView(LoginRequiredMixin, View):
@@ -101,7 +88,11 @@ class MealPlanAssignView(LoginRequiredMixin, View):
             return redirect(f"{reverse('easy_kitchen:planner')}?week={week_start.isoformat()}")
         day = form.cleaned_data["date"]
         set_meal_plan_recipe(request.user, day, form.cleaned_data["recipe"])
-        messages.success(request, _("Recipe planned for %(date)s.") % {"date": day.strftime("%x")})
+        messages.success(
+            request,
+            _("Recipe planned for %(date)s.")
+            % {"date": formats.date_format(day, "SHORT_DATE_FORMAT")},
+        )
         return redirect(f"{reverse('easy_kitchen:planner')}?week={week_start.isoformat()}")
 
 
@@ -117,7 +108,9 @@ class MealPlanClearView(LoginRequiredMixin, View):
             return redirect(reverse("easy_kitchen:planner"))
         clear_meal_plan_day(request.user, planned_day)
         messages.success(
-            request, _("Removed the recipe from %(date)s.") % {"date": planned_day.strftime("%x")}
+            request,
+            _("Removed the recipe from %(date)s.")
+            % {"date": formats.date_format(planned_day, "SHORT_DATE_FORMAT")},
         )
         return redirect(f"{reverse('easy_kitchen:planner')}?week={week_start.isoformat()}")
 
@@ -132,7 +125,7 @@ class MealPlanAddToListView(LoginRequiredMixin, View):
             return render(
                 request,
                 "easy_kitchen/planner/week.html",
-                _planner_context(request, week_start=week_start, add_to_list_form=form),
+                _planner_context(request, add_to_list_form=form),
                 status=422,
             )
         title = form.cleaned_data["title"]
@@ -149,7 +142,7 @@ class MealPlanAddToListView(LoginRequiredMixin, View):
             return render(
                 request,
                 "easy_kitchen/planner/week.html",
-                _planner_context(request, week_start=week_start, add_to_list_form=form),
+                _planner_context(request, add_to_list_form=form),
                 status=422,
             )
         recipe_count = planned_recipe_count(request.user, week_start)

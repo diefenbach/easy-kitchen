@@ -286,7 +286,7 @@ class MealPlanDayForm(forms.Form):
 
     def __init__(self, *args, user, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["recipe"].queryset = Recipe.objects.filter(user=user).order_by("title")
+        self.fields["recipe"].queryset = Recipe.objects.filter(user=user).order_by("title", "pk")
 
 
 class AddRecipeToListForm(forms.Form):

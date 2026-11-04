@@ -518,7 +518,23 @@ msgstr "Übersicht"
 #: src/easy_kitchen/templates/easy_kitchen/planner/week.html:3
 #: src/easy_kitchen/templates/easy_kitchen/planner/week.html:6
 msgid "Meal planner"
-msgstr "Essensplaner"
+msgstr "Wochenplaner"
+
+#: src/easy_kitchen/templates/easy_kitchen/planner/week.html
+msgid "Current week"
+msgstr "Aktuelle Woche"
+
+#: src/easy_kitchen/templates/easy_kitchen/planner/week.html
+msgid "Search recipes"
+msgstr "Rezept suchen"
+
+#: src/easy_kitchen/templates/easy_kitchen/planner/week.html
+msgid "Choose a recipe from the suggestions."
+msgstr "Wähle ein Rezept aus den Vorschlägen."
+
+#: src/easy_kitchen/templates/easy_kitchen/planner/week.html
+msgid "Recipe suggestions"
+msgstr "Rezeptvorschläge"
 
 #: src/easy_kitchen/templates/easy_kitchen/base.html:51
 #: src/easy_kitchen/templates/easy_kitchen/base.html:53

@@ -29,6 +29,14 @@ A recipe has a title, a description, one picture, optional calories, protein, ca
 - A step is one block of text. Drag the handle to reorder ingredients or steps.
 - **Add to list** copies those ingredients onto a shopping list that belongs to the same user. Choose an existing list, or enter a title to create one for today.
 
+## Meal planner
+
+Open **Meal planner** in the navigation to plan one recipe per day from Monday through Sunday. The arrows switch weeks; **Current week** returns to this week. Empty days are allowed.
+
+Type part of a recipe title, choose one of your existing recipes from the suggestions, then **Save**. You can also select a suggestion with the arrow keys and Enter. Choose a different recipe to replace the day's plan, or **Remove** to clear it.
+
+Under **Create shopping list from plan**, choose an existing shopping list or enter a new list title. All ingredients from the selected week are copied to that list using the usual quantity-merging rules. Planning a recipe twice adds its ingredients twice. Empty days contribute nothing. An entirely empty week cannot create a list. Creating the list again adds the ingredients again.
+
 ## Web application
 
 - Django 5.2 templates and class-based views. HTMX updates items in place. SortableJS is used only for reordering.

@@ -660,9 +660,6 @@ def set_meal_plan_recipe(user: AbstractBaseUser, day: date, recipe: Recipe) -> M
         date=day,
         defaults={"recipe": recipe},
     )
-    if entry.recipe_id != recipe.pk:
-        entry.recipe = recipe
-        entry.save(update_fields=["recipe"])
     return entry
 
 
@@ -677,6 +674,7 @@ def planned_recipe_count(user: AbstractBaseUser, week_start: date) -> int:
     return sum(1 for day in week_dates(week_start) if plan.get(day) and plan[day].recipe_id)
 
 
+@transaction.atomic
 def add_meal_plan_week_to_list(
     user: AbstractBaseUser,
     week_start: date,
@@ -685,15 +683,6 @@ def add_meal_plan_week_to_list(
     title: str = "",
 ) -> ShoppingList:
     """Copy planned recipes for the week onto one shopping list, merging quantities."""
-    if title:
-        target = create_shopping_list(user, title=title, date=timezone.localdate())
-    elif shopping_list is not None:
-        if shopping_list.user_id != user.pk:
-            raise ValueError(_("Invalid shopping list."))
-        target = shopping_list
-    else:
-        raise ValueError(_("Choose a list or enter a title for a new one."))
-
     dates = week_dates(week_start)
     entries = {
         entry.date: entry
@@ -704,6 +693,15 @@ def add_meal_plan_week_to_list(
     planned = [entries[day].recipe for day in dates if day in entries and entries[day].recipe]
     if not planned:
         raise ValueError(_("This week has no planned recipes yet."))
+
+    if title:
+        target = create_shopping_list(user, title=title, date=timezone.localdate())
+    elif shopping_list is not None:
+        if shopping_list.user_id != user.pk:
+            raise ValueError(_("Invalid shopping list."))
+        target = shopping_list
+    else:
+        raise ValueError(_("Choose a list or enter a title for a new one."))
 
     for recipe in planned:
         add_recipe_ingredients_to_list(recipe, target)
