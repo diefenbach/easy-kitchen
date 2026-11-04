@@ -717,6 +717,71 @@ def add_meal_plan_week_to_list(
     return target
 
 
+def meal_plan_day_data(day: date, recipe: Recipe | None = None) -> dict[str, Any]:
+    """Represent a calendar day consistently in the API and MCP."""
+    return {
+        "date": day.isoformat(),
+        "recipe": {"id": recipe.pk, "title": recipe.title} if recipe else None,
+    }
+
+
+def _complete_meal_plan_week(day: date) -> date:
+    """Normalize a date to Monday and reject a week beyond the calendar range."""
+    start = week_start_for(day)
+    try:
+        week_dates(start)
+    except OverflowError:
+        raise ValueError(_("Choose a complete calendar week.")) from None
+    return start
+
+
+def meal_plan_week_data(user: AbstractBaseUser, week: date | None = None) -> dict[str, Any]:
+    """Read all seven days of the selected local week for the current user."""
+    start = _complete_meal_plan_week(week if week is not None else timezone.localdate())
+    plan = meal_plan_for_week(user, start)
+    return {
+        "week_start": start.isoformat(),
+        "week_end": week_dates(start)[-1].isoformat(),
+        "days": [
+            meal_plan_day_data(day, entry.recipe if entry else None)
+            for day, entry in plan.items()
+        ],
+    }
+
+
+def plan_owned_recipe(
+    user: AbstractBaseUser,
+    day: date,
+    *,
+    recipe_id: int | None = None,
+    recipe_title: str = "",
+) -> dict[str, Any]:
+    """Assign or replace a day using an owned recipe id or an unambiguous title."""
+    recipe = owned_recipe(user, recipe_id=recipe_id, title=recipe_title)
+    set_meal_plan_recipe(user, day, recipe)
+    return meal_plan_day_data(day, recipe)
+
+
+def add_meal_plan_to_owned_list(
+    user: AbstractBaseUser,
+    week: date,
+    *,
+    list_id: int | None = None,
+    title: str = "",
+) -> ShoppingList:
+    """Copy a complete week to exactly one owned list or a newly named list."""
+    start = _complete_meal_plan_week(week)
+    title = _normalized_name(title)
+    if (list_id is not None) == bool(title):
+        raise ValueError(_("Choose exactly one shopping list or a title for a new one."))
+    target = None
+    if list_id is not None:
+        target = user.shopping_lists.filter(pk=list_id).first()
+        if target is None:
+            raise ValueError(_("Shopping list not found."))
+    return add_meal_plan_week_to_list(user, start, shopping_list=target, title=title)
+
+
 def export_records(
     *,
     lists: Sequence[ShoppingList] | None = None,

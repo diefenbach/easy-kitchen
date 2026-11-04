@@ -177,3 +177,51 @@ class RecipeSerializer(serializers.ModelSerializer):
         if "steps" in validated_data:
             data["steps"] = validated_data["steps"]
         return data
+
+
+class MealPlanDateSerializer(serializers.Serializer):
+    """A calendar date used to address a planner day."""
+
+    date = serializers.DateField()
+
+
+class MealPlanWeekQuerySerializer(serializers.Serializer):
+    """An optional day in the requested week; omitted means the current local week."""
+
+    week = serializers.DateField(required=False)
+
+
+class MealPlanAssignSerializer(serializers.Serializer):
+    """The owned recipe to assign to the day addressed by the URL."""
+
+    recipe_id = serializers.IntegerField(min_value=1)
+
+
+class MealPlanToListSerializer(serializers.Serializer):
+    """A week and either an existing list id or a title for a new list."""
+
+    week = serializers.DateField()
+    shopping_list_id = serializers.IntegerField(min_value=1, required=False, allow_null=True)
+    title = serializers.CharField(max_length=255, required=False, allow_blank=True)
+
+
+class PlannedRecipeSerializer(serializers.Serializer):
+    """A planned recipe summary; full details are available from the recipes API."""
+
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+
+
+class MealPlanDaySerializer(serializers.Serializer):
+    """One day, including empty days."""
+
+    date = serializers.DateField()
+    recipe = PlannedRecipeSerializer(allow_null=True)
+
+
+class MealPlanWeekSerializer(serializers.Serializer):
+    """A Monday–Sunday week with seven day records."""
+
+    week_start = serializers.DateField()
+    week_end = serializers.DateField()
+    days = MealPlanDaySerializer(many=True)

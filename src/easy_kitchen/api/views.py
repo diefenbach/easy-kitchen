@@ -1,12 +1,17 @@
 from typing import Any
 
 from django.utils.translation import gettext as _
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from easy_kitchen.models import Recipe, ShoppingList
 from easy_kitchen.services import (
+    add_meal_plan_to_owned_list,
+    clear_meal_plan_day,
+    meal_plan_week_data,
+    plan_owned_recipe,
     import_recipes,
     import_shopping_lists,
     reorder_items,
@@ -15,6 +20,12 @@ from easy_kitchen.services import (
     reorder_shopping_lists,
 )
 from .serializers import (
+    MealPlanAssignSerializer,
+    MealPlanDateSerializer,
+    MealPlanDaySerializer,
+    MealPlanToListSerializer,
+    MealPlanWeekQuerySerializer,
+    MealPlanWeekSerializer,
     RecipeSerializer,
     ReorderItemsSerializer,
     ReorderLinesSerializer,
@@ -171,3 +182,64 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return Response(
             self.get_serializer(recipes, many=True).data, status=status.HTTP_201_CREATED
         )
+
+
+class MealPlanViewSet(viewsets.GenericViewSet):
+    """Weekly planning scoped to the authenticated user and addressed by date."""
+
+    serializer_class = MealPlanDaySerializer
+    lookup_field = "date"
+    lookup_value_regex = r"\d{4}-\d{2}-\d{2}"
+
+    @extend_schema(parameters=[MealPlanWeekQuerySerializer], responses=MealPlanWeekSerializer)
+    def list(self, request):
+        query = MealPlanWeekQuerySerializer(data=request.query_params)
+        query.is_valid(raise_exception=True)
+        try:
+            data = meal_plan_week_data(request.user, query.validated_data.get("week"))
+        except ValueError as error:
+            return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(data)
+
+    @extend_schema(
+        parameters=[OpenApiParameter("date", OpenApiTypes.DATE, OpenApiParameter.PATH)],
+        request=MealPlanAssignSerializer,
+        responses=MealPlanDaySerializer,
+    )
+    def update(self, request, date=None):
+        day = MealPlanDateSerializer(data={"date": date})
+        day.is_valid(raise_exception=True)
+        selection = MealPlanAssignSerializer(data=request.data)
+        selection.is_valid(raise_exception=True)
+        try:
+            data = plan_owned_recipe(request.user, day.validated_data["date"], **selection.validated_data)
+        except ValueError as error:
+            return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(data)
+
+    @extend_schema(
+        parameters=[OpenApiParameter("date", OpenApiTypes.DATE, OpenApiParameter.PATH)],
+        responses={204: None},
+    )
+    def destroy(self, request, date=None):
+        day = MealPlanDateSerializer(data={"date": date})
+        day.is_valid(raise_exception=True)
+        clear_meal_plan_day(request.user, day.validated_data["date"])
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(request=MealPlanToListSerializer, responses=ShoppingListSerializer)
+    @action(detail=False, methods=["post"], url_path="add-to-list")
+    def add_to_list(self, request):
+        selection = MealPlanToListSerializer(data=request.data)
+        selection.is_valid(raise_exception=True)
+        data = selection.validated_data
+        try:
+            target = add_meal_plan_to_owned_list(
+                request.user,
+                data["week"],
+                list_id=data.get("shopping_list_id"),
+                title=data.get("title", ""),
+            )
+        except ValueError as error:
+            return Response({"detail": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(ShoppingListSerializer(target, context={"request": request}).data)
