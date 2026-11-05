@@ -1,10 +1,18 @@
 import {bindSortable, postJson, showSaveError} from "./easykitchen.js";
 
+let suggestionSequence = 0;
+
 function hideArticleSuggestions(field) {
   const list = field?.querySelector(".article-suggestions");
   const input = field?.querySelector("input[name=name]");
-  if (list) list.hidden = true;
-  if (input) input.setAttribute("aria-expanded", "false");
+  if (list) {
+    list.hidden = true;
+    list.querySelectorAll('[aria-selected="true"]').forEach((option) => option.setAttribute("aria-selected", "false"));
+  }
+  if (input) {
+    input.setAttribute("aria-expanded", "false");
+    input.removeAttribute("aria-activedescendant");
+  }
 }
 
 function showArticleSuggestions(input) {
@@ -15,23 +23,30 @@ function showArticleSuggestions(input) {
     hideArticleSuggestions(field);
     return;
   }
+  if (!list.id) list.id = `article-suggestions-${++suggestionSequence}`;
+  input.setAttribute("aria-controls", list.id);
+  input.removeAttribute("aria-activedescendant");
   const query = input.value.trim().toLocaleLowerCase();
   const names = [...document.querySelectorAll("#articles option")]
     .map((option) => option.value)
     .filter((name) => name && name.toLocaleLowerCase().includes(query));
-  list.replaceChildren(...names.map((name) => {
+  list.replaceChildren(...names.map((name, index) => {
     const item = document.createElement("li");
+    item.setAttribute("role", "presentation");
     const button = document.createElement("button");
     button.type = "button";
+    button.tabIndex = -1;
+    button.id = `${list.id}-option-${index}`;
     button.className = "article-suggestion";
     button.setAttribute("role", "option");
+    button.setAttribute("aria-selected", "false");
     button.textContent = name;
     item.append(button);
     return item;
   }));
   const open = names.length > 0;
   list.hidden = !open;
-  input.setAttribute("aria-expanded", open ? "true" : "false");
+  input.setAttribute("aria-expanded", String(open));
 }
 
 document.addEventListener("focusin", (event) => {
@@ -46,30 +61,49 @@ document.addEventListener("focusout", (event) => {
   hideArticleSuggestions(field);
 });
 document.addEventListener("mousedown", (event) => {
+  if (event.target.closest?.(".article-suggestion")) event.preventDefault();
+});
+document.addEventListener("click", (event) => {
   const button = event.target.closest?.(".article-suggestion");
   if (!button) return;
   const field = button.closest(".article-field");
-  const input = field?.querySelector("input[name=name]");
-  if (!input) return;
-  event.preventDefault();
+  const input = field.querySelector("input[name=name]");
   input.value = button.textContent;
-  field.querySelector(".article-suggestions").hidden = true;
-  input.setAttribute("aria-expanded", "false");
+  input.focus();
+  hideArticleSuggestions(field);
 });
 document.addEventListener("keydown", (event) => {
-  if (event.key !== "Escape" || !event.target.matches?.(".article-field input[name=name]")) return;
-  const list = event.target.closest(".article-field").querySelector(".article-suggestions");
-  if (!list) return;
-  list.hidden = true;
-  event.target.setAttribute("aria-expanded", "false");
+  const input = event.target;
+  if (event.isComposing || !input.matches?.(".article-field input[name=name]")) return;
+  const field = input.closest(".article-field");
+  const list = field.querySelector(".article-suggestions");
+  if (event.key === "Escape") {
+    hideArticleSuggestions(field);
+    return;
+  }
+  if (event.key === "Enter" && !list.hidden && input.hasAttribute("aria-activedescendant")) {
+    event.preventDefault();
+    document.getElementById(input.getAttribute("aria-activedescendant"))?.click();
+    return;
+  }
+  if (!["ArrowDown", "ArrowUp"].includes(event.key)) return;
+  event.preventDefault();
+  if (list.hidden) showArticleSuggestions(input);
+  const options = [...list.querySelectorAll("button")];
+  if (!options.length) return;
+  const current = options.findIndex((option) => option.id === input.getAttribute("aria-activedescendant"));
+  const direction = event.key === "ArrowDown" ? 1 : -1;
+  const next = current < 0 ? (direction === 1 ? 0 : options.length - 1)
+    : (current + direction + options.length) % options.length;
+  options.forEach((option, index) => option.setAttribute("aria-selected", String(index === next)));
+  input.setAttribute("aria-activedescendant", options[next].id);
+  options[next].scrollIntoView({block: "nearest"});
 });
-document.addEventListener("reset", (event) => {
-  const form = event.target;
-  form.querySelectorAll?.(".article-field").forEach(hideArticleSuggestions);
-  const nameInput = form.querySelector?.(".article-field input[name=name]");
-  if (!nameInput || !form.closest("#item-form")) return;
-  requestAnimationFrame(() => nameInput.focus());
-}, true);
+document.addEventListener("htmx:oobAfterSwap", (event) => {
+  if (event.detail.target.id === "item-form") {
+    requestAnimationFrame(() => document.querySelector('#item-form input[name="name"]')?.focus());
+  }
+});
 
 const itemsContainer = document.getElementById("items");
 const checkedItemsToggle = document.getElementById("toggle-checked-items");

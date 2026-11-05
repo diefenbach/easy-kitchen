@@ -262,12 +262,14 @@ class ItemCreateView(LoginRequiredMixin, View):
                     {
                         "item": item,
                         "shopping_list": shopping_list,
-                        "include_modal": item.id not in existing_ids,
                     },
                 )
                 response.content += render_to_string(
-                    "easy_kitchen/lists/partials/article_options.html",
-                    {"articles": request.user.articles.all(), "oob": True},
+                    "easy_kitchen/lists/partials/item_form.html",
+                    {
+                        "form": ShoppingItemForm(), "shopping_list": shopping_list,
+                        "articles": request.user.articles.all(), "oob": True,
+                    },
                     request=request,
                 ).encode()
                 if item.id in existing_ids:
@@ -276,7 +278,7 @@ class ItemCreateView(LoginRequiredMixin, View):
                 return response
             return redirect("easy_kitchen:detail", pk=shopping_list.pk)
         if request.headers.get("HX-Request"):
-            return render(
+            response = render(
                 request,
                 "easy_kitchen/lists/partials/item_form.html",
                 {
@@ -286,6 +288,10 @@ class ItemCreateView(LoginRequiredMixin, View):
                 },
                 status=422,
             )
+            response["X-Item-Form"] = "true"
+            response["HX-Retarget"] = "#item-form"
+            response["HX-Reswap"] = "innerHTML"
+            return response
         return redirect("easy_kitchen:detail", pk=shopping_list.pk)
 
 
@@ -302,12 +308,12 @@ class ItemUpdateView(LoginRequiredMixin, View):
         return render(
             request,
             "easy_kitchen/lists/partials/item_edit_form.html",
-            {"item": item, "form": ShoppingItemForm(instance=item)},
+            {"item": item, "form": ShoppingItemForm(instance=item, auto_id=f"item-{item.pk}-%s")},
         )
 
     def post(self, request, list_pk, pk):
         item = self.get_item(request, list_pk, pk)
-        form = ShoppingItemForm(request.POST, instance=item)
+        form = ShoppingItemForm(request.POST, instance=item, auto_id=f"item-{item.pk}-%s")
         if form.is_valid():
             form.save()
             remember_article(request.user, item.name)
@@ -316,12 +322,14 @@ class ItemUpdateView(LoginRequiredMixin, View):
                 "easy_kitchen/lists/partials/item.html",
                 {"item": item, "shopping_list": item.shopping_list},
             )
-        return render(
+        response = render(
             request,
             "easy_kitchen/lists/partials/item_edit_form.html",
             {"item": item, "form": form},
             status=422,
         )
+        response["X-Item-Form"] = "true"
+        return response
 
 
 class ItemToggleView(LoginRequiredMixin, View):

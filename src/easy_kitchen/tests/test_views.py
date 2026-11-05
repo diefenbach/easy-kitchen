@@ -126,7 +126,7 @@ def test_item_name_suggests_saved_articles(client, user, shopping_list):
     )
     suggestions = response.content.decode()
     assert 'id="articles"' in suggestions
-    assert 'hx-swap-oob="outerHTML"' in suggestions
+    assert 'id="item-form" hx-swap-oob="innerHTML"' in suggestions
     assert '<option value="Hafermilch"></option>' in suggestions
     assert '<option value="Brokkoli"></option>' in suggestions
 
@@ -237,7 +237,7 @@ def test_adding_the_same_item_updates_the_existing_row(client, user, shopping_li
     assert response["HX-Reswap"] == "outerHTML"
     content = response.content.decode()
     assert "1 l, 500 ml" in content
-    assert f'id="delete-item-modal-{item.id}"' not in content
+    assert content.count(f'id="delete-item-modal-{item.id}"') == 1
 
 
 @pytest.mark.django_db

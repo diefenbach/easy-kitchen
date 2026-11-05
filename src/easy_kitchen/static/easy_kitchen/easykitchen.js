@@ -60,6 +60,14 @@ document.body.addEventListener("htmx:configRequest", (event) => {
   if (token) event.detail.headers["X-CSRFToken"] = token;
 });
 
+// Only swap explicitly marked item validation responses; leave other HTTP errors alone.
+document.addEventListener("htmx:beforeSwap", (event) => {
+  if (event.detail.xhr.status === 422 && event.detail.xhr.getResponseHeader("X-Item-Form") === "true") {
+    event.detail.shouldSwap = true;
+    event.detail.isError = false;
+  }
+});
+
 const boundPageElements = new WeakSet();
 
 function bindPageElements() {

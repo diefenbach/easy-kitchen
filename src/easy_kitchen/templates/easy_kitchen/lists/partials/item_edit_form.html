@@ -2,13 +2,19 @@
 <div class="shopping-item card mb-2" data-item-id="{{ item.id }}">
   <form class="card-body py-2 px-3 row g-2 align-items-center" hx-post="{% url 'easy_kitchen:item-update' item.shopping_list.pk item.pk %}" hx-target="closest .shopping-item" hx-swap="outerHTML">
     {% csrf_token %}
+    {{ form.non_field_errors }}
     <div class="col-sm">
       <div class="article-field">
+        <label class="visually-hidden" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
         {{ form.name }}
+        {{ form.name.errors }}
         <ul class="article-suggestions" role="listbox" hidden aria-label="{% translate 'Articles' %}"></ul>
       </div>
     </div>
-    <div class="col-sm-3">{{ form.quantity }}</div>
+    <div class="col-sm-3">
+      <label class="visually-hidden" for="{{ form.quantity.id_for_label }}">{{ form.quantity.label }}</label>
+      {{ form.quantity }}{{ form.quantity.errors }}
+    </div>
     <div class="col-sm-auto">
       <button class="btn btn-primary btn-sm" aria-label="{% translate 'Save' %}">
         <i class="bi bi-check-lg" aria-hidden="true"></i>

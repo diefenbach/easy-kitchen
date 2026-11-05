@@ -247,6 +247,7 @@ body.editing .btn-group.edit-actions > .btn.edit-only:last-child {
 }
 .article-suggestion:hover,
 .article-suggestion:focus,
+.article-suggestion[aria-selected="true"],
 .recipe-suggestion:hover,
 .recipe-suggestion[aria-selected="true"] { background: var(--ek-blush); }
 .recipe-suggestions { width: 100%; overflow-wrap: anywhere; }
