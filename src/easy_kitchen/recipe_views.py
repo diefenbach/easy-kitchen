@@ -1,7 +1,9 @@
 import json
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -37,16 +39,49 @@ class RecipeListView(LoginRequiredMixin, View):
     """Show every recipe of the signed-in user."""
 
     def get(self, request):
+        search_query = request.GET.get("q", "").strip()
+        favorites_only = request.GET.get("favorites") == "1"
         recipes = Recipe.objects.filter(user=request.user).prefetch_related("ingredients")
+        for term in search_query.split():
+            recipes = recipes.filter(Q(title__icontains=term) | Q(description__icontains=term))
+        if favorites_only:
+            recipes = recipes.filter(is_favorite=True)
         return render(
             request,
             "easy_kitchen/recipes/overview.html",
             {
                 "recipes": recipes,
+                "search_query": search_query,
+                "favorites_only": favorites_only,
+                "filters_active": bool(search_query or favorites_only),
                 "add_to_list_form": AddRecipeToListForm(user=request.user),
                 "add_to_planner_form": AddRecipeToPlannerForm(auto_id="planner_%s"),
             },
         )
+
+
+class RecipeFavoriteView(UserRecipeMixin, View):
+    """Set the favorite state of an owned recipe and return to its originating page."""
+
+    def post(self, request, pk):
+        recipe = get_object_or_404(self.get_queryset(), pk=pk)
+        value = request.POST.get("is_favorite")
+        if value not in {"0", "1"}:
+            return HttpResponseBadRequest(_("Invalid request."))
+        recipe.is_favorite = value == "1"
+        recipe.save(update_fields=["is_favorite", "updated_at"])
+        if request.POST.get("return_to") == "detail":
+            return redirect("easy_kitchen:recipe-detail", pk=recipe.pk)
+        parameters = {}
+        query = request.POST.get("q", "").strip()
+        if query:
+            parameters["q"] = query
+        if request.POST.get("favorites") == "1":
+            parameters["favorites"] = "1"
+        url = reverse("easy_kitchen:recipes")
+        if parameters:
+            url = f"{url}?{urlencode(parameters)}"
+        return redirect(url)
 
 
 class RecipeReorderView(LoginRequiredMixin, View):

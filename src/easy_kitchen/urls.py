@@ -23,6 +23,7 @@ urlpatterns = [
     path("import/", views.ImportView.as_view(), name="import-json"),
     path("export/", views.ExportView.as_view(), name="export-json"),
     path("recipes/<int:pk>/", recipe_views.RecipeDetailView.as_view(), name="recipe-detail"),
+    path("recipes/<int:pk>/favorite/", recipe_views.RecipeFavoriteView.as_view(), name="recipe-favorite"),
     path(
         "recipes/<int:pk>/add-to-planner/",
         recipe_views.RecipeAddToPlannerView.as_view(),
