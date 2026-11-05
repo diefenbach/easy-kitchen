@@ -1146,3 +1146,30 @@ msgstr "Für diese Woche sind noch keine Gerichte geplant."
 
 msgid "View meal planner"
 msgstr "Zum Wochenplaner"
+
+msgid "favorite"
+msgstr "Favorit"
+
+msgid "Favorites only"
+msgstr "Nur Favoriten"
+
+msgid "Add to favorites"
+msgstr "Zu Favoriten hinzufügen"
+
+msgid "Remove from favorites"
+msgstr "Aus Favoriten entfernen"
+
+msgid "Search titles and descriptions"
+msgstr "Titel und Beschreibung durchsuchen"
+
+msgid "Search"
+msgstr "Suchen"
+
+msgid "Reset filters"
+msgstr "Filter zurücksetzen"
+
+msgid "No matching recipes"
+msgstr "Keine passenden Rezepte"
+
+msgid "Try another search or reset the filters."
+msgstr "Versuche eine andere Suche oder setze die Filter zurück."

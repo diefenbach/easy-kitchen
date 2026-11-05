@@ -1,0 +1,11 @@
+{% load i18n %}
+<form method="post" action="{% url 'easy_kitchen:recipe-favorite' recipe.pk %}" class="d-inline-flex">
+  {% csrf_token %}
+  <input type="hidden" name="is_favorite" value="{% if recipe.is_favorite %}0{% else %}1{% endif %}">
+  <input type="hidden" name="return_to" value="{{ favorite_return_to }}">
+  {% if search_query %}<input type="hidden" name="q" value="{{ search_query }}">{% endif %}
+  {% if favorites_only %}<input type="hidden" name="favorites" value="1">{% endif %}
+  <button type="submit" class="btn btn-outline-secondary{% if recipe.is_favorite %} text-danger{% endif %}" aria-pressed="{{ recipe.is_favorite|yesno:'true,false' }}" aria-label="{% if recipe.is_favorite %}{% translate 'Remove from favorites' %}{% else %}{% translate 'Add to favorites' %}{% endif %}" title="{% if recipe.is_favorite %}{% translate 'Remove from favorites' %}{% else %}{% translate 'Add to favorites' %}{% endif %}">
+    <i class="bi {% if recipe.is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %}" aria-hidden="true"></i>
+  </button>
+</form>

@@ -40,7 +40,12 @@
       </button>
     </div>
   </div>
-  <img class="recipe-picture" src="{% if recipe.picture_url %}{{ recipe.picture_url }}{% else %}{% static 'easy_kitchen/recipe-placeholder.svg' %}{% endif %}" alt="">
+  <div class="position-relative">
+    <img class="recipe-picture" src="{% if recipe.picture_url %}{{ recipe.picture_url }}{% else %}{% static 'easy_kitchen/recipe-placeholder.svg' %}{% endif %}" alt="">
+    <div class="recipe-card-actions">
+      {% include "easy_kitchen/recipes/partials/favorite_button.html" with favorite_return_to="detail" %}
+    </div>
+  </div>
   {% include "easy_kitchen/recipes/partials/facts.html" with facts_class="card-body pt-3" %}
 </header>
 

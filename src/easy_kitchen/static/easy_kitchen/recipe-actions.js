@@ -20,3 +20,7 @@ for (const id of ["add-to-planner-modal", "add-to-list-modal"]) {
     globalThis.bootstrap.Modal.getOrCreateInstance(modal).show();
   }
 }
+
+document.getElementById("recipe-favorites")?.addEventListener("change", (event) => {
+  event.target.form.requestSubmit();
+});

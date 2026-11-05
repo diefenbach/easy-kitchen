@@ -12,13 +12,31 @@
     </a>
   </div>
 </div>
+<form method="get" action="{% url 'easy_kitchen:recipes' %}" class="d-flex flex-wrap align-items-center gap-3 mb-4" role="search" aria-label="{% translate 'Search recipes' %}">
+  <div class="flex-grow-1">
+    <label for="recipe-search" class="visually-hidden">{% translate "Search recipes" %}</label>
+    <input id="recipe-search" class="form-control" type="search" name="q" value="{{ search_query }}" placeholder="{% translate 'Search titles and descriptions' %}">
+  </div>
+  <div class="form-check form-switch mb-0">
+    <input id="recipe-favorites" class="form-check-input" type="checkbox" name="favorites" value="1"{% if favorites_only %} checked{% endif %}>
+    <label for="recipe-favorites" class="form-check-label">{% translate "Favorites only" %}</label>
+  </div>
+  <button type="submit" class="btn btn-outline-secondary" aria-label="{% translate 'Search' %}">
+    <i class="bi bi-search" aria-hidden="true"></i>
+    <span class="d-none d-md-inline">{% translate "Search" %}</span>
+  </button>
+  {% if filters_active %}
+    <a href="{% url 'easy_kitchen:recipes' %}" class="btn btn-outline-secondary">{% translate "Reset filters" %}</a>
+  {% endif %}
+</form>
 {% if recipes %}
-  <div id="recipes" class="row g-3" data-card-reorder="{% url 'easy_kitchen:recipe-reorder' %}" data-id-field="recipe_ids">
+  <div id="recipes" class="row g-3" {% if not filters_active %}data-card-reorder="{% url 'easy_kitchen:recipe-reorder' %}" data-id-field="recipe_ids"{% endif %}>
     {% for recipe in recipes %}
       <div class="col-12 col-lg-6 col-xxl-4" data-list-id="{{ recipe.pk }}">
         <article class="card h-100 shadow-sm list-card position-relative">
           <img class="card-img-top recipe-card-picture" src="{% if recipe.picture_url %}{{ recipe.picture_url }}{% else %}{% static 'easy_kitchen/recipe-placeholder.svg' %}{% endif %}" alt="">
           <div class="recipe-card-actions" role="group" aria-label="{% translate 'Use recipe' %}: {{ recipe.title }}">
+            {% include "easy_kitchen/recipes/partials/favorite_button.html" with favorite_return_to="overview" %}
             <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#add-to-list-modal" data-recipe-action="{% url 'easy_kitchen:recipe-add-to-list' recipe.pk %}" data-recipe-title="{{ recipe.title }}" aria-label="{% translate 'Add to a shopping list' %}" title="{% translate 'Add to a shopping list' %}">
               <i class="bi bi-cart-plus" aria-hidden="true"></i>
             </button>
@@ -31,9 +49,9 @@
           </div>
           {% include "easy_kitchen/recipes/partials/card_facts.html" %}
           <div class="card-footer bg-white d-flex flex-nowrap align-items-center gap-2 edit-only position-relative z-2">
-            <button class="drag-handle btn btn-sm text-secondary" type="button" aria-label="{% translate 'Move' %}">
+            {% if not filters_active %}<button class="drag-handle btn btn-sm text-secondary" type="button" aria-label="{% translate 'Move' %}">
               <i class="bi bi-grip-vertical" aria-hidden="true"></i>
-            </button>
+            </button>{% endif %}
             <a href="{% url 'easy_kitchen:recipe-update' recipe.pk %}?return_to=overview" class="btn btn-outline-secondary ms-auto" aria-label="{% translate 'Edit' %}">
               <i class="bi bi-pencil" aria-hidden="true"></i>
               <span class="d-none d-md-inline">{% translate "Edit" %}</span>
@@ -77,12 +95,17 @@
     {% endfor %}
 {% else %}
   <div class="text-center py-5 bg-white rounded shadow-sm">
+    {% if filters_active %}
+    <h2 class="h4">{% translate "No matching recipes" %}</h2>
+    <p class="text-secondary">{% translate "Try another search or reset the filters." %}</p>
+    {% else %}
     <h2 class="h4">{% translate "No recipes yet" %}</h2>
     <p class="text-secondary">{% translate "Save a recipe with ingredients and steps." %}</p>
     <a href="{% url 'easy_kitchen:recipe-create' %}" class="btn btn-primary" aria-label="{% translate 'Create recipe' %}">
       <i class="bi bi-plus-lg" aria-hidden="true"></i>
       <span class="d-none d-md-inline">{% translate "Create recipe" %}</span>
     </a>
+    {% endif %}
   </div>
 {% endif %}
 {% endblock %}

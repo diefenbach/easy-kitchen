@@ -137,6 +137,7 @@ class Recipe(models.Model):
     )
     title = models.CharField(_("title"), max_length=255)
     description = models.TextField(_("description"), blank=True)
+    is_favorite = models.BooleanField(_("favorite"), default=False)
     image = models.ImageField(_("image"), upload_to="recipes/", blank=True)
     image_url = models.URLField(
         _("image URL"),
