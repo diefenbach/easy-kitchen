@@ -125,6 +125,7 @@ def test_empty_day_recipe_selection_fills_the_available_width(authenticated_page
     row = day.locator(":scope > div")
     date_column = day.get_by_text("Monday", exact=True).locator("..")
     save = day.get_by_role("button", name="Save plan", exact=True)
+    expect(search).to_be_visible()
     row_box = row.bounding_box()
     date_box = date_column.bounding_box()
     form_box = form.bounding_box()

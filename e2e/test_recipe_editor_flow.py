@@ -235,6 +235,7 @@ def test_editor_back_and_forward_confirm_before_discarding(authenticated_page, u
     page.goto(detail)
     page.get_by_role("link", name="Edit recipe", exact=True).click()
     title = page.get_by_label("Title", exact=True)
+    page.wait_for_function("!document.querySelector('.htmx-settling, .htmx-request')")
     title.fill("Draft soup")
     dialogs = []
 
@@ -258,6 +259,7 @@ def test_editor_back_and_forward_confirm_before_discarding(authenticated_page, u
     expect(page).to_have_url(detail)
     page.evaluate("history.back()")
     expect(title).to_have_value("Soup")
+    page.wait_for_function("!document.querySelector('.htmx-settling, .htmx-request')")
     title.fill("Another draft")
     page.on("dialog", dismiss)
     page.evaluate("history.forward()")
