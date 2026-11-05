@@ -275,6 +275,13 @@ Open `docs/_build/html/index.html`. Import the GitHub repository at [readthedocs
 
 ## Quality
 
+Bootstrap, Bootstrap Icons, HTMX, and SortableJS are served from committed local
+vendor assets. Node.js 24 or newer is needed only for JavaScript checks and vendor
+updates. Use `npm ci --ignore-scripts` to install the locked packages, then
+`npm run vendor:build` to regenerate assets and `npm run vendor:check` to verify
+them. See [development documentation](docs/development.md#vendor-assets) for the
+copy list, licenses, source-map policy, and update workflow.
+
 ```sh
 uv run pytest
 ```

@@ -6,14 +6,21 @@
     "node": ">=24"
   },
   "scripts": {
-    "lint": "eslint src/easy_kitchen/static/easy_kitchen eslint.config.js --max-warnings=0",
-    "format": "prettier --write \"src/easy_kitchen/static/easy_kitchen/**/*.js\" eslint.config.js package.json package-lock.json .prettierrc.json",
-    "format:check": "prettier --check \"src/easy_kitchen/static/easy_kitchen/**/*.js\" eslint.config.js package.json package-lock.json .prettierrc.json"
+    "lint": "eslint src/easy_kitchen/static/easy_kitchen scripts eslint.config.js --max-warnings=0",
+    "format": "prettier --write \"src/easy_kitchen/static/easy_kitchen/**/*.js\" \"scripts/**/*.mjs\" eslint.config.js package.json package-lock.json .prettierrc.json",
+    "format:check": "prettier --check \"src/easy_kitchen/static/easy_kitchen/**/*.js\" \"scripts/**/*.mjs\" eslint.config.js package.json package-lock.json .prettierrc.json",
+    "vendor:build": "node scripts/vendor.mjs",
+    "vendor:check": "node scripts/vendor.mjs --check",
+    "test:vendor": "node --test scripts/vendor.test.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "bootstrap": "5.3.3",
+    "bootstrap-icons": "1.11.3",
     "eslint": "10.14.0",
     "globals": "17.14.0",
-    "prettier": "3.9.10"
+    "htmx.org": "2.0.4",
+    "prettier": "3.9.10",
+    "sortablejs": "1.15.6"
   }
 }

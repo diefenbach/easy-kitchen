@@ -26,20 +26,65 @@ This documentation is built in the same suite. Sphinx treats warnings as errors.
 
 ## JavaScript checks
 
-Node.js 24 or newer is needed for the development checks. These tools do not add
-JavaScript dependencies to the running Django application or require a build step.
-Install the exact versions from the lockfile and run the same checks as CI:
+Node.js 24 or newer is needed for the development checks and vendor updates.
+Install the exact package versions from the committed lockfile and run the same
+checks as CI:
 
 ```sh
-npm ci
+npm ci --ignore-scripts
 npm run lint
 npm run format:check
+npm run test:vendor
+npm run vendor:check
 ```
 
 Run `npm run format` to apply the shared Prettier format to the JavaScript and its
 tooling configuration. ESLint checks browser globals and correctness rules across
-all source JavaScript. The `javascript` CI job checks lint and formatting; the
-production build requires this job as well as the Python and browser tests.
+application JavaScript and the Node scripts. Generated vendor files are excluded
+from lint and formatting. The `javascript` CI job checks lint, formatting, the
+vendor build tests, and the committed vendor files; the production build requires
+this job as well as the Python and browser tests.
+
+## Vendor assets
+
+Bootstrap 5.3.3, Bootstrap Icons 1.11.3, HTMX 2.0.4, and SortableJS 1.15.6 are
+pinned npm development dependencies. Their runtime files and license notices are
+committed under `src/easy_kitchen/static/easy_kitchen/vendor/` and served through
+Django staticfiles. Bootstrap's bundle includes Popper, whose license is copied
+as well. Production and ordinary Python development do not need Node.js or an
+asset build. The Google Fonts stylesheet remains an external request; browser
+font fallbacks work when that service is unavailable.
+
+To regenerate the vendor files:
+
+```sh
+npm ci --ignore-scripts
+npm run vendor:build
+npm run vendor:check
+```
+
+`scripts/vendor.mjs` uses Node's filesystem APIs and an explicit copy list.
+It verifies installed versions against the lockfile and prepares all assets in
+a temporary sibling directory before replacing `vendor/`. Copy failures leave
+the current vendor files intact. If the final rename fails, the script restores
+the previous directory; if restoration also fails, it preserves the backup and
+prints its recovery path. Run builds with the development server stopped because
+the two renames briefly remove the destination directory.
+
+Only the compiled Bootstrap CSS and bundle, the minified Bootstrap Icons CSS
+with its two referenced fonts, and the minified HTMX and SortableJS scripts are
+shipped. Bootstrap Icons retains its `font/fonts/` layout so relative URLs resolve.
+SCSS, icon metadata, alternative CSS files, and source maps are omitted.
+Source-map comments are removed from the copied CSS and JavaScript to avoid
+requests for maps and source trees that are not shipped. Debugging uses the
+distributed minified files.
+
+For an intentional dependency update, change its exact version in `package.json`,
+run `npm install --package-lock-only --ignore-scripts`, then run the commands
+above and the test suite. Commit `package.json`, `package-lock.json`, and the
+regenerated vendor files together. `vendor:check` compares filenames and bytes,
+detects missing, changed, and unexpected files, and never replaces the current
+vendor directory.
 
 Cards and editor rows use `createSortable`, which returns the SortableJS instance
 and destroys it during HTMX cleanup.
@@ -61,7 +106,7 @@ Open `docs/_build/html/index.html`. Read the Docs reads `.readthedocs.yaml` and 
 
 `.github/workflows/ci-cd.yml` runs on pull requests and on `main`:
 
-- **javascript** — ESLint and Prettier checks using locked development dependencies.
+- **javascript** — ESLint, Prettier, vendor build tests, and vendor consistency checks using locked npm dependencies.
 - **test** — Ruff, pytest, and the browser suite (every pull request and every push to `main`).
 - **build** — only on `main`, and only when runtime paths changed (`src/`, `Dockerfile`, lockfiles, deploy script). Pushes `ghcr.io/diefenbach/easy-kitchen:<sha>`.
 - **deploy** — same gate as **build**. SSHs to production and runs `.github/scripts/deploy.sh`.
