@@ -10,3 +10,5 @@ staticfiles/
 media/
 db.sqlite3
 *.code-workspace
+
+node_modules/
