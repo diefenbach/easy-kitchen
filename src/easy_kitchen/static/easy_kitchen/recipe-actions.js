@@ -28,7 +28,9 @@ function bindRecipeActions() {
   const filter = document.getElementById("recipe-favorites");
   if (filter && !boundActions.has(filter)) {
     boundActions.add(filter);
-    filter.addEventListener("change", (event) => { event.target.form.requestSubmit(); });
+    filter.addEventListener("change", (event) => {
+      event.target.form.requestSubmit();
+    });
   }
 }
 

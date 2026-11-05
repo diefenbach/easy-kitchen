@@ -1209,3 +1209,12 @@ msgstr "Artikel hinzufügen"
 
 msgid "Remove item"
 msgstr "Artikel entfernen"
+
+msgid "Your changes could not be saved. Please reload the page and try again."
+msgstr "Deine Änderungen konnten nicht gespeichert werden. Bitte lade die Seite neu und versuche es erneut."
+
+msgid "Discard your unsaved recipe changes?"
+msgstr "Deine ungespeicherten Rezeptänderungen verwerfen?"
+
+msgid "Discard your unsaved shopping list changes?"
+msgstr "Deine ungespeicherten Änderungen an der Einkaufsliste verwerfen?"

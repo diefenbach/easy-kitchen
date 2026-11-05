@@ -44,9 +44,21 @@ jobs:
       - run: uv run playwright install --with-deps chromium
       - run: uv run python -m pytest
 
+  javascript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+
   build:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.deploy == 'true'
-    needs: [changes, test]
+    needs: [changes, test, javascript]
     runs-on: ubuntu-latest
     permissions:
       contents: read

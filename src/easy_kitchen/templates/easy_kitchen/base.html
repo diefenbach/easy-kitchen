@@ -82,6 +82,7 @@
     </div>
   </nav>
   <main class="container pb-5">
+    <div id="save-error" class="alert alert-danger" hidden>{% translate "Your changes could not be saved. Please reload the page and try again." %}</div>
     {% if messages %}
       {% for message in messages %}
         <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert" data-autohide="3000">

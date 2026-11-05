@@ -1,0 +1,19 @@
+{
+  "name": "easy-kitchen-js-checks",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "lint": "eslint src/easy_kitchen/static/easy_kitchen eslint.config.js --max-warnings=0",
+    "format": "prettier --write \"src/easy_kitchen/static/easy_kitchen/**/*.js\" eslint.config.js package.json package-lock.json .prettierrc.json",
+    "format:check": "prettier --check \"src/easy_kitchen/static/easy_kitchen/**/*.js\" eslint.config.js package.json package-lock.json .prettierrc.json"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.14.0",
+    "globals": "17.14.0",
+    "prettier": "3.9.10"
+  }
+}

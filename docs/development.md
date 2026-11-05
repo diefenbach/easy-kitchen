@@ -24,6 +24,28 @@ uv run python -m pytest e2e
 
 This documentation is built in the same suite. Sphinx treats warnings as errors.
 
+## JavaScript checks
+
+Node.js 24 or newer is needed for the development checks. These tools do not add
+JavaScript dependencies to the running Django application or require a build step.
+Install the exact versions from the lockfile and run the same checks as CI:
+
+```sh
+npm ci
+npm run lint
+npm run format:check
+```
+
+Run `npm run format` to apply the shared Prettier format to the JavaScript and its
+tooling configuration. ESLint checks browser globals and correctness rules across
+all source JavaScript. The `javascript` CI job checks lint and formatting; the
+production build requires this job as well as the Python and browser tests.
+
+Cards and editor rows use `createSortable`, which returns the SortableJS instance
+and destroys it during HTMX cleanup.
+Article and recipe suggestion lists display at most 20 matches. Typing a more
+specific query still searches the complete catalog.
+
 ## Documentation
 
 Build the HTML locally:
@@ -39,6 +61,7 @@ Open `docs/_build/html/index.html`. Read the Docs reads `.readthedocs.yaml` and 
 
 `.github/workflows/ci-cd.yml` runs on pull requests and on `main`:
 
+- **javascript** — ESLint and Prettier checks using locked development dependencies.
 - **test** — Ruff, pytest, and the browser suite (every pull request and every push to `main`).
 - **build** — only on `main`, and only when runtime paths changed (`src/`, `Dockerfile`, lockfiles, deploy script). Pushes `ghcr.io/diefenbach/easy-kitchen:<sha>`.
 - **deploy** — same gate as **build**. SSHs to production and runs `.github/scripts/deploy.sh`.

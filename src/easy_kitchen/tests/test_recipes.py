@@ -194,7 +194,7 @@ def test_a_new_recipe_is_placed_first_and_the_overview_can_be_reordered(client, 
         json.dumps({"recipe_ids": [first.pk, second.pk]}),
         content_type="application/json",
     )
-    assert reordered.status_code == 302
+    assert reordered.status_code == 204
     assert list(user.recipes.values_list("title", flat=True)) == ["First", "Second"]
     reorder_recipes(user, [second.pk, first.pk])
     assert list(user.recipes.values_list("title", flat=True)) == ["Second", "First"]

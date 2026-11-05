@@ -15,7 +15,7 @@
         <button type="submit" form="recipe-editor-form" class="btn btn-primary">{% translate "Save" %}</button>
       </div>
     </div>
-    <form id="recipe-editor-form" method="post" action="{{ request.get_full_path }}" enctype="multipart/form-data" hx-post="{{ request.get_full_path }}" hx-target="main" hx-select="main" hx-swap="outerHTML show:none focus-scroll:false" hx-push-url="false" hx-encoding="multipart/form-data" hx-sync="this:drop" hx-history="false" data-bound="{{ form.is_bound|yesno:'true,false' }}">
+    <form id="recipe-editor-form" method="post" action="{{ request.get_full_path }}" enctype="multipart/form-data" hx-post="{{ request.get_full_path }}" hx-target="main" hx-select="main" hx-swap="outerHTML show:none focus-scroll:false" hx-push-url="false" hx-encoding="multipart/form-data" hx-sync="this:drop" hx-history="false" data-bound="{{ form.is_bound|yesno:'true,false' }}" data-discard-message="{% translate 'Discard your unsaved recipe changes?' %}">
       {% csrf_token %}
       {% if form.errors or ingredient_formset.errors or step_formset.errors or ingredient_formset.non_form_errors or step_formset.non_form_errors %}
         <div class="alert alert-danger" role="alert">{% translate "Please check the highlighted fields. Your changes have not been saved." %}</div>
