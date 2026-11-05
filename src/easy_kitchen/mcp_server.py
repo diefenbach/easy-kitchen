@@ -139,9 +139,7 @@ def _recipe_payload(recipe: Recipe) -> dict:
         "carbohydrates": recipe.carbohydrates,
         "fat": recipe.fat,
         "preparation_minutes": recipe.preparation_minutes,
-        "ingredients": [
-            {"name": line.name, "quantity": line.quantity} for line in recipe.ingredients.all()
-        ],
+        "ingredients": [{"name": line.name, "quantity": line.quantity} for line in recipe.ingredients.all()],
         "steps": [{"text": line.text} for line in recipe.steps.all()],
     }
 
@@ -226,9 +224,7 @@ def create_recipe(
             carbohydrates=carbohydrates,
             fat=fat,
             preparation_minutes=preparation_minutes,
-            ingredients=[
-                IngredientInput.model_validate(item).model_dump() for item in ingredients or []
-            ],
+            ingredients=[IngredientInput.model_validate(item).model_dump() for item in ingredients or []],
             steps=[StepInput.model_validate(item).model_dump() for item in steps or []],
         )
     except ValueError as error:
@@ -247,10 +243,7 @@ def create_recipe(
 def list_shopping_lists(ctx: Context) -> list[dict]:
     """List the authenticated user's shopping lists and their items."""
     user = user_from_authorization(_authorization(ctx))
-    return [
-        _shopping_list_payload(shopping_list)
-        for shopping_list in user.shopping_lists.prefetch_related("items")
-    ]
+    return [_shopping_list_payload(shopping_list) for shopping_list in user.shopping_lists.prefetch_related("items")]
 
 
 @mcp.tool(
@@ -264,10 +257,7 @@ def list_shopping_lists(ctx: Context) -> list[dict]:
 def list_recipes(ctx: Context) -> list[dict]:
     """List the authenticated user's recipes, including ingredients and steps."""
     user = user_from_authorization(_authorization(ctx))
-    return [
-        _recipe_payload(recipe)
-        for recipe in user.recipes.prefetch_related("ingredients", "steps")
-    ]
+    return [_recipe_payload(recipe) for recipe in user.recipes.prefetch_related("ingredients", "steps")]
 
 
 @mcp.tool(
@@ -367,7 +357,10 @@ def add_recipe_to_list(
 
 @mcp.tool(
     annotations=ToolAnnotations(
-        read_only_hint=True, destructive_hint=False, idempotent_hint=True, open_world_hint=False,
+        read_only_hint=True,
+        destructive_hint=False,
+        idempotent_hint=True,
+        open_world_hint=False,
     )
 )
 def get_meal_plan_week(ctx: Context, week: Date | None = None) -> dict:
@@ -381,7 +374,10 @@ def get_meal_plan_week(ctx: Context, week: Date | None = None) -> dict:
 
 @mcp.tool(
     annotations=ToolAnnotations(
-        read_only_hint=False, destructive_hint=True, idempotent_hint=True, open_world_hint=False,
+        read_only_hint=False,
+        destructive_hint=True,
+        idempotent_hint=True,
+        open_world_hint=False,
     )
 )
 def set_meal_plan_recipe(
@@ -400,7 +396,10 @@ def set_meal_plan_recipe(
 
 @mcp.tool(
     annotations=ToolAnnotations(
-        read_only_hint=False, destructive_hint=True, idempotent_hint=True, open_world_hint=False,
+        read_only_hint=False,
+        destructive_hint=True,
+        idempotent_hint=True,
+        open_world_hint=False,
     )
 )
 def clear_meal_plan_day(date: Date, ctx: Context) -> dict:
@@ -412,7 +411,10 @@ def clear_meal_plan_day(date: Date, ctx: Context) -> dict:
 
 @mcp.tool(
     annotations=ToolAnnotations(
-        read_only_hint=False, destructive_hint=False, idempotent_hint=False, open_world_hint=False,
+        read_only_hint=False,
+        destructive_hint=False,
+        idempotent_hint=False,
+        open_world_hint=False,
     )
 )
 def add_meal_plan_week_to_list(
