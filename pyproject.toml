@@ -41,3 +41,9 @@ markers = [
 
 [tool.ruff]
 line-length = 100
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+pythonVersion = "3.13"
+extraPaths = ["src"]
