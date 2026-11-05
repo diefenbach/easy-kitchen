@@ -25,7 +25,8 @@ def test_saved_articles_are_suggested_and_can_be_renamed(authenticated_page):
     lists = page.get_by_role("link", name="Shopping lists", exact=True)
     account = page.get_by_role("button", name="e2e-user", exact=True)
     expect(overview).to_be_visible()
-    assert overview.bounding_box()["x"] < lists.bounding_box()["x"] < account.bounding_box()["x"]
+    recipes = page.get_by_role("link", name="Recipes", exact=True)
+    assert overview.bounding_box()["x"] < recipes.bounding_box()["x"] < lists.bounding_box()["x"] < account.bounding_box()["x"]
 
     page.get_by_role("link", name="New list").click()
     page.locator("input[name=title]").fill("Vorrat")
