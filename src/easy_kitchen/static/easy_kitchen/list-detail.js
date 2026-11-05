@@ -1,4 +1,5 @@
-import {bindSortable, postJson} from "./easykitchen.js";
+import {postJson} from "./easykitchen.js";
+import "./editor.js";
 
 function hideArticleSuggestions(field) {
   const list = field?.querySelector(".article-suggestions");
@@ -71,58 +72,68 @@ document.addEventListener("reset", (event) => {
   requestAnimationFrame(() => nameInput.focus());
 }, true);
 
-const itemsContainer = document.getElementById("items");
-const checkedItemsToggle = document.getElementById("toggle-checked-items");
-const hideCompletedUrl = itemsContainer?.dataset.hideCompletedUrl;
+const boundLists = new WeakSet();
 
-function setCompletedItemsHidden(hidden) {
-  if (!itemsContainer || !checkedItemsToggle) return;
-  itemsContainer.classList.toggle("hide-completed", hidden);
-  itemsContainer.querySelectorAll(".shopping-item.checked").forEach((item) => {
-    item.hidden = hidden;
+function bindShoppingList() {
+  const itemsContainer = document.getElementById("items");
+  if (!itemsContainer || boundLists.has(itemsContainer)) return;
+  boundLists.add(itemsContainer);
+  const checkedItemsToggle = document.getElementById("toggle-checked-items");
+  const hideCompletedUrl = itemsContainer?.dataset.hideCompletedUrl;
+
+  function setCompletedItemsHidden(hidden) {
+    if (!itemsContainer || !checkedItemsToggle) return;
+    itemsContainer.classList.toggle("hide-completed", hidden);
+    itemsContainer.querySelectorAll(".shopping-item.checked").forEach((item) => {
+      item.hidden = hidden;
+    });
+    const text = hidden ? checkedItemsToggle.dataset.labelShow : checkedItemsToggle.dataset.labelHide;
+    const label = checkedItemsToggle.querySelector(".btn-label");
+    if (label) label.textContent = text;
+    checkedItemsToggle.setAttribute("aria-label", text);
+    checkedItemsToggle.setAttribute("aria-pressed", hidden ? "true" : "false");
+  }
+
+  if (itemsContainer?.classList.contains("hide-completed")) {
+    setCompletedItemsHidden(true);
+  }
+
+  checkedItemsToggle?.addEventListener("click", () => {
+    const hidden = !itemsContainer.classList.contains("hide-completed");
+    setCompletedItemsHidden(hidden);
+    if (hideCompletedUrl) postJson(hideCompletedUrl, {hide: hidden});
   });
-  const text = hidden ? checkedItemsToggle.dataset.labelShow : checkedItemsToggle.dataset.labelHide;
-  const label = checkedItemsToggle.querySelector(".btn-label");
-  if (label) label.textContent = text;
-  checkedItemsToggle.setAttribute("aria-label", text);
-  checkedItemsToggle.setAttribute("aria-pressed", hidden ? "true" : "false");
-}
-
-if (itemsContainer?.classList.contains("hide-completed")) {
-  setCompletedItemsHidden(true);
-}
-
-checkedItemsToggle?.addEventListener("click", () => {
-  const hidden = !itemsContainer.classList.contains("hide-completed");
-  setCompletedItemsHidden(hidden);
-  if (hideCompletedUrl) postJson(hideCompletedUrl, {hide: hidden});
-});
-function completedItemCount() {
-  return itemsContainer?.querySelectorAll(".shopping-item.checked").length ?? 0;
-}
-
-function syncDeleteCompletedControl() {
-  const count = completedItemCount();
-  const trigger = document.getElementById("delete-completed-trigger");
-  if (trigger) trigger.disabled = count === 0;
-  const body = document.getElementById("delete-completed-body");
-  if (!body) return;
-  if (count === 0) {
-    body.textContent = "";
-    return;
+  function completedItemCount() {
+    return itemsContainer?.querySelectorAll(".shopping-item.checked").length ?? 0;
   }
-  if (count === 1) {
-    body.textContent = body.dataset.messageOne ?? "";
-    return;
+
+  function syncDeleteCompletedControl() {
+    const count = completedItemCount();
+    const trigger = document.getElementById("delete-completed-trigger");
+    if (trigger) trigger.disabled = count === 0;
+    const body = document.getElementById("delete-completed-body");
+    if (!body) return;
+    if (count === 0) {
+      body.textContent = "";
+      return;
+    }
+    if (count === 1) {
+      body.textContent = body.dataset.messageOne ?? "";
+      return;
+    }
+    body.textContent = (body.dataset.messageMany ?? "").replaceAll("__COUNT__", String(count));
   }
-  body.textContent = (body.dataset.messageMany ?? "").replaceAll("__COUNT__", String(count));
+
+  syncDeleteCompletedControl();
+  itemsContainer.addEventListener("htmx:afterSwap", (event) => {
+    if (event.target.closest?.("#items") || event.target.classList?.contains("shopping-item")) {
+      syncDeleteCompletedControl();
+    }
+  });
+
+
 }
 
-syncDeleteCompletedControl();
-document.body.addEventListener("htmx:afterSwap", (event) => {
-  if (event.target.closest?.("#items") || event.target.classList?.contains("shopping-item")) {
-    syncDeleteCompletedControl();
-  }
-});
-
-bindSortable(itemsContainer, {draggable: ".shopping-item", datasetKey: "itemId", field: "item_ids"});
+document.addEventListener("htmx:load", bindShoppingList);
+document.addEventListener("htmx:historyRestore", bindShoppingList);
+bindShoppingList();

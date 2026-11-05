@@ -1,0 +1,24 @@
+{% load i18n list_icons %}
+        {% for field in form %}
+          {% if field.name == "icon" %}
+            <div class="mb-3">
+              <div class="form-label">{{ field.label }}</div>
+              <div class="list-icon-choices">
+                {% for choice in field %}
+                  <label class="list-icon-choice">
+                    {{ choice.tag }}
+                    <span class="list-icon list-icon-{{ choice.data.value }}" aria-hidden="true"><i class="bi {{ choice.data.value|list_icon_class }}"></i></span>
+                    <span class="visually-hidden">{{ choice.choice_label }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+              {{ field.errors }}
+            </div>
+          {% else %}
+          <div class="mb-3">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {{ field.errors }}
+          </div>
+          {% endif %}
+        {% endfor %}

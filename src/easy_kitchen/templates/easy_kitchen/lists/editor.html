@@ -1,0 +1,47 @@
+{% extends "easy_kitchen/base.html" %}
+{% load i18n static %}
+{% block title %}{% translate "Edit list" %} · EasyKitchen{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-xl-9">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+      <h1 class="h2 mb-0">{% translate "Edit list" %}</h1>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#delete-list-modal" aria-label="{% translate 'Delete list' %}"><i class="bi bi-trash" aria-hidden="true"></i><span class="d-none d-md-inline"> {% translate "Delete list" %}</span></button>
+        <a href="{{ cancel_url }}" class="btn btn-outline-secondary" data-editor-cancel hx-get="{{ cancel_url }}" hx-target="main" hx-select="main" hx-swap="outerHTML show:none focus-scroll:false" hx-push-url="true">{% translate "Cancel" %}</a>
+        <button type="submit" form="list-editor-form" class="btn btn-primary">{% translate "Save" %}</button>
+      </div>
+    </div>
+    <form id="list-editor-form" method="post" action="{{ request.get_full_path }}" hx-post="{{ request.get_full_path }}" hx-target="main" hx-select="main" hx-swap="outerHTML show:none focus-scroll:false" hx-push-url="false" hx-sync="this:drop" hx-history="false" data-bound="{{ form.is_bound|yesno:'true,false' }}">
+      {% csrf_token %}
+      {% if form.errors or item_formset.errors or item_formset.non_form_errors %}
+        <div class="alert alert-danger" role="alert">{% translate "Please check the highlighted fields. Your changes have not been saved." %}</div>
+      {% endif %}
+      <section class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h2 class="h4 mb-3">{% translate "List details" %}</h2>
+          {{ form.non_field_errors }}
+          {% include "easy_kitchen/lists/partials/form_fields.html" %}
+        </div>
+      </section>
+      <section class="card shadow-sm mb-4" data-editor-lines="items">
+        <div class="card-body">
+          <h2 class="h4 mb-3">{% translate "Items" %}</h2>
+          {{ item_formset.management_form }}{{ item_formset.non_form_errors }}
+          <div data-editor-rows>
+            {% for line in item_formset %}{% include "easy_kitchen/lists/partials/editor_item.html" %}{% endfor %}
+          </div>
+          <template data-editor-empty>{% include "easy_kitchen/lists/partials/editor_item.html" with line=item_formset.empty_form %}</template>
+          <button type="button" class="btn btn-outline-secondary" data-editor-add><i class="bi bi-plus-lg" aria-hidden="true"></i> {% translate "Add item" %}</button>
+        </div>
+      </section>
+      <div class="list-editor-footer d-flex justify-content-end gap-2 rounded border shadow-sm p-3">
+        <a href="{{ cancel_url }}" class="btn btn-outline-secondary" data-editor-cancel hx-get="{{ cancel_url }}" hx-target="main" hx-select="main" hx-swap="outerHTML show:none focus-scroll:false" hx-push-url="true">{% translate "Cancel" %}</a>
+        <button type="submit" class="btn btn-primary">{% translate "Save" %}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% include "easy_kitchen/lists/partials/delete_modal.html" %}
+{% endblock %}
+{% block scripts %}<script type="module" src="{% static 'easy_kitchen/list-editor.js' %}"></script>{% endblock %}

@@ -265,18 +265,12 @@ def test_edit_mode_starts_off_and_resets_when_the_page_reloads(authenticated_pag
 
     page.get_by_role("link", name="Wocheneinkauf").click()
     item = page.locator(".shopping-item", has_text="Tofu")
-    move = item.get_by_role("button", name="Move", include_hidden=True)
-    edit_item = item.get_by_role("button", name="Edit item", include_hidden=True)
-    expect(move).to_be_hidden()
-    expect(edit_item).to_be_hidden()
+    expect(item.get_by_role("button", name="Move")).to_have_count(0)
+    expect(item.get_by_role("button", name="Edit item")).to_have_count(0)
     expect(item.get_by_role("button", name="Toggle completed")).to_be_visible()
     expect(page.get_by_role("button", name="Add")).to_be_visible()
-    show_edit_actions(page)
-    expect(move).to_be_visible()
-    expect(edit_item).to_be_visible()
+    expect(page.get_by_role("button", name="Edit", exact=True)).to_have_count(0)
     expect(page.get_by_role("link", name="Edit list")).to_be_visible()
-    page.reload()
-    expect(move).to_be_hidden()
 
     page.get_by_role("link", name="Recipes", exact=True).click()
     recipe_card = page.locator(".list-card", has_text=recipe_title)
@@ -308,7 +302,7 @@ def test_user_can_edit_a_list_from_the_overview(authenticated_page, user):
     show_edit_actions(page)
     card.get_by_role("link", name="Edit", exact=True).click()
     page.locator("input[name=title]").fill("Neuer Titel")
-    page.get_by_role("button", name="Save").click()
+    page.get_by_role("button", name="Save", exact=True).first.click()
     expect(page.get_by_role("heading", name="Shopping lists")).to_be_visible()
 
 
@@ -321,10 +315,9 @@ def test_user_can_edit_a_list_from_its_detail_page(authenticated_page, user):
     page = authenticated_page
     page.goto(f"{page.url.rstrip('/')}/lists/{shopping_list.pk}/")
 
-    show_edit_actions(page)
     page.get_by_role("link", name="Edit list").click()
     page.locator("input[name=title]").fill("Neuer Titel")
-    page.get_by_role("button", name="Save").click()
+    page.get_by_role("button", name="Save", exact=True).first.click()
 
     expect(page.get_by_role("heading", name="Neuer Titel")).to_be_visible()
 
@@ -388,20 +381,20 @@ def test_user_can_reorder_items_with_drag_and_drop(authenticated_page, user):
     from easy_kitchen.models import ShoppingItem, ShoppingList
 
     shopping_list = ShoppingList.objects.create(user=user, title="Wocheneinkauf")
-    tofu = ShoppingItem.objects.create(shopping_list=shopping_list, name="Tofu", position=1)
-    rice = ShoppingItem.objects.create(shopping_list=shopping_list, name="Reis", position=2)
+    ShoppingItem.objects.create(shopping_list=shopping_list, name="Tofu", position=1)
+    ShoppingItem.objects.create(shopping_list=shopping_list, name="Reis", position=2)
     page = authenticated_page
+    page.set_viewport_size({"width": 1280, "height": 1600})
     page.goto(f"{page.url.rstrip('/')}/lists/{shopping_list.pk}/")
 
-    show_edit_actions(page)
-    tofu_handle = page.locator(f'.shopping-item[data-item-id="{tofu.pk}"]').get_by_role("button", name="Move")
-    rice_handle = page.locator(f'.shopping-item[data-item-id="{rice.pk}"]').get_by_role("button", name="Move")
-    with page.expect_response(lambda response: "/reorder/" in response.url and response.request.method == "POST"):
-        tofu_handle.drag_to(rice_handle)
-    page.reload()
-
-    item_names = page.locator(".shopping-item .item-name").all_text_contents()
-    assert item_names == ["Reis", "Tofu"]
+    page.get_by_role("link", name="Edit list", exact=True).click()
+    rows = page.locator('[data-editor-lines="items"] .editor-line')
+    rows.first.get_by_role("button", name="Move", exact=True).drag_to(rows.last, target_position={"x": 20, "y": rows.last.bounding_box()["height"] - 5})
+    expect(rows.first.get_by_label("Item", exact=True)).to_have_value("Reis")
+    assert list(shopping_list.items.values_list("name", flat=True)) == ["Tofu", "Reis"]
+    page.get_by_role("button", name="Save", exact=True).first.click()
+    expect(page.get_by_role("heading", name="Wocheneinkauf", exact=True)).to_be_visible()
+    assert page.locator(".shopping-item .item-name").all_text_contents() == ["Reis", "Tofu"]
 
 
 @pytest.mark.e2e

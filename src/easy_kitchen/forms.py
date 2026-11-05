@@ -333,8 +333,8 @@ class AddRecipeToListForm(forms.Form):
         return cleaned
 
 
-class RecipeEditorLineFormSet(BaseInlineFormSet):
-    """Order and delete draft lines, restricting submitted IDs to this recipe."""
+class OrderedEditorLineFormSet(BaseInlineFormSet):
+    """Order and delete draft lines, restricting submitted IDs to their parent."""
 
     ordering_widget = forms.HiddenInput
     deletion_widget = forms.HiddenInput
@@ -347,20 +347,34 @@ class RecipeEditorLineFormSet(BaseInlineFormSet):
         for form in self.deleted_forms:
             if form.instance.pk:
                 form.instance.delete()
+        saved = []
         for position, form in enumerate(self.ordered_forms):
             line = form.save(commit=False)
-            line.recipe = self.instance
+            setattr(line, self.fk.name, self.instance)
             line.position = position
             line.save()
+            saved.append(line)
+        return saved
 
 
 RecipeIngredientEditorFormSet = inlineformset_factory(
-    Recipe, RecipeIngredient, formset=RecipeEditorLineFormSet,
+    Recipe, RecipeIngredient, formset=OrderedEditorLineFormSet,
     fields=("name", "quantity"), extra=0, can_delete=True, can_order=True,
     widgets={"name": forms.TextInput(attrs={"class": "form-control"}), "quantity": forms.TextInput(attrs={"class": "form-control"})},
 )
 RecipeStepEditorFormSet = inlineformset_factory(
-    Recipe, RecipeStep, formset=RecipeEditorLineFormSet,
+    Recipe, RecipeStep, formset=OrderedEditorLineFormSet,
     fields=("text",), extra=0, can_delete=True, can_order=True,
     widgets={"text": forms.Textarea(attrs={"class": "form-control", "rows": 3})},
+)
+
+
+ShoppingItemEditorFormSet = inlineformset_factory(
+    ShoppingList, ShoppingItem, formset=OrderedEditorLineFormSet,
+    fields=("name", "quantity", "checked"), extra=0, can_delete=True, can_order=True,
+    widgets={
+        "name": forms.TextInput(attrs={"class": "form-control"}),
+        "quantity": forms.TextInput(attrs={"class": "form-control"}),
+        "checked": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+    },
 )

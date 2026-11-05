@@ -397,7 +397,7 @@ textarea:not(.form-control) {
 .recipe-card-actions .bi { display: flex; line-height: 1; }
 .recipe-card-actions .bi::before { display: block; vertical-align: 0; }
 
-.recipe-editor-footer { position: sticky; bottom: 1rem; z-index: 4; background: #fffdfb; }
+.recipe-editor-footer, .list-editor-footer { position: sticky; bottom: 1rem; z-index: 4; background: #fffdfb; }
 .editor-line[hidden] { display: none !important; }
 .editor-line .editor-drag { cursor: grab; }
 .editor-line textarea { resize: vertical; }
