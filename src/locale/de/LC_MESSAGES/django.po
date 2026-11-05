@@ -1173,3 +1173,27 @@ msgstr "Keine passenden Rezepte"
 
 msgid "Try another search or reset the filters."
 msgstr "Versuche eine andere Suche oder setze die Filter zurück."
+
+msgid "Recipe details"
+msgstr "Rezeptdaten"
+
+msgid "Please check the highlighted fields. Your changes have not been saved."
+msgstr "Bitte prüfe die markierten Felder. Deine Änderungen wurden nicht gespeichert."
+
+msgid "Add ingredient"
+msgstr "Zutat hinzufügen"
+
+msgid "Add step"
+msgstr "Schritt hinzufügen"
+
+msgid "Move up"
+msgstr "Nach oben verschieben"
+
+msgid "Move down"
+msgstr "Nach unten verschieben"
+
+msgid "Remove ingredient"
+msgstr "Zutat entfernen"
+
+msgid "Remove step"
+msgstr "Schritt entfernen"

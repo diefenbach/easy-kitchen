@@ -1,0 +1,52 @@
+{% extends "easy_kitchen/base.html" %}
+{% load i18n static %}
+{% block title %}{% translate "Edit recipe" %} · EasyKitchen{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-xl-9">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+      <h1 class="h2 mb-0">{% translate "Edit recipe" %}</h1>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#delete-recipe-modal" aria-label="{% translate 'Delete' %}">
+        <i class="bi bi-trash" aria-hidden="true"></i>
+        <span class="d-none d-md-inline">{% translate "Delete" %}</span>
+      </button>
+        <a href="{{ cancel_url }}" class="btn btn-outline-secondary" data-editor-cancel hx-get="{{ cancel_url }}" hx-target="main" hx-select="main" hx-swap="outerHTML show:none focus-scroll:false" hx-push-url="true">{% translate "Cancel" %}</a>
+        <button type="submit" form="recipe-editor-form" class="btn btn-primary">{% translate "Save" %}</button>
+      </div>
+    </div>
+    <form id="recipe-editor-form" method="post" action="{{ request.get_full_path }}" enctype="multipart/form-data" hx-post="{{ request.get_full_path }}" hx-target="main" hx-select="main" hx-swap="outerHTML show:none focus-scroll:false" hx-push-url="false" hx-encoding="multipart/form-data" hx-sync="this:drop" hx-history="false" data-bound="{{ form.is_bound|yesno:'true,false' }}">
+      {% csrf_token %}
+      {% if form.errors or ingredient_formset.errors or step_formset.errors or ingredient_formset.non_form_errors or step_formset.non_form_errors %}
+        <div class="alert alert-danger" role="alert">{% translate "Please check the highlighted fields. Your changes have not been saved." %}</div>
+      {% endif %}
+      <section class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h2 class="h4 mb-3">{% translate "Recipe details" %}</h2>
+          {{ form.non_field_errors }}
+          <div class="row">
+            {% for field in form %}
+              <div class="mb-3 {% if field.field.widget.input_type == 'number' %}col-6 col-md-4{% else %}col-12{% endif %}">
+                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.name == "image_url" %}<div class="form-text">{% translate "Used when no image file is uploaded." %}</div>{% endif %}
+                {{ field.errors }}
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+      {% include "easy_kitchen/recipes/partials/editor_lines.html" with formset=ingredient_formset kind="ingredient" %}
+      {% include "easy_kitchen/recipes/partials/editor_lines.html" with formset=step_formset kind="step" %}
+      <div class="recipe-editor-footer d-flex justify-content-end gap-2 rounded border shadow-sm p-3">
+        <a href="{{ cancel_url }}" class="btn btn-outline-secondary" data-editor-cancel hx-get="{{ cancel_url }}" hx-target="main" hx-select="main" hx-swap="outerHTML show:none focus-scroll:false" hx-push-url="true">{% translate "Cancel" %}</a>
+        <button type="submit" class="btn btn-primary">{% translate "Save" %}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% include "easy_kitchen/recipes/partials/delete_modal.html" %}
+{% endblock %}
+{% block scripts %}
+<script type="module" src="{% static 'easy_kitchen/recipe-editor.js' %}"></script>
+{% endblock %}

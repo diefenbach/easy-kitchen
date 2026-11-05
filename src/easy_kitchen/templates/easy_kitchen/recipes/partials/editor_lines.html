@@ -1,0 +1,20 @@
+{% load i18n %}
+<section class="card shadow-sm mb-4" data-editor-lines="{{ formset.prefix }}">
+  <div class="card-body">
+    <h2 class="h4 mb-3">{% if kind == "ingredient" %}{% translate "Ingredients" %}{% else %}{% translate "Steps" %}{% endif %}</h2>
+    {{ formset.management_form }}
+    {{ formset.non_form_errors }}
+    <div data-editor-rows>
+      {% for line in formset %}
+        {% include "easy_kitchen/recipes/partials/editor_line.html" %}
+      {% endfor %}
+    </div>
+    <template data-editor-empty>
+      {% include "easy_kitchen/recipes/partials/editor_line.html" with line=formset.empty_form %}
+    </template>
+    <button type="button" class="btn btn-outline-secondary" data-editor-add>
+      <i class="bi bi-plus-lg" aria-hidden="true"></i>
+      {% if kind == "ingredient" %}{% translate "Add ingredient" %}{% else %}{% translate "Add step" %}{% endif %}
+    </button>
+  </div>
+</section>

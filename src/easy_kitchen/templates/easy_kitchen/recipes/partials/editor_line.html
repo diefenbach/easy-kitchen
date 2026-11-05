@@ -1,0 +1,20 @@
+{% load i18n %}
+<div class="editor-line border rounded p-3 mb-3"{% if line.cleaned_data.DELETE %} hidden{% endif %}>
+  {% for hidden in line.hidden_fields %}{{ hidden }}{{ hidden.errors }}{% endfor %}
+  {{ line.non_field_errors }}
+  <div class="d-flex align-items-center gap-2 mb-3">
+    <span class="text-secondary" data-editor-number></span>
+    <button type="button" class="btn btn-sm btn-outline-secondary editor-drag" aria-label="{% translate 'Move' %}"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-editor-up aria-label="{% translate 'Move up' %}"><i class="bi bi-arrow-up" aria-hidden="true"></i></button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-editor-down aria-label="{% translate 'Move down' %}"><i class="bi bi-arrow-down" aria-hidden="true"></i></button>
+    <button type="button" class="btn btn-sm btn-outline-danger ms-auto" data-editor-remove aria-label="{% if kind == 'ingredient' %}{% translate 'Remove ingredient' %}{% else %}{% translate 'Remove step' %}{% endif %}"><i class="bi bi-trash" aria-hidden="true"></i></button>
+  </div>
+  <div class="row g-3">
+    {% for field in line.visible_fields %}
+      <div class="{% if kind == 'ingredient' and field.name == 'quantity' %}col-12 col-sm-4{% elif kind == 'ingredient' %}col-12 col-sm-8{% else %}col-12{% endif %}">
+        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}{{ field.errors }}
+      </div>
+    {% endfor %}
+  </div>
+</div>

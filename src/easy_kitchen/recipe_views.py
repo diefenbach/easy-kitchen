@@ -1,8 +1,10 @@
 import json
 from urllib.parse import urlencode
 
+from django import forms
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
@@ -11,9 +13,12 @@ from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import gettext as _, ngettext
 from django.views import View
-from django.views.generic import CreateView, DeleteView, UpdateView
+from django.views.generic import CreateView, DeleteView
 
-from .forms import AddRecipeToListForm, AddRecipeToPlannerForm, RecipeForm, RecipeLineForm
+from .forms import (
+    AddRecipeToListForm, AddRecipeToPlannerForm, RecipeForm, RecipeLineForm,
+    RecipeIngredientEditorFormSet, RecipeStepEditorFormSet,
+)
 from .models import Recipe
 from .recipe_pdf import build_recipe_pdf
 from .services import (
@@ -118,27 +123,55 @@ class RecipeCreateView(LoginRequiredMixin, CreateView):
         return context
 
 
-class RecipeUpdateView(UserRecipeMixin, UpdateView):
-    """Edit a recipe and return to the overview or the recipe that opened the form."""
+class RecipeUpdateView(UserRecipeMixin, View):
+    """Edit the whole recipe as a draft and save all sections atomically."""
 
-    model = Recipe
-    form_class = RecipeForm
-    template_name = "easy_kitchen/recipes/form.html"
+    def get(self, request, pk):
+        recipe = get_object_or_404(self.get_queryset(), pk=pk)
+        return self.render_editor(request, recipe)
 
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        messages.success(self.request, _("Recipe updated."))
-        return response
+    def post(self, request, pk):
+        recipe = get_object_or_404(self.get_queryset(), pk=pk)
+        form = RecipeForm(request.POST, request.FILES, instance=recipe)
+        ingredients = RecipeIngredientEditorFormSet(request.POST, instance=recipe, prefix="ingredients")
+        steps = RecipeStepEditorFormSet(request.POST, instance=recipe, prefix="steps")
+        valid = [form.is_valid(), ingredients.is_valid(), steps.is_valid()]
+        if all(valid):
+            with transaction.atomic():
+                form.save()
+                ingredients.save_ordered()
+                steps.save_ordered()
+            messages.success(request, _("Recipe updated."))
+            if request.headers.get("HX-Request") == "true":
+                if request.GET.get("return_to") == "overview":
+                    response = RecipeListView().get(request)
+                else:
+                    recipe = self.get_queryset().prefetch_related("ingredients", "steps").get(pk=pk)
+                    response = render(request, "easy_kitchen/recipes/detail.html", RecipeDetailView()._context(request, recipe))
+                response["HX-Push-Url"] = self.return_url(request, recipe)
+                return response
+            return redirect(self.return_url(request, recipe))
+        return self.render_editor(request, recipe, form=form, ingredients=ingredients, steps=steps, status=422)
 
-    def get_success_url(self):
-        if self.request.GET.get("return_to") == "overview":
+    def return_url(self, request, recipe):
+        if request.GET.get("return_to") == "overview":
             return reverse("easy_kitchen:recipes")
-        return reverse("easy_kitchen:recipe-detail", kwargs={"pk": self.object.pk})
+        return reverse("easy_kitchen:recipe-detail", args=[recipe.pk])
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["cancel_url"] = self.get_success_url()
-        return context
+    def render_editor(self, request, recipe, *, form=None, ingredients=None, steps=None, status=200):
+        if form is None:
+            form = RecipeForm(instance=recipe)
+        for field in form.fields.values():
+            if not isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs["class"] = "form-control"
+        response = render(request, "easy_kitchen/recipes/editor.html", {
+            "recipe": recipe, "form": form,
+            "ingredient_formset": ingredients if ingredients is not None else RecipeIngredientEditorFormSet(instance=recipe, prefix="ingredients"),
+            "step_formset": steps if steps is not None else RecipeStepEditorFormSet(instance=recipe, prefix="steps"),
+            "cancel_url": self.return_url(request, recipe),
+        }, status=status)
+        response["X-Recipe-Editor"] = "true"
+        return response
 
 
 class RecipeDeleteView(UserRecipeMixin, DeleteView):

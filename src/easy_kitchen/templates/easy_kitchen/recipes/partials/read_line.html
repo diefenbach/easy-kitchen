@@ -1,0 +1,11 @@
+<div class="recipe-line card mb-2">
+  <div class="card-body py-2 px-3 d-flex align-items-start gap-2">
+    {% if kind == "step" %}<span class="step-number text-secondary"></span>{% endif %}
+    <div class="recipe-line-text flex-grow-1">
+      {% if kind == "ingredient" %}
+        <span class="item-name">{{ line.name }}</span>
+        {% if line.quantity %}<small class="item-quantity text-secondary ms-2">{{ line.quantity }}</small>{% endif %}
+      {% else %}{{ line.text|linebreaksbr }}{% endif %}
+    </div>
+  </div>
+</div>

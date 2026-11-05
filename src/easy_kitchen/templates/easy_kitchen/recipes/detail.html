@@ -28,16 +28,11 @@
       <h1 class="h2 mb-2 min-w-0">{{ recipe.title }}</h1>
       {% if recipe.description %}<p class="mb-0">{{ recipe.description|linebreaksbr }}</p>{% endif %}
     </div>
-    <div class="btn-group edit-actions flex-shrink-0 align-self-start" role="group" aria-label="{% translate 'Recipe actions' %}">
-      {% include "easy_kitchen/partials/edit_mode_button.html" %}
-      <a href="{% url 'easy_kitchen:recipe-update' recipe.pk %}" class="btn btn-outline-secondary edit-only" aria-label="{% translate 'Edit recipe' %}">
+    <div class="d-flex gap-2 flex-shrink-0 align-self-start" role="group" aria-label="{% translate 'Recipe actions' %}">
+      <a href="{% url 'easy_kitchen:recipe-update' recipe.pk %}" hx-get="{% url 'easy_kitchen:recipe-update' recipe.pk %}" hx-target="main" hx-select="main" hx-swap="outerHTML show:none focus-scroll:false" data-editor-open hx-push-url="true" class="btn btn-outline-secondary" aria-label="{% translate 'Edit recipe' %}">
         <i class="bi bi-pencil" aria-hidden="true"></i>
         <span class="d-none d-md-inline">{% translate "Edit recipe" %}</span>
       </a>
-      <button type="button" class="btn btn-outline-danger edit-only" data-bs-toggle="modal" data-bs-target="#delete-recipe-modal" aria-label="{% translate 'Delete' %}">
-        <i class="bi bi-trash" aria-hidden="true"></i>
-        <span class="d-none d-md-inline">{% translate "Delete" %}</span>
-      </button>
     </div>
   </div>
   <div class="position-relative">
@@ -52,15 +47,12 @@
 <section class="card shadow-sm mb-4">
   <div class="card-body">
     <h2 class="h4">{% translate "Ingredients" %}</h2>
-    {% include "easy_kitchen/recipes/partials/line_form.html" with form=ingredient_form kind="ingredient" recipe=recipe %}
     {% if not recipe.ingredients.all %}
       <p id="empty-ingredients" class="text-secondary">{% translate "No ingredients yet." %}</p>
     {% endif %}
     <div id="ingredients" data-reorder-url="{% url 'easy_kitchen:recipe-ingredient-reorder' recipe.pk %}">
       {% for line in recipe.ingredients.all %}
-        {% url 'easy_kitchen:recipe-ingredient-update' recipe.pk line.pk as update_url %}
-        {% url 'easy_kitchen:recipe-ingredient-delete' recipe.pk line.pk as delete_url %}
-        {% include "easy_kitchen/recipes/partials/line.html" with kind="ingredient" %}
+        {% include "easy_kitchen/recipes/partials/read_line.html" with kind="ingredient" %}
       {% endfor %}
     </div>
   </div>
@@ -69,15 +61,12 @@
 <section class="card shadow-sm mb-4">
   <div class="card-body">
     <h2 class="h4">{% translate "Steps" %}</h2>
-    {% include "easy_kitchen/recipes/partials/line_form.html" with form=step_form kind="step" recipe=recipe %}
     {% if not recipe.steps.all %}
       <p id="empty-steps" class="text-secondary">{% translate "No steps yet." %}</p>
     {% endif %}
     <div id="steps" data-reorder-url="{% url 'easy_kitchen:recipe-step-reorder' recipe.pk %}">
       {% for line in recipe.steps.all %}
-        {% url 'easy_kitchen:recipe-step-update' recipe.pk line.pk as update_url %}
-        {% url 'easy_kitchen:recipe-step-delete' recipe.pk line.pk as delete_url %}
-        {% include "easy_kitchen/recipes/partials/line.html" with kind="step" %}
+        {% include "easy_kitchen/recipes/partials/read_line.html" with kind="step" %}
       {% endfor %}
     </div>
   </div>
@@ -89,30 +78,6 @@
 {% url 'easy_kitchen:recipe-add-to-planner' recipe.pk as planner_modal_action %}
 {% include 'easy_kitchen/recipes/partials/add_to_planner_modal.html' with modal_action=planner_modal_action %}
 
-<div class="modal fade" id="delete-recipe-modal" tabindex="-1" aria-labelledby="delete-recipe-title" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title fs-5" id="delete-recipe-title">{% translate "Delete recipe?" %}</h2>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate 'Close' %}"></button>
-      </div>
-      <div class="modal-body">{% blocktranslate with title=recipe.title %}"{{ title }}" and its ingredients and steps will be permanently deleted.{% endblocktranslate %}</div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" aria-label="{% translate 'Cancel' %}">
-                <i class="bi bi-x-lg" aria-hidden="true"></i>
-                <span class="d-none d-md-inline">{% translate "Cancel" %}</span>
-              </button>
-        <form method="post" action="{% url 'easy_kitchen:recipe-delete' recipe.pk %}">
-          {% csrf_token %}
-          <button class="btn btn-danger" aria-label="{% translate 'Delete permanently' %}">
-                  <i class="bi bi-trash" aria-hidden="true"></i>
-                  <span class="d-none d-md-inline">{% translate "Delete permanently" %}</span>
-                </button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
 {% endblock %}
 {% block scripts %}
 <script type="module" src="{% static 'easy_kitchen/recipe-detail.js' %}"></script>
