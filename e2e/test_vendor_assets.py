@@ -19,6 +19,7 @@ def test_vendor_assets_work_without_external_requests(page, live_server, user):
     page.get_by_label("Password").fill("test-password")
     page.get_by_role("button", name="Sign in").click()
     expect(page.get_by_role("heading", name="Shopping lists")).to_be_visible()
+    page.wait_for_load_state("domcontentloaded")
 
     assert page.evaluate("htmx.version") == "2.0.4"
     assert page.evaluate("Sortable.version") == "1.15.6"
