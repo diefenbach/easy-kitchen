@@ -8,6 +8,8 @@ from datetime import date
 from easy_kitchen.models import ShoppingItem, ShoppingList
 
 
+EMPTY_ITEM_EDITOR = {"items-TOTAL_FORMS": "0", "items-INITIAL_FORMS": "0"}
+
 @pytest.mark.django_db
 def test_pages_show_the_wordmark_logo(client, user):
     client.force_login(user)
@@ -282,19 +284,17 @@ def test_login_displays_invalid_credentials_error(client):
 
 
 @pytest.mark.django_db
-def test_list_detail_uses_modal_delete_confirmations(client, user, shopping_list):
+def test_list_delete_confirmation_is_in_editor(client, user, shopping_list):
     ShoppingItem.objects.create(shopping_list=shopping_list, name="Tofu")
     client.force_login(user)
-
-    response = client.get(reverse("easy_kitchen:detail", args=[shopping_list.pk]))
-
-    content = response.content.decode()
-    assert 'data-bs-target="#delete-list-modal"' in content
-    assert 'data-bs-target="#delete-item-modal-' in content
-    assert 'role="group" aria-label="Item actions"' in content
-    assert 'class="drag-handle edit-only' in content
-    assert 'class="btn-group edit-only" role="group" aria-label="Item actions"' in content
-    assert "hx-confirm" not in content
+    content = client.get(reverse("easy_kitchen:detail", args=[shopping_list.pk])).content.decode()
+    assert 'data-bs-target="#delete-list-modal"' not in content
+    assert 'data-bs-target="#delete-completed-modal"' in content
+    assert 'aria-label="Item actions"' not in content
+    assert 'class="drag-handle edit-only' not in content
+    editor = client.get(reverse("easy_kitchen:update", args=[shopping_list.pk])).content.decode()
+    assert 'data-bs-target="#delete-list-modal"' in editor
+    assert 'aria-label="Delete permanently"' in editor
 
 
 @pytest.mark.django_db
@@ -323,7 +323,7 @@ def test_list_icon_defaults_to_a_basket_and_can_be_changed(client, user):
 
     updated = client.post(
         reverse("easy_kitchen:update", args=[shopping_list.pk]),
-        {"title": "Market", "date": "2026-11-01", "icon": "flower"},
+        {"title": "Market", "date": "2026-11-01", "icon": "flower", **EMPTY_ITEM_EDITOR},
     )
     assert updated.status_code == 302
     shopping_list.refresh_from_db()
@@ -338,9 +338,9 @@ def test_list_icon_defaults_to_a_basket_and_can_be_changed(client, user):
 
     rejected = client.post(
         reverse("easy_kitchen:update", args=[shopping_list.pk]),
-        {"title": "Market", "date": "2026-11-01", "icon": "pasta"},
+        {"title": "Market", "date": "2026-11-01", "icon": "pasta", **EMPTY_ITEM_EDITOR},
     )
-    assert rejected.status_code == 200
+    assert rejected.status_code == 422
     shopping_list.refresh_from_db()
     assert shopping_list.icon == ShoppingList.Icon.FLOWER
 
@@ -361,8 +361,8 @@ def test_list_detail_uses_a_minimal_icon_header(client, user, shopping_list):
     assert "bi-calendar3" in content
     assert ">Shopping lists</span>" in content
     assert 'aria-label="Edit list"' in content
-    assert 'aria-label="Delete list"' in content
-    assert "data-edit-toggle" in content
+    assert 'aria-label="Delete list"' not in content
+    assert "data-edit-toggle" not in content
     assert 'src="/static/easy_kitchen/list-detail.js"' in content
     assert f'data-hide-completed-url="/lists/{shopping_list.pk}/hide-completed/"' in content
 
@@ -422,14 +422,14 @@ def test_list_detail_keeps_delete_completed_disabled_without_checked_items(clien
 
 
 @pytest.mark.django_db
-def test_list_detail_item_row_actions_are_icon_only(client, user, shopping_list):
+def test_list_detail_keeps_item_completion_without_edit_actions(client, user, shopping_list):
     ShoppingItem.objects.create(shopping_list=shopping_list, name="Tofu")
     client.force_login(user)
 
     content = client.get(reverse("easy_kitchen:detail", args=[shopping_list.pk])).content.decode()
 
-    assert 'aria-label="Edit item"' in content
-    assert 'aria-label="Delete item"' in content
+    assert 'aria-label="Edit item"' not in content
+    assert 'aria-label="Delete item"' not in content
     assert 'd-none d-md-inline">Edit item' not in content
     assert 'd-none d-md-inline">Delete item' not in content
 
@@ -524,7 +524,7 @@ def test_edit_from_overview_returns_to_list_overview(client, user, shopping_list
 
     response = client.post(
         f'{reverse("easy_kitchen:update", args=[shopping_list.pk])}?return_to=overview',
-        {"title": "Umbenannte Liste", "date": "2026-10-30"},
+        {"title": "Umbenannte Liste", "date": "2026-10-30", **EMPTY_ITEM_EDITOR},
     )
 
     assert response.url == reverse("easy_kitchen:list")
@@ -536,7 +536,7 @@ def test_edit_from_detail_returns_to_list_detail(client, user, shopping_list):
 
     response = client.post(
         reverse("easy_kitchen:update", args=[shopping_list.pk]),
-        {"title": "Umbenannte Liste", "date": "2026-10-30"},
+        {"title": "Umbenannte Liste", "date": "2026-10-30", **EMPTY_ITEM_EDITOR},
     )
 
     assert response.url == reverse("easy_kitchen:detail", args=[shopping_list.pk])
@@ -550,7 +550,7 @@ def test_edit_from_overview_cancels_to_list_overview(client, user, shopping_list
 
     content = response.content.decode()
     assert f'href="{reverse("easy_kitchen:list")}"' in content
-    assert 'd-none d-md-inline">Cancel</span>' in content
+    assert 'data-editor-cancel hx-get=' in content
 
 
 @pytest.mark.django_db
@@ -561,7 +561,7 @@ def test_edit_from_detail_cancels_to_list_detail(client, user, shopping_list):
 
     content = response.content.decode()
     assert f'href="{reverse("easy_kitchen:detail", args=[shopping_list.pk])}"' in content
-    assert 'd-none d-md-inline">Cancel</span>' in content
+    assert 'data-editor-cancel hx-get=' in content
 
 
 @pytest.mark.django_db
@@ -626,7 +626,7 @@ def test_list_views_show_a_status_message_after_create_update_and_delete(client,
 
     updated = client.post(
         reverse("easy_kitchen:update", args=[shopping_list.pk]),
-        {"title": "Market", "date": "2026-11-01"},
+        {"title": "Market", "date": "2026-11-01", **EMPTY_ITEM_EDITOR},
         follow=True,
     )
     assert "Shopping list updated." in updated.content.decode()

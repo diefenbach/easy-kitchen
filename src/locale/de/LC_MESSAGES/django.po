@@ -1197,3 +1197,15 @@ msgstr "Zutat entfernen"
 
 msgid "Remove step"
 msgstr "Schritt entfernen"
+
+msgid "List details"
+msgstr "Listendaten"
+
+msgid "Items"
+msgstr "Artikel"
+
+msgid "Add item"
+msgstr "Artikel hinzufügen"
+
+msgid "Remove item"
+msgstr "Artikel entfernen"
