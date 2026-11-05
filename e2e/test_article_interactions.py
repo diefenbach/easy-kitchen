@@ -38,24 +38,18 @@ def test_article_suggestions_support_keyboard_selection(authenticated_page, user
     expect(name).to_have_attribute("aria-expanded", "false")
 
 
-def test_item_dialog_stays_unique_and_uses_updated_name(authenticated_page, user, live_server):
+def test_item_controls_stay_bound_after_editor_save(authenticated_page, user, live_server):
     page = authenticated_page
     shopping_list = open_list(page, user, live_server)
-    item = shopping_list.items.get()
-    card = page.locator(f'.shopping-item[data-item-id="{item.pk}"]')
-    for _ in range(2):
-        card.get_by_role("button", name="Toggle completed", exact=True).click()
-        page.wait_for_function("!document.querySelector('.htmx-request')")
-    page.get_by_role("button", name="Edit", exact=True).click()
-    card.get_by_role("button", name="Edit item", exact=True).click()
-    card.get_by_role("combobox").fill("Oat milk")
-    card.get_by_role("button", name="Save", exact=True).click()
-    expect(card).to_contain_text("Oat milk")
-    card.get_by_role("button", name="Delete item", exact=True).click()
-    modal = page.get_by_role("dialog", name="Delete item?", exact=True)
-    expect(modal).to_be_visible()
-    expect(modal).to_contain_text('"Oat milk" will be permanently deleted.')
-    assert len(page.locator('[id^="delete-item-modal"]').all()) == 1
+    page.get_by_role("link", name="Edit list", exact=True).click()
+    page.locator("#list-editor-form").get_by_label("Item", exact=True).fill("Oat milk")
+    page.get_by_role("button", name="Save", exact=True).first.click()
+    expect(page.locator(".shopping-item")).to_contain_text("Oat milk")
+    page.route("**/hide-completed/", lambda route: route.fulfill(status=500))
+    page.get_by_role("button", name="Hide completed", exact=True).click()
+    expect(page.get_by_role("alert").filter(has_text="Your changes could not be saved")).to_be_visible()
+    expect(page.locator(".shopping-item")).to_be_visible()
+    assert page.locator('[id^="delete-item-modal"]').count() == 0
 
 
 @pytest.mark.parametrize("editing", [False, True])
@@ -63,18 +57,17 @@ def test_item_validation_errors_are_swapped_into_the_form(authenticated_page, us
     page = authenticated_page
     shopping_list = open_list(page, user, live_server)
     if editing:
-        page.get_by_role("button", name="Edit", exact=True).click()
-        page.get_by_role("button", name="Edit item", exact=True).click()
-        form = page.locator(".shopping-item form[hx-post]")
+        page.get_by_role("link", name="Edit list", exact=True).click()
+        form = page.locator("#list-editor-form")
     else:
         form = page.locator("#item-form form")
     form.evaluate("form => form.noValidate = true")
-    form.get_by_role("combobox").fill("")
-    form.locator('[name="quantity"]').fill("2 litres")
+    form.get_by_label("Item", exact=True).fill("")
+    form.get_by_label("Quantity", exact=True).fill("2 litres")
     form.get_by_role("button", name="Save" if editing else "Add", exact=True).click()
     expect(form).to_contain_text("This field is required.")
-    expect(form.locator('[name="quantity"]')).to_have_value("2 litres")
-    form.get_by_role("combobox").fill("Oat milk")
+    expect(form.get_by_label("Quantity", exact=True)).to_have_value("2 litres")
+    form.get_by_label("Item", exact=True).fill("Oat milk")
     form.get_by_role("button", name="Save" if editing else "Add", exact=True).click()
     expect(page.locator("#items")).to_contain_text("Oat milk")
     if not editing:

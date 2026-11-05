@@ -1,7 +1,9 @@
 import json
 
+from django import forms
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db import transaction
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -15,10 +17,9 @@ from django.views.generic import (
     DetailView,
     ListView,
     TemplateView,
-    UpdateView,
 )
 
-from .forms import ArticleForm, ExportForm, ImportForm, ShoppingItemForm, ShoppingListForm
+from .forms import ArticleForm, ExportForm, ImportForm, ShoppingItemForm, ShoppingListForm, ShoppingItemEditorFormSet
 from .models import Article, ShoppingItem, ShoppingList
 from .services import (
     create_item,
@@ -206,27 +207,51 @@ class ExportView(LoginRequiredMixin, View):
         }
 
 
-class ShoppingListUpdateView(UserListMixin, UpdateView):
-    """Edit a list and return to the overview or the list that opened the form."""
+class ShoppingListUpdateView(UserListMixin, View):
+    """Edit list metadata and items as one draft with an atomic save."""
 
-    model = ShoppingList
-    form_class = ShoppingListForm
-    template_name = "easy_kitchen/lists/form.html"
+    def get(self, request, pk):
+        shopping_list = get_object_or_404(self.get_queryset(), pk=pk)
+        return self.render_editor(request, shopping_list)
 
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        messages.success(self.request, _("Shopping list updated."))
-        return response
+    def post(self, request, pk):
+        shopping_list = get_object_or_404(self.get_queryset(), pk=pk)
+        form = ShoppingListForm(request.POST, instance=shopping_list)
+        items = ShoppingItemEditorFormSet(request.POST, instance=shopping_list, prefix="items")
+        valid = [form.is_valid(), items.is_valid()]
+        if all(valid):
+            with transaction.atomic():
+                form.save()
+                for item in items.save_ordered():
+                    remember_article(request.user, item.name)
+            messages.success(request, _("Shopping list updated."))
+            if request.headers.get("HX-Request") == "true":
+                view = ShoppingListListView() if request.GET.get("return_to") == "overview" else ShoppingListDetailView()
+                view.setup(request, pk=pk)
+                response = view.get(request, pk=pk)
+                response["HX-Push-Url"] = self.return_url(request, shopping_list)
+                return response
+            return redirect(self.return_url(request, shopping_list))
+        return self.render_editor(request, shopping_list, form=form, items=items, status=422)
 
-    def get_success_url(self):
-        if self.request.GET.get("return_to") == "overview":
+    def return_url(self, request, shopping_list):
+        if request.GET.get("return_to") == "overview":
             return reverse("easy_kitchen:list")
-        return reverse("easy_kitchen:detail", kwargs={"pk": self.object.pk})
+        return reverse("easy_kitchen:detail", args=[shopping_list.pk])
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["cancel_url"] = self.get_success_url()
-        return context
+    def render_editor(self, request, shopping_list, *, form=None, items=None, status=200):
+        if form is None:
+            form = ShoppingListForm(instance=shopping_list)
+        for field in form.fields.values():
+            if not isinstance(field.widget, forms.RadioSelect):
+                field.widget.attrs["class"] = "form-control"
+        response = render(request, "easy_kitchen/lists/editor.html", {
+            "object": shopping_list, "shopping_list": shopping_list, "form": form,
+            "item_formset": items if items is not None else ShoppingItemEditorFormSet(instance=shopping_list, prefix="items"),
+            "cancel_url": self.return_url(request, shopping_list),
+        }, status=status)
+        response["X-List-Editor"] = "true"
+        return response
 
 
 class ShoppingListDeleteView(UserListMixin, DeleteView):

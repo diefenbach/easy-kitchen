@@ -62,27 +62,19 @@ def test_hide_completed_blocks_overlapping_requests(authenticated_page, user, li
     assert not shopping_list.hide_completed_items
 
 
-@pytest.mark.parametrize("kind", ["items", "lists", "recipes"])
+@pytest.mark.parametrize("kind", ["lists", "recipes"])
 def test_failed_reorder_rolls_back_and_blocks_another_drag(authenticated_page, user, live_server, kind):
     page = authenticated_page
-    if kind == "items":
-        shopping_list = ShoppingList.objects.create(user=user, title="Groceries")
-        for name in ("First", "Second"):
-            ShoppingItem.objects.create(shopping_list=shopping_list, name=name)
-        page.goto(f"{live_server.url}/lists/{shopping_list.pk}/")
-        cards = page.locator("#items .shopping-item")
-        manager = shopping_list.items
-        ids = "data-item-id"
-    else:
-        for name in ("First", "Second"):
-            if kind == "lists":
-                ShoppingList.objects.create(user=user, title=name)
-            else:
-                create_recipe(user, title=name)
-        page.goto(f"{live_server.url}/{kind}/")
-        cards = page.locator("[data-card-reorder] > [data-list-id]")
-        manager = getattr(user, "shopping_lists" if kind == "lists" else "recipes")
-        ids = "data-list-id"
+    for name in ("First", "Second"):
+        if kind == "lists":
+            ShoppingList.objects.create(user=user, title=name)
+        else:
+            create_recipe(user, title=name)
+    page.goto(f"{live_server.url}/{kind}/")
+    cards = page.locator("[data-card-reorder] > [data-list-id]")
+    manager = getattr(user, "shopping_lists" if kind == "lists" else "recipes")
+    ids = "data-list-id"
+
     def order():
         return list(manager.values_list("pk", flat=True))
 

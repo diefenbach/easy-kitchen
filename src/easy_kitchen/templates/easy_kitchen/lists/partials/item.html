@@ -1,9 +1,6 @@
 {% load i18n %}
 <div class="shopping-item card mb-2 {% if item.checked %}checked{% endif %}" data-item-id="{{ item.id }}">
   <div class="card-body py-2 px-3 d-flex align-items-center gap-2">
-    <button class="drag-handle edit-only btn btn-sm text-secondary" type="button" aria-label="{% translate 'Move' %}">
-      <i class="bi bi-grip-vertical" aria-hidden="true"></i>
-    </button>
     <button class="btn btn-sm p-0 border-0 bg-transparent" hx-post="{% url 'easy_kitchen:item-toggle' shopping_list.pk item.pk %}" hx-target="closest .shopping-item" hx-swap="outerHTML" aria-label="{% translate 'Toggle completed' %}">
       <span class="checkmark">{% if item.checked %}☑{% else %}☐{% endif %}</span>
     </button>
@@ -11,37 +8,5 @@
       <span class="item-name">{{ item.name }}</span>
       {% if item.quantity %}<small class="item-quantity text-secondary ms-2">{{ item.quantity }}</small>{% endif %}
     </button>
-    <div class="btn-group edit-only" role="group" aria-label="{% translate 'Item actions' %}">
-      <button class="btn btn-outline-secondary" hx-get="{% url 'easy_kitchen:item-update' shopping_list.pk item.pk %}" hx-target="closest .shopping-item" hx-swap="outerHTML" aria-label="{% translate 'Edit item' %}">
-        <i class="bi bi-pencil" aria-hidden="true"></i>
-      </button>
-      <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#delete-item-modal-{{ item.id }}" aria-label="{% translate 'Delete item' %}">
-        <i class="bi bi-trash" aria-hidden="true"></i>
-      </button>
-    </div>
   </div>
-<div class="modal fade" id="delete-item-modal-{{ item.id }}" tabindex="-1" aria-labelledby="delete-item-title-{{ item.id }}" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 class="modal-title fs-5" id="delete-item-title-{{ item.id }}">{% translate "Delete item?" %}</h2>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate 'Close' %}"></button>
-      </div>
-      <div class="modal-body">{% blocktranslate with name=item.name %}"{{ name }}" will be permanently deleted.{% endblocktranslate %}</div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" aria-label="{% translate 'Cancel' %}">
-                <i class="bi bi-x-lg" aria-hidden="true"></i>
-                <span class="d-none d-md-inline">{% translate "Cancel" %}</span>
-              </button>
-        <form method="post" action="{% url 'easy_kitchen:item-delete' shopping_list.pk item.pk %}">
-          {% csrf_token %}
-          <button class="btn btn-danger" aria-label="{% translate 'Delete permanently' %}">
-                  <i class="bi bi-trash" aria-hidden="true"></i>
-                  <span class="d-none d-md-inline">{% translate "Delete permanently" %}</span>
-                </button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
 </div>
