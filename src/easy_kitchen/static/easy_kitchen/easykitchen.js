@@ -28,33 +28,50 @@ document.body.addEventListener("htmx:configRequest", (event) => {
   if (token) event.detail.headers["X-CSRFToken"] = token;
 });
 
-document.querySelectorAll("[data-edit-toggle]").forEach((button) => {
-  button.addEventListener("click", () => {
-    const editing = document.body.classList.toggle("editing");
-    const icon = button.querySelector("i");
-    button.setAttribute("aria-pressed", editing ? "true" : "false");
-    const text = editing ? button.dataset.labelOn : button.dataset.labelOff;
-    button.setAttribute("aria-label", text);
-    const label = button.querySelector(".btn-label");
-    if (label) label.textContent = text;
-    icon.classList.remove(editing ? icon.dataset.iconOff : icon.dataset.iconOn);
-    icon.classList.add(editing ? icon.dataset.iconOn : icon.dataset.iconOff);
-  });
-});
+const boundPageElements = new WeakSet();
 
-document.querySelectorAll("[data-autohide]").forEach((element) => {
-  const delay = Number(element.dataset.autohide) || 3000;
-  window.setTimeout(() => element.remove(), delay + 800);
-});
-
-document.querySelectorAll("[data-card-reorder]").forEach((container) => {
-  new globalThis.Sortable(container, {
-    animation: 150,
-    handle: ".drag-handle",
-    draggable: "[data-list-id]",
-    onEnd() {
-      const ids = [...container.querySelectorAll("[data-list-id]")].map((card) => Number(card.dataset.listId));
-      postJson(container.dataset.cardReorder, {[container.dataset.idField]: ids});
-    },
+function bindPageElements() {
+  document.querySelectorAll("[data-edit-toggle]").forEach((button) => {
+    if (boundPageElements.has(button)) return;
+    boundPageElements.add(button);
+    button.addEventListener("click", () => {
+      const editing = document.body.classList.toggle("editing");
+      const icon = button.querySelector("i");
+      button.setAttribute("aria-pressed", editing ? "true" : "false");
+      const text = editing ? button.dataset.labelOn : button.dataset.labelOff;
+      button.setAttribute("aria-label", text);
+      const label = button.querySelector(".btn-label");
+      if (label) label.textContent = text;
+      icon.classList.remove(editing ? icon.dataset.iconOff : icon.dataset.iconOn);
+      icon.classList.add(editing ? icon.dataset.iconOn : icon.dataset.iconOff);
+    });
   });
-});
+
+  document.querySelectorAll("[data-autohide]").forEach((element) => {
+    if (boundPageElements.has(element)) return;
+    boundPageElements.add(element);
+    const delay = Number(element.dataset.autohide) || 3000;
+    window.setTimeout(() => element.remove(), delay + 800);
+  });
+
+  document.querySelectorAll("[data-card-reorder]").forEach((container) => {
+    if (boundPageElements.has(container)) return;
+    boundPageElements.add(container);
+    const sortable = new globalThis.Sortable(container, {
+      animation: 150,
+      handle: ".drag-handle",
+      draggable: "[data-list-id]",
+      onEnd() {
+        const ids = [...container.querySelectorAll("[data-list-id]")].map((card) => Number(card.dataset.listId));
+        postJson(container.dataset.cardReorder, {[container.dataset.idField]: ids});
+      },
+    });
+    container.addEventListener("htmx:beforeCleanupElement", (event) => {
+      if (event.target === container) sortable.destroy();
+    });
+  });
+}
+
+document.addEventListener("htmx:load", bindPageElements);
+document.addEventListener("htmx:historyRestore", bindPageElements);
+bindPageElements();
