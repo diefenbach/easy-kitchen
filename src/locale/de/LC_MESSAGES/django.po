@@ -1197,3 +1197,6 @@ msgstr "Zutat entfernen"
 
 msgid "Remove step"
 msgstr "Schritt entfernen"
+
+msgid "Your changes could not be saved. Please reload the page and try again."
+msgstr "Deine Änderungen konnten nicht gespeichert werden. Bitte lade die Seite neu und versuche es erneut."

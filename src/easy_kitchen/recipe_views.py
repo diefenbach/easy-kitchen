@@ -98,7 +98,7 @@ class RecipeReorderView(LoginRequiredMixin, View):
             reorder_recipes(request.user, [int(value) for value in payload["recipe_ids"]])
         except (ValueError, KeyError, TypeError, json.JSONDecodeError):
             return HttpResponseBadRequest(_("Invalid order."))
-        return HttpResponseRedirect(reverse("easy_kitchen:recipes"))
+        return HttpResponse(status=204)
 
 
 class RecipeCreateView(LoginRequiredMixin, CreateView):

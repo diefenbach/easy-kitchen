@@ -514,7 +514,7 @@ def test_list_overview_reorder_keeps_other_users_lists(client, user, other_user)
         json.dumps({"list_ids": [first.pk, second.pk]}),
         content_type="application/json",
     )
-    assert kept.status_code == 302
+    assert kept.status_code == 204
     assert list(user.shopping_lists.values_list("title", flat=True)) == ["First", "Second"]
 
 

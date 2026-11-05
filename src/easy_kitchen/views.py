@@ -82,7 +82,7 @@ class ShoppingListReorderView(LoginRequiredMixin, View):
             reorder_shopping_lists(request.user, [int(value) for value in payload["list_ids"]])
         except (ValueError, KeyError, TypeError, json.JSONDecodeError):
             return HttpResponseBadRequest(_("Invalid order."))
-        return HttpResponseRedirect(reverse("easy_kitchen:list"))
+        return HttpResponse(status=204)
 
 
 class ListHideCompletedView(LoginRequiredMixin, View):
@@ -365,7 +365,7 @@ class ItemReorderView(LoginRequiredMixin, View):
             reorder_items(shopping_list, [int(value) for value in payload["item_ids"]])
         except (ValueError, KeyError, TypeError, json.JSONDecodeError):
             return HttpResponseBadRequest(_("Invalid order."))
-        return HttpResponseRedirect(reverse("easy_kitchen:detail", kwargs={"pk": list_pk}))
+        return HttpResponse(status=204)
 
 
 def return_list_for(request):

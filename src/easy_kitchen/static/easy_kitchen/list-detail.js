@@ -1,4 +1,4 @@
-import {bindSortable, postJson} from "./easykitchen.js";
+import {bindSortable, postJson, showSaveError} from "./easykitchen.js";
 
 function hideArticleSuggestions(field) {
   const list = field?.querySelector(".article-suggestions");
@@ -92,10 +92,19 @@ if (itemsContainer?.classList.contains("hide-completed")) {
   setCompletedItemsHidden(true);
 }
 
-checkedItemsToggle?.addEventListener("click", () => {
-  const hidden = !itemsContainer.classList.contains("hide-completed");
-  setCompletedItemsHidden(hidden);
-  if (hideCompletedUrl) postJson(hideCompletedUrl, {hide: hidden});
+checkedItemsToggle?.addEventListener("click", async () => {
+  if (!itemsContainer || !hideCompletedUrl || checkedItemsToggle.disabled) return;
+  const previous = itemsContainer.classList.contains("hide-completed");
+  checkedItemsToggle.disabled = true;
+  setCompletedItemsHidden(!previous);
+  try {
+    await postJson(hideCompletedUrl, {hide: !previous});
+  } catch {
+    setCompletedItemsHidden(previous);
+    showSaveError();
+  } finally {
+    checkedItemsToggle.disabled = false;
+  }
 });
 function completedItemCount() {
   return itemsContainer?.querySelectorAll(".shopping-item.checked").length ?? 0;
