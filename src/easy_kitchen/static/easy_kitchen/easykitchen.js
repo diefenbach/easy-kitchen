@@ -5,7 +5,7 @@ export async function postJson(url, body) {
     redirect: "error",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? {"X-CSRFToken": token} : {}),
+      ...(token ? { "X-CSRFToken": token } : {}),
     },
     body: JSON.stringify(body),
   });
@@ -21,11 +21,25 @@ export function showSaveError() {
   }
 }
 
-export function bindSortable(element, {draggable, datasetKey, field, url = element?.dataset.reorderUrl}) {
-  if (!element || !globalThis.Sortable) return;
+// Optional drag support owns its cleanup, regardless of the calling page.
+export function createSortable(element, options) {
+  if (!element || typeof globalThis.Sortable !== "function") return;
+  const sortable = new globalThis.Sortable(element, { animation: 150, ...options });
+  function cleanup(event) {
+    if (event.target !== element) return;
+    sortable.destroy();
+    element.removeEventListener("htmx:beforeCleanupElement", cleanup);
+  }
+  element.addEventListener("htmx:beforeCleanupElement", cleanup);
+  return sortable;
+}
+
+export function bindSortable(
+  element,
+  { draggable, datasetKey, field, url = element?.dataset.reorderUrl },
+) {
   let previousOrder = [];
-  const sortable = new globalThis.Sortable(element, {
-    animation: 150,
+  const sortable = createSortable(element, {
     handle: ".drag-handle",
     draggable,
     onStart() {
@@ -33,24 +47,25 @@ export function bindSortable(element, {draggable, datasetKey, field, url = eleme
     },
     async onEnd(event) {
       if (event.oldDraggableIndex === event.newDraggableIndex) return;
-      const ids = [...element.querySelectorAll(draggable)].map((node) => Number(node.dataset[datasetKey]));
+      const ids = [...element.querySelectorAll(draggable)].map((node) =>
+        Number(node.dataset[datasetKey]),
+      );
       sortable.option("disabled", true);
       element.setAttribute("aria-busy", "true");
       try {
-        await postJson(url, {[field]: ids});
+        await postJson(url, { [field]: ids });
       } catch {
-        previousOrder.filter((node) => node.parentElement === element).forEach((node, index) => {
-          element.insertBefore(node, element.children[index] ?? null);
-        });
+        previousOrder
+          .filter((node) => node.parentElement === element)
+          .forEach((node, index) => {
+            element.insertBefore(node, element.children[index] ?? null);
+          });
         showSaveError();
       } finally {
         sortable.option("disabled", false);
         element.removeAttribute("aria-busy");
       }
     },
-  });
-  element.addEventListener("htmx:beforeCleanupElement", (event) => {
-    if (event.target === element) sortable.destroy();
   });
   return sortable;
 }
@@ -62,7 +77,10 @@ document.body.addEventListener("htmx:configRequest", (event) => {
 
 // Only swap explicitly marked item validation responses; leave other HTTP errors alone.
 document.addEventListener("htmx:beforeSwap", (event) => {
-  if (event.detail.xhr.status === 422 && event.detail.xhr.getResponseHeader("X-Item-Form") === "true") {
+  if (
+    event.detail.xhr.status === 422 &&
+    event.detail.xhr.getResponseHeader("X-Item-Form") === "true"
+  ) {
     event.detail.shouldSwap = true;
     event.detail.isError = false;
   }
@@ -98,8 +116,10 @@ function bindPageElements() {
     if (boundPageElements.has(container)) return;
     boundPageElements.add(container);
     bindSortable(container, {
-      draggable: "[data-list-id]", datasetKey: "listId",
-      field: container.dataset.idField, url: container.dataset.cardReorder,
+      draggable: "[data-list-id]",
+      datasetKey: "listId",
+      field: container.dataset.idField,
+      url: container.dataset.cardReorder,
     });
   });
 }

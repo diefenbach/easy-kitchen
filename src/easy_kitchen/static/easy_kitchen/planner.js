@@ -1,10 +1,16 @@
+import { findSuggestions } from "./suggestions.js";
+
 // Enhance the server-validated recipe selects with a keyboard-accessible autocomplete.
 const recipeDataById = new Map(
-  Object.entries(JSON.parse(document.getElementById("recipe-search-data").textContent))
-    .map(([id, recipe]) => [id, {
-      text: recipe.text.toLocaleLowerCase(),
-      pictureUrl: recipe.picture_url,
-    }])
+  Object.entries(JSON.parse(document.getElementById("recipe-search-data").textContent)).map(
+    ([id, recipe]) => [
+      id,
+      {
+        text: recipe.text.toLocaleLowerCase(),
+        pictureUrl: recipe.picture_url,
+      },
+    ],
+  ),
 );
 
 document.querySelectorAll(".recipe-field").forEach((field) => {
@@ -32,41 +38,47 @@ document.querySelectorAll(".recipe-field").forEach((field) => {
 
   function show() {
     const terms = input.value.toLocaleLowerCase().split(/\s+/).filter(Boolean);
-    const matches = recipes.filter((option) => {
+    const matches = findSuggestions(recipes, (option) => {
       const text = recipeDataById.get(option.value).text;
       return terms.every((term) => text.includes(term));
     });
     active = -1;
     input.removeAttribute("aria-activedescendant");
-    list.replaceChildren(...matches.map((option, index) => {
-      const item = document.createElement("li");
-      item.setAttribute("role", "presentation");
-      const button = document.createElement("button");
-      button.type = "button";
-      button.tabIndex = -1;
-      button.id = `${input.id}-option-${index}`;
-      button.className = "recipe-suggestion";
-      button.setAttribute("role", "option");
-      button.setAttribute("aria-selected", "false");
-      const picture = document.createElement("img");
-      picture.className = "recipe-suggestion-picture";
-      picture.alt = "";
-      picture.width = 96;
-      picture.height = 96;
-      picture.loading = "lazy";
-      picture.addEventListener("error", () => {
-        picture.src = placeholderPicture;
-      }, {once: true});
-      picture.src = recipeDataById.get(option.value).pictureUrl || placeholderPicture;
-      const title = document.createElement("span");
-      title.className = "recipe-suggestion-title";
-      title.textContent = option.textContent;
-      button.append(picture, title);
-      button.addEventListener("mousedown", (event) => event.preventDefault());
-      button.addEventListener("click", () => choose(option.value));
-      item.append(button);
-      return item;
-    }));
+    list.replaceChildren(
+      ...matches.map((option, index) => {
+        const item = document.createElement("li");
+        item.setAttribute("role", "presentation");
+        const button = document.createElement("button");
+        button.type = "button";
+        button.tabIndex = -1;
+        button.id = `${input.id}-option-${index}`;
+        button.className = "recipe-suggestion";
+        button.setAttribute("role", "option");
+        button.setAttribute("aria-selected", "false");
+        const picture = document.createElement("img");
+        picture.className = "recipe-suggestion-picture";
+        picture.alt = "";
+        picture.width = 96;
+        picture.height = 96;
+        picture.loading = "lazy";
+        picture.addEventListener(
+          "error",
+          () => {
+            picture.src = placeholderPicture;
+          },
+          { once: true },
+        );
+        picture.src = recipeDataById.get(option.value).pictureUrl || placeholderPicture;
+        const title = document.createElement("span");
+        title.className = "recipe-suggestion-title";
+        title.textContent = option.textContent;
+        button.append(picture, title);
+        button.addEventListener("mousedown", (event) => event.preventDefault());
+        button.addEventListener("click", () => choose(option.value));
+        item.append(button);
+        return item;
+      }),
+    );
     list.hidden = matches.length === 0;
     input.setAttribute("aria-expanded", String(matches.length > 0));
   }
@@ -99,12 +111,17 @@ document.querySelectorAll(".recipe-field").forEach((field) => {
     const options = [...list.querySelectorAll("button")];
     if (!options.length) return;
     const direction = event.key === "ArrowDown" ? 1 : -1;
-    active = active < 0
-      ? (direction === 1 ? 0 : options.length - 1)
-      : (active + direction + options.length) % options.length;
-    options.forEach((option, index) => option.setAttribute("aria-selected", String(index === active)));
+    active =
+      active < 0
+        ? direction === 1
+          ? 0
+          : options.length - 1
+        : (active + direction + options.length) % options.length;
+    options.forEach((option, index) =>
+      option.setAttribute("aria-selected", String(index === active)),
+    );
     input.setAttribute("aria-activedescendant", options[active].id);
-    options[active].scrollIntoView({block: "nearest"});
+    options[active].scrollIntoView({ block: "nearest" });
   });
   field.addEventListener("focusout", (event) => {
     if (!field.contains(event.relatedTarget)) close();

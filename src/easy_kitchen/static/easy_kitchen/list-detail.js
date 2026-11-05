@@ -1,6 +1,7 @@
-import {postJson, showSaveError} from "./easykitchen.js";
+import { postJson, showSaveError } from "./easykitchen.js";
 
 import "./editor.js";
+import { findSuggestions } from "./suggestions.js";
 
 let suggestionSequence = 0;
 
@@ -9,7 +10,9 @@ function hideArticleSuggestions(field) {
   const input = field?.querySelector("input[name=name]");
   if (list) {
     list.hidden = true;
-    list.querySelectorAll('[aria-selected="true"]').forEach((option) => option.setAttribute("aria-selected", "false"));
+    list
+      .querySelectorAll('[aria-selected="true"]')
+      .forEach((option) => option.setAttribute("aria-selected", "false"));
   }
   if (input) {
     input.setAttribute("aria-expanded", "false");
@@ -29,33 +32,38 @@ function showArticleSuggestions(input) {
   input.setAttribute("aria-controls", list.id);
   input.removeAttribute("aria-activedescendant");
   const query = input.value.trim().toLocaleLowerCase();
-  const names = [...document.querySelectorAll("#articles option")]
-    .map((option) => option.value)
-    .filter((name) => name && name.toLocaleLowerCase().includes(query));
-  list.replaceChildren(...names.map((name, index) => {
-    const item = document.createElement("li");
-    item.setAttribute("role", "presentation");
-    const button = document.createElement("button");
-    button.type = "button";
-    button.tabIndex = -1;
-    button.id = `${list.id}-option-${index}`;
-    button.className = "article-suggestion";
-    button.setAttribute("role", "option");
-    button.setAttribute("aria-selected", "false");
-    button.textContent = name;
-    item.append(button);
-    return item;
-  }));
+  const names = findSuggestions(
+    document.querySelectorAll("#articles option"),
+    (option) => option.value && option.value.toLocaleLowerCase().includes(query),
+  ).map((option) => option.value);
+  list.replaceChildren(
+    ...names.map((name, index) => {
+      const item = document.createElement("li");
+      item.setAttribute("role", "presentation");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.tabIndex = -1;
+      button.id = `${list.id}-option-${index}`;
+      button.className = "article-suggestion";
+      button.setAttribute("role", "option");
+      button.setAttribute("aria-selected", "false");
+      button.textContent = name;
+      item.append(button);
+      return item;
+    }),
+  );
   const open = names.length > 0;
   list.hidden = !open;
   input.setAttribute("aria-expanded", String(open));
 }
 
 document.addEventListener("focusin", (event) => {
-  if (event.target.matches?.(".article-field input[name=name]")) showArticleSuggestions(event.target);
+  if (event.target.matches?.(".article-field input[name=name]"))
+    showArticleSuggestions(event.target);
 });
 document.addEventListener("input", (event) => {
-  if (event.target.matches?.(".article-field input[name=name]")) showArticleSuggestions(event.target);
+  if (event.target.matches?.(".article-field input[name=name]"))
+    showArticleSuggestions(event.target);
 });
 document.addEventListener("focusout", (event) => {
   const field = event.target.closest?.(".article-field");
@@ -93,13 +101,19 @@ document.addEventListener("keydown", (event) => {
   if (list.hidden) showArticleSuggestions(input);
   const options = [...list.querySelectorAll("button")];
   if (!options.length) return;
-  const current = options.findIndex((option) => option.id === input.getAttribute("aria-activedescendant"));
+  const current = options.findIndex(
+    (option) => option.id === input.getAttribute("aria-activedescendant"),
+  );
   const direction = event.key === "ArrowDown" ? 1 : -1;
-  const next = current < 0 ? (direction === 1 ? 0 : options.length - 1)
-    : (current + direction + options.length) % options.length;
+  const next =
+    current < 0
+      ? direction === 1
+        ? 0
+        : options.length - 1
+      : (current + direction + options.length) % options.length;
   options.forEach((option, index) => option.setAttribute("aria-selected", String(index === next)));
   input.setAttribute("aria-activedescendant", options[next].id);
-  options[next].scrollIntoView({block: "nearest"});
+  options[next].scrollIntoView({ block: "nearest" });
 });
 document.addEventListener("htmx:oobAfterSwap", (event) => {
   if (event.detail.target.id === "item-form") {
@@ -122,7 +136,9 @@ function bindShoppingList() {
     itemsContainer.querySelectorAll(".shopping-item.checked").forEach((item) => {
       item.hidden = hidden;
     });
-    const text = hidden ? checkedItemsToggle.dataset.labelShow : checkedItemsToggle.dataset.labelHide;
+    const text = hidden
+      ? checkedItemsToggle.dataset.labelShow
+      : checkedItemsToggle.dataset.labelHide;
     const label = checkedItemsToggle.querySelector(".btn-label");
     if (label) label.textContent = text;
     checkedItemsToggle.setAttribute("aria-label", text);
@@ -139,7 +155,7 @@ function bindShoppingList() {
     checkedItemsToggle.disabled = true;
     setCompletedItemsHidden(!previous);
     try {
-      await postJson(hideCompletedUrl, {hide: !previous});
+      await postJson(hideCompletedUrl, { hide: !previous });
     } catch {
       setCompletedItemsHidden(previous);
       showSaveError();
@@ -174,8 +190,6 @@ function bindShoppingList() {
       syncDeleteCompletedControl();
     }
   });
-
-
 }
 
 document.addEventListener("htmx:load", bindShoppingList);
