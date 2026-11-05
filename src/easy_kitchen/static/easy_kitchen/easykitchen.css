@@ -387,7 +387,12 @@ textarea:not(.form-control) {
   justify-content: center;
   width: 2.75rem;
   height: 2.75rem;
+  padding: 0;
+  line-height: 1;
   background: #fffdfb;
   box-shadow: 0 .15rem .5rem rgba(0, 0, 0, .15);
 }
 .recipe-card-actions .btn:hover { background: #f3ece4; }
+
+.recipe-card-actions .bi { display: flex; line-height: 1; }
+.recipe-card-actions .bi::before { display: block; vertical-align: 0; }
