@@ -8,6 +8,16 @@ from easy_kitchen.models import Recipe
 from easy_kitchen.services import create_recipe
 
 
+def open_modal(page, trigger, modal_id):
+    page.locator(f"#{modal_id}").evaluate("""element => {
+        window.editorModalShown = new Promise(resolve => {
+            element.addEventListener('shown.bs.modal', () => resolve(), {once: true});
+        });
+    }""")
+    trigger.click()
+    page.evaluate("window.editorModalShown")
+
+
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.parametrize("width", [1280, 390])
@@ -112,10 +122,11 @@ def test_editor_history_direct_links_and_recipe_modals_after_save(authenticated_
     expect(page).to_have_url(detail)
     expect(page.locator("#ingredients")).to_contain_text("Onion")
     assert page.evaluate("window.editorHistorySentinel") is True
-    page.get_by_role("button", name="Plan recipe", exact=True).click()
+    open_modal(page, page.get_by_role("button", name="Plan recipe", exact=True), "add-to-planner-modal")
     modal = page.get_by_role("dialog", name="Add to meal planner", exact=True)
     expect(modal).to_be_visible()
     modal.get_by_role("button", name="Cancel", exact=True).click()
+    expect(modal).to_be_hidden()
     page.get_by_role("link", name="Edit recipe", exact=True).click()
     expect(page).to_have_url(editor_url)
     expect(page.get_by_role("heading", name="Edit recipe", exact=True)).to_be_visible()
@@ -195,7 +206,7 @@ def test_recipe_delete_is_in_editor_and_requires_confirmation(authenticated_page
     expect(page.get_by_role("button", name="Delete", exact=True)).to_have_count(0)
     page.get_by_role("link", name="Edit recipe", exact=True).click()
     page.get_by_label("Title", exact=True).fill("Unsaved title")
-    page.get_by_role("button", name="Delete", exact=True).click()
+    open_modal(page, page.get_by_role("button", name="Delete", exact=True), "delete-recipe-modal")
     modal = page.get_by_role("dialog", name="Delete recipe?", exact=True)
     expect(modal).to_be_visible()
     modal.get_by_role("button", name="Cancel", exact=True).click()
@@ -207,7 +218,7 @@ def test_recipe_delete_is_in_editor_and_requires_confirmation(authenticated_page
         dialogs.append(dialog.type)
         dialog.accept()
     page.on("dialog", accept_dialog)
-    page.get_by_role("button", name="Delete", exact=True).click()
+    open_modal(page, page.get_by_role("button", name="Delete", exact=True), "delete-recipe-modal")
     modal.get_by_role("button", name="Delete permanently", exact=True).click()
     expect(page).to_have_url(f"{live_server.url}/recipes/")
     expect(page.get_by_role("heading", name="Recipes", exact=True)).to_be_visible()
