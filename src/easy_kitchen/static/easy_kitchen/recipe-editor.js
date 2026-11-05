@@ -75,8 +75,54 @@ function bindRecipeEditor() {
   }
 }
 
+function hasUnsavedChanges() {
+  return activeEditor?.editor.isConnected && activeEditor.dirty;
+}
+
+// HTMX owns same-document history entries. Tag them through its public events so
+// a rejected Back/Forward action can return to the original entry without a swap.
+let historyPosition = history.state?.easyKitchenPosition ?? 0;
+let restoringHistoryPosition = false;
+function markHistoryPosition() {
+  history.replaceState({...history.state, easyKitchenPosition: historyPosition}, "");
+}
+markHistoryPosition();
+document.addEventListener("htmx:beforeHistoryUpdate", markHistoryPosition);
+document.addEventListener("htmx:pushedIntoHistory", () => {
+  historyPosition += 1;
+  markHistoryPosition();
+});
+document.addEventListener("htmx:replacedInHistory", markHistoryPosition);
+document.addEventListener("htmx:historyRestore", markHistoryPosition);
+window.addEventListener("popstate", (event) => {
+  if (restoringHistoryPosition) {
+    event.stopImmediatePropagation();
+    restoringHistoryPosition = false;
+    markHistoryPosition();
+    return;
+  }
+  const destination = event.state?.easyKitchenPosition;
+  if (!Number.isInteger(destination)) return;
+  if (hasUnsavedChanges() && !window.confirm(activeEditor.editor.dataset.discardMessage)) {
+    event.stopImmediatePropagation();
+    const distance = historyPosition - destination;
+    if (distance) {
+      restoringHistoryPosition = true;
+      history.go(distance);
+    }
+    return;
+  }
+  historyPosition = destination;
+}, true);
+
+document.addEventListener("htmx:beforeRequest", (event) => {
+  if (!hasUnsavedChanges() || !event.detail.target?.contains(activeEditor.editor)) return;
+  if (event.detail.elt.matches("#recipe-editor-form, [data-editor-cancel]")) return;
+  if (!window.confirm(activeEditor.editor.dataset.discardMessage)) event.preventDefault();
+});
+
 window.addEventListener("beforeunload", (event) => {
-  if (!activeEditor?.editor.isConnected || !activeEditor.dirty) return;
+  if (!hasUnsavedChanges()) return;
   event.preventDefault();
   event.returnValue = "";
 });

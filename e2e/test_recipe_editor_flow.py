@@ -213,3 +213,49 @@ def test_recipe_delete_is_in_editor_and_requires_confirmation(authenticated_page
     expect(page.get_by_role("heading", name="Recipes", exact=True)).to_be_visible()
     assert not Recipe.objects.filter(pk=recipe.pk).exists()
     assert dialogs == []
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
+def test_editor_back_and_forward_confirm_before_discarding(authenticated_page, user, live_server):
+    recipe = create_recipe(user, title="Soup", steps=["Chop"])
+    page = authenticated_page
+    detail = f"{live_server.url}/recipes/{recipe.pk}/"
+    page.goto(detail)
+    page.get_by_role("link", name="Edit recipe", exact=True).click()
+    title = page.get_by_label("Title", exact=True)
+    title.fill("Draft soup")
+    dialogs = []
+
+    def dismiss(dialog):
+        dialogs.append(dialog.message)
+        dialog.dismiss()
+
+    page.on("dialog", dismiss)
+    page.evaluate("history.back()")
+    expect(page).to_have_url(detail + "edit/")
+    expect(title).to_have_value("Draft soup")
+    assert len(dialogs) == 1
+    page.remove_listener("dialog", dismiss)
+    page.once("dialog", lambda dialog: dialog.accept())
+    page.evaluate("history.back()")
+    expect(page).to_have_url(detail)
+    expect(page.get_by_role("heading", name="Soup", exact=True)).to_be_visible()
+    page.evaluate("history.forward()")
+    expect(title).to_have_value("Soup")
+    page.get_by_role("link", name="Cancel", exact=True).first.click()
+    expect(page).to_have_url(detail)
+    page.evaluate("history.back()")
+    expect(title).to_have_value("Soup")
+    title.fill("Another draft")
+    page.on("dialog", dismiss)
+    page.evaluate("history.forward()")
+    expect(page).to_have_url(detail + "edit/")
+    expect(title).to_have_value("Another draft")
+    assert len(dialogs) == 2
+    page.remove_listener("dialog", dismiss)
+    page.once("dialog", lambda dialog: dialog.accept())
+    page.evaluate("history.forward()")
+    expect(page).to_have_url(detail)
+    recipe.refresh_from_db()
+    assert recipe.title == "Soup"
