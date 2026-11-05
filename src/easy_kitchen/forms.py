@@ -2,12 +2,13 @@ import json
 from typing import Any, Literal
 
 from django import forms
+from django.forms import BaseInlineFormSet, inlineformset_factory
 from django.core.validators import URLValidator
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError as DRFValidationError
 
 from .api.serializers import RecipeSerializer, ShoppingListSerializer
-from .models import Recipe, ShoppingItem, ShoppingList
+from .models import Recipe, RecipeIngredient, RecipeStep, ShoppingItem, ShoppingList
 from .services import _normalized_name, save_article
 
 
@@ -330,3 +331,36 @@ class AddRecipeToListForm(forms.Form):
         if not title and not cleaned.get("shopping_list"):
             raise forms.ValidationError(_("Choose a list or enter a title for a new one."))
         return cleaned
+
+
+class RecipeEditorLineFormSet(BaseInlineFormSet):
+    """Order and delete draft lines, restricting submitted IDs to this recipe."""
+
+    ordering_widget = forms.HiddenInput
+    deletion_widget = forms.HiddenInput
+
+    def add_fields(self, form, index):
+        super().add_fields(form, index)
+        form.fields["id"].queryset = self.get_queryset()
+
+    def save_ordered(self):
+        for form in self.deleted_forms:
+            if form.instance.pk:
+                form.instance.delete()
+        for position, form in enumerate(self.ordered_forms):
+            line = form.save(commit=False)
+            line.recipe = self.instance
+            line.position = position
+            line.save()
+
+
+RecipeIngredientEditorFormSet = inlineformset_factory(
+    Recipe, RecipeIngredient, formset=RecipeEditorLineFormSet,
+    fields=("name", "quantity"), extra=0, can_delete=True, can_order=True,
+    widgets={"name": forms.TextInput(attrs={"class": "form-control"}), "quantity": forms.TextInput(attrs={"class": "form-control"})},
+)
+RecipeStepEditorFormSet = inlineformset_factory(
+    Recipe, RecipeStep, formset=RecipeEditorLineFormSet,
+    fields=("text",), extra=0, can_delete=True, can_order=True,
+    widgets={"text": forms.Textarea(attrs={"class": "form-control", "rows": 3})},
+)

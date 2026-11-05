@@ -287,27 +287,11 @@ def test_edit_mode_starts_off_and_resets_when_the_page_reloads(authenticated_pag
 
     page.get_by_role("link", name=recipe_title).click()
     line = page.locator(".recipe-line", has_text="Flour")
-    expect(line.get_by_role("button", name="Move", include_hidden=True)).to_be_hidden()
-    expect(line.get_by_role("button", name="Edit ingredient", include_hidden=True)).to_be_hidden()
-    ingredient_add = page.locator("#ingredient-form").get_by_role("button", name="Add", include_hidden=True)
-    step_add = page.locator("#step-form").get_by_role("button", name="Add", include_hidden=True)
-    expect(ingredient_add).to_be_hidden()
-    expect(step_add).to_be_hidden()
+    expect(line.get_by_role("button")).to_have_count(0)
+    expect(page.locator("#ingredient-form, #step-form")).to_have_count(0)
     expect(page.get_by_role("button", name="Add to a shopping list", exact=True)).to_be_visible()
-    page.set_viewport_size({"width": 768, "height": 900})
-    show_edit_actions(page)
-    expect(line.get_by_role("button", name="Move")).to_be_visible()
-    expect(ingredient_add).to_be_visible()
-    expect(step_add).to_be_visible()
-    done = page.get_by_role("button", name="Done", exact=True)
-    edit_recipe = page.get_by_role("link", name="Edit recipe")
-    delete_recipe = page.get_by_role("button", name="Delete", exact=True)
-    done_box = done.bounding_box()
-    edit_box = edit_recipe.bounding_box()
-    delete_box = delete_recipe.bounding_box()
-    assert abs(done_box["y"] - edit_box["y"]) < 8
-    assert abs(edit_box["y"] - delete_box["y"]) < 8
-    assert done_box["x"] < edit_box["x"] < delete_box["x"]
+    expect(page.get_by_role("link", name="Edit recipe", exact=True)).to_be_visible()
+    expect(page.get_by_role("button", name="Edit", exact=True)).to_have_count(0)
 
 
 @pytest.mark.e2e
@@ -536,7 +520,7 @@ def test_user_can_edit_a_recipe_from_the_overview(authenticated_page, user):
     show_edit_actions(page)
     card.get_by_role("link", name="Edit", exact=True).click()
     page.get_by_label("Title").fill("Neuer Titel")
-    page.get_by_role("button", name="Save").click()
+    page.get_by_role("button", name="Save", exact=True).first.click()
 
     expect(page.get_by_role("heading", name="Recipes")).to_be_visible()
     expect(page.get_by_role("link", name="Neuer Titel")).to_be_visible()
@@ -551,10 +535,9 @@ def test_user_can_edit_a_recipe_from_its_detail_page(authenticated_page, user):
     page = authenticated_page
     page.goto(f"{page.url.rstrip('/')}/recipes/{recipe.pk}/")
 
-    show_edit_actions(page)
     page.get_by_role("link", name="Edit recipe").click()
     page.get_by_label("Title").fill("Neuer Titel")
-    page.get_by_role("button", name="Save").click()
+    page.get_by_role("button", name="Save", exact=True).first.click()
 
     expect(page.get_by_role("heading", name="Neuer Titel")).to_be_visible()
 
@@ -570,13 +553,14 @@ def test_recipe_ingredients_can_be_added_to_a_new_list(authenticated_page):
     page.get_by_role("button", name="Save").click()
     expect(page.get_by_role("heading", name="Pancakes")).to_be_visible()
 
-    show_edit_actions(page)
-    page.get_by_label("Ingredient").fill("Flour")
-    page.get_by_label("quantity").fill("200 g")
-    page.locator("#ingredient-form").get_by_role("button", name="Add").click()
+    page.get_by_role("link", name="Edit recipe", exact=True).click()
+    page.get_by_role("button", name="Add ingredient", exact=True).click()
+    page.get_by_label("Ingredient", exact=True).fill("Flour")
+    page.get_by_label("Quantity", exact=True).fill("200 g")
+    page.get_by_role("button", name="Add step", exact=True).click()
+    page.get_by_label("Step", exact=True).fill("Mix the batter")
+    page.get_by_role("button", name="Save", exact=True).first.click()
     expect(page.locator("#ingredients")).to_contain_text("Flour")
-    page.get_by_label("Step").fill("Mix the batter")
-    page.locator("#step-form").get_by_role("button", name="Add").click()
     expect(page.locator("#steps")).to_contain_text("Mix the batter")
 
     page.get_by_role("button", name="Add to a shopping list", exact=True).click()

@@ -1,0 +1,25 @@
+{% load i18n %}
+<div class="modal fade" id="delete-recipe-modal" tabindex="-1" aria-labelledby="delete-recipe-title" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title fs-5" id="delete-recipe-title">{% translate "Delete recipe?" %}</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate 'Close' %}"></button>
+      </div>
+      <div class="modal-body">{% blocktranslate with title=recipe.title %}"{{ title }}" and its ingredients and steps will be permanently deleted.{% endblocktranslate %}</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" aria-label="{% translate 'Cancel' %}">
+                <i class="bi bi-x-lg" aria-hidden="true"></i>
+                <span class="d-none d-md-inline">{% translate "Cancel" %}</span>
+              </button>
+        <form method="post" data-editor-delete action="{% url 'easy_kitchen:recipe-delete' recipe.pk %}">
+          {% csrf_token %}
+          <button class="btn btn-danger" aria-label="{% translate 'Delete permanently' %}">
+                  <i class="bi bi-trash" aria-hidden="true"></i>
+                  <span class="d-none d-md-inline">{% translate "Delete permanently" %}</span>
+                </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

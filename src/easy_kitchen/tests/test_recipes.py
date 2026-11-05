@@ -11,6 +11,8 @@ from easy_kitchen.models import Recipe, ShoppingList
 from easy_kitchen.services import add_recipe_ingredients_to_list, create_recipe, reorder_recipes
 
 
+EMPTY_EDITOR_LINES = {"ingredients-TOTAL_FORMS": "0", "ingredients-INITIAL_FORMS": "0", "steps-TOTAL_FORMS": "0", "steps-INITIAL_FORMS": "0"}
+
 def png_upload():
     buffer = io.BytesIO()
     Image.new("RGB", (2, 2), "red").save(buffer, format="PNG")
@@ -56,7 +58,7 @@ def test_recipe_views_show_a_status_message_after_create_update_and_delete(clien
 
     updated = client.post(
         reverse("easy_kitchen:recipe-update", args=[recipe.pk]),
-        {"title": "Pancakes", "description": "Sunday", "image_url": ""},
+        {"title": "Pancakes", "description": "Sunday", "image_url": "", **EMPTY_EDITOR_LINES},
         follow=True,
     )
     assert "Recipe updated." in updated.content.decode()
@@ -223,7 +225,7 @@ def test_edit_from_overview_returns_to_recipe_overview(client, user):
 
     response = client.post(
         f'{reverse("easy_kitchen:recipe-update", args=[recipe.pk])}?return_to=overview',
-        {"title": "Pfannkuchen", "description": "", "image_url": ""},
+        {"title": "Pfannkuchen", "description": "", "image_url": "", **EMPTY_EDITOR_LINES},
     )
 
     assert response.url == reverse("easy_kitchen:recipes")
@@ -236,7 +238,7 @@ def test_edit_from_detail_returns_to_recipe_detail(client, user):
 
     response = client.post(
         reverse("easy_kitchen:recipe-update", args=[recipe.pk]),
-        {"title": "Pfannkuchen", "description": "", "image_url": ""},
+        {"title": "Pfannkuchen", "description": "", "image_url": "", **EMPTY_EDITOR_LINES},
     )
 
     assert response.url == reverse("easy_kitchen:recipe-detail", args=[recipe.pk])
@@ -251,7 +253,7 @@ def test_edit_from_overview_cancels_to_recipe_overview(client, user):
 
     content = response.content.decode()
     assert f'href="{reverse("easy_kitchen:recipes")}"' in content
-    assert 'd-none d-md-inline">Cancel</span>' in content
+    assert 'data-editor-cancel hx-get=' in content
 
 
 @pytest.mark.django_db
@@ -263,7 +265,7 @@ def test_edit_from_detail_cancels_to_recipe_detail(client, user):
 
     content = response.content.decode()
     assert f'href="{reverse("easy_kitchen:recipe-detail", args=[recipe.pk])}"' in content
-    assert 'd-none d-md-inline">Cancel</span>' in content
+    assert 'data-editor-cancel hx-get=' in content
 
 
 @pytest.mark.django_db
@@ -285,9 +287,9 @@ def test_recipe_pages_are_private_and_can_send_ingredients_to_a_new_list(client,
     assert detail.status_code == 200
     detail_content = detail.content.decode()
     assert "Pancakes" in detail_content
-    assert "data-edit-toggle" in detail_content
+    assert "data-edit-toggle" not in detail_content
     assert 'src="/static/easy_kitchen/recipe-detail.js"' in detail_content
-    assert detail_content.count('class="row g-2 align-items-end mb-3 edit-only"') == 2
+    assert detail_content.count('class="row g-2 align-items-end mb-3 edit-only"') == 0
 
     added = client.post(
         reverse("easy_kitchen:recipe-ingredient-create", args=[recipe.pk]),
@@ -416,20 +418,14 @@ def test_adding_a_recipe_to_an_existing_list_keeps_the_quantity(client, user):
 
 
 @pytest.mark.django_db
-def test_recipe_line_row_actions_are_icon_only(client, user):
+def test_recipe_detail_shows_read_only_ingredients_and_steps(client, user):
     client.force_login(user)
     recipe = create_recipe(user, title="Pancakes", ingredients=[{"name": "Flour"}], steps=["Mix"])
-
     content = client.get(reverse("easy_kitchen:recipe-detail", args=[recipe.pk])).content.decode()
-
-    assert 'aria-label="Edit ingredient"' in content
-    assert 'aria-label="Delete ingredient"' in content
-    assert 'aria-label="Edit step"' in content
-    assert 'aria-label="Delete step"' in content
-    assert 'd-none d-md-inline">Edit ingredient' not in content
-    assert 'd-none d-md-inline">Delete ingredient' not in content
-    assert 'd-none d-md-inline">Edit step' not in content
-    assert 'd-none d-md-inline">Delete step' not in content
+    assert "Flour" in content and "Mix" in content
+    for label in ("Edit ingredient", "Delete ingredient", "Edit step", "Delete step"):
+        assert f'aria-label="{label}"' not in content
+    assert 'aria-label="Edit recipe"' in content
 
 
 @pytest.mark.django_db
@@ -540,7 +536,7 @@ def test_recipe_detail_offers_pdf_download(client, user):
 
     content = client.get(reverse("easy_kitchen:recipe-detail", args=[recipe.pk])).content.decode()
 
-    assert 'class="btn-group edit-actions' in content
+    assert 'aria-label="Recipe actions"' in content
     assert 'id="recipe-actions"' in content
     assert content.index('id="recipe-actions"') < content.index('<header')
     assert 'aria-label="Download PDF"' in content
