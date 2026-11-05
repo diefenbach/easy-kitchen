@@ -6,6 +6,7 @@ from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedire
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
+from django.utils import timezone
 from django.utils.translation import gettext as _, ngettext
 from django.views import View
 from django.views.generic import (
@@ -25,6 +26,8 @@ from .services import (
     export_records,
     import_recipes,
     import_shopping_lists,
+    meal_plan_for_week,
+    week_start_for,
     remember_article,
     reorder_items,
     reorder_shopping_lists,
@@ -39,12 +42,17 @@ class UserListMixin(LoginRequiredMixin):
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
-    """Show the three newest lists and recipes for the signed-in user."""
+    """Show the current meal plan and the three newest lists and recipes."""
 
     template_name = "easy_kitchen/home.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        week_start = week_start_for(timezone.localdate())
+        plan = meal_plan_for_week(self.request.user, week_start)
+        context["planned_meals"] = [entry for entry in plan.values() if entry and entry.recipe]
+        context["week_start"] = week_start
+        context["week_end"] = next(reversed(plan))
         context["shopping_lists"] = self.request.user.shopping_lists.order_by(
             "-created_at", "-id"
         ).prefetch_related("items")[:3]

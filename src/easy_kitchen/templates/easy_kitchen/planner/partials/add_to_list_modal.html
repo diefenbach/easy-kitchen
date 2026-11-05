@@ -1,0 +1,31 @@
+{% load i18n %}
+<div class="modal fade" id="planner-list-modal" tabindex="-1" aria-labelledby="planner-list-title" aria-hidden="true" data-open-on-error="{% if add_to_list_form.errors %}true{% else %}false{% endif %}">
+  <div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" method="post" action="{% url 'easy_kitchen:planner-add-to-list' %}">
+      {% csrf_token %}
+      <input type="hidden" name="week_start" value="{{ week_start|date:'Y-m-d' }}">
+      <div class="modal-header">
+        <h2 class="modal-title fs-5" id="planner-list-title">{% translate "Create shopping list from plan" %}</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate 'Close' %}"></button>
+      </div>
+      <div class="modal-body">
+        <p class="fw-bold">{{ week_start|date:"SHORT_DATE_FORMAT" }} – {{ week_end|date:"SHORT_DATE_FORMAT" }}</p>
+        <p class="text-secondary">{% translate "Ingredients from all planned recipes this week are merged onto one list." %}</p>
+        {% for error in add_to_list_form.non_field_errors %}
+          <div class="alert alert-danger">{{ error }}</div>
+        {% endfor %}
+        {% for field in add_to_list_form %}
+          <div class="mb-3">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {{ field.errors }}
+          </div>
+        {% endfor %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Cancel" %}</button>
+        <button type="submit" class="btn btn-primary">{% translate "Create shopping list" %}</button>
+      </div>
+    </form>
+  </div>
+</div>

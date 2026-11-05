@@ -110,3 +110,11 @@ document.querySelectorAll(".recipe-field").forEach((field) => {
     if (!field.contains(event.relatedTarget)) close();
   });
 });
+
+const listModal = document.getElementById("planner-list-modal");
+listModal.addEventListener("shown.bs.modal", () => {
+  listModal.querySelector('select, input:not([type="hidden"])')?.focus();
+});
+if (listModal.dataset.openOnError === "true") {
+  globalThis.bootstrap.Modal.getOrCreateInstance(listModal).show();
+}

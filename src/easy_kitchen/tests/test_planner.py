@@ -294,7 +294,7 @@ def test_planner_uses_german_translations(client, user):
     assert "Wochenplaner" in content
     assert "Rezept suchen" in content
     assert "Kein Rezept geplant" not in content
-    assert "Suche in Rezepttiteln." in content
+    assert "Suche in Rezepttiteln." not in content
     assert "Einkaufsliste aus Plan erstellen" in content
 
 

@@ -3,7 +3,7 @@ from datetime import date
 import pytest
 from playwright.sync_api import expect
 
-from easy_kitchen.models import MealPlanEntry
+from easy_kitchen.models import MealPlanEntry, ShoppingList
 from easy_kitchen.services import create_recipe
 
 
@@ -41,6 +41,7 @@ def test_weekly_planning_with_autocomplete_and_merged_shopping_list(authenticate
     expect(monday.locator("input.recipe-search")).to_have_count(0)
     expect(tuesday.locator("input.recipe-search")).to_have_count(0)
 
+    page.get_by_role("button", name="Create shopping list from plan", exact=True).click()
     page.get_by_label("New list", exact=True).fill("Weekly shop")
     page.get_by_role("button", name="Create shopping list", exact=True).click()
     expect(page.get_by_role("heading", name="Weekly shop", exact=True)).to_be_visible()
@@ -254,3 +255,41 @@ def test_recipe_suggestions_show_pictures_on_the_left(authenticated_page, user, 
     page.go_back()
     day.locator(".planner-recipe-title").click()
     expect(page.get_by_role("heading", name=title, exact=True)).to_be_visible()
+
+
+@pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.parametrize("width", [1280, 390])
+def test_plan_list_modal_reopens_on_error_and_adds_to_existing_list(authenticated_page, user, live_server, width):
+    week = date(2026, 12, 28)
+    recipe = create_recipe(user, title="Soup", ingredients=[{"name": "Carrot", "quantity": "2"}])
+    MealPlanEntry.objects.create(user=user, date=week, recipe=recipe)
+    target = ShoppingList.objects.create(user=user, title="Existing weekly shop")
+    page = authenticated_page
+    page.set_viewport_size({"width": width, "height": 844})
+    page.goto(f"{live_server.url}/planner/?week={week.isoformat()}")
+    modal = page.get_by_role("dialog", name="Create shopping list from plan", exact=True)
+    trigger = page.get_by_role("button", name="Create shopping list from plan", exact=True)
+    heading_box = page.get_by_role("heading", name="Meal planner", exact=True).bounding_box()
+    button_box = trigger.bounding_box()
+    navigation_box = page.get_by_role("link", name="Current week", exact=True).bounding_box()
+    assert button_box["x"] > heading_box["x"] + heading_box["width"]
+    assert abs(button_box["y"] + button_box["height"] / 2 - heading_box["y"] - heading_box["height"] / 2) < 2
+    assert navigation_box["y"] >= max(heading_box["y"] + heading_box["height"], button_box["y"] + button_box["height"]) + 20
+    expect(modal).to_be_hidden()
+    expect(page.get_by_label("New list", exact=True)).to_be_hidden()
+    trigger.click()
+    expect(modal).to_be_visible()
+    modal.get_by_role("button", name="Cancel", exact=True).click()
+    expect(modal).to_be_hidden()
+    trigger.click()
+    modal.get_by_role("button", name="Create shopping list", exact=True).click()
+    expect(modal).to_be_visible()
+    expect(modal.locator(".alert-danger")).to_be_visible()
+    expect(modal.locator('input[name="week_start"]')).to_have_value(week.isoformat())
+    expect(modal.locator("select")).to_be_focused()
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    modal.locator("select").select_option(str(target.pk))
+    modal.get_by_role("button", name="Create shopping list", exact=True).click()
+    expect(page.get_by_role("heading", name=target.title, exact=True)).to_be_visible()
+    expect(page.locator(".shopping-item", has_text="Carrot").locator(".item-quantity")).to_have_text("2")
