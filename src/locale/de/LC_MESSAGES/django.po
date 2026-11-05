@@ -1137,3 +1137,12 @@ msgstr "Wähle eine vollständige Kalenderwoche."
 
 msgid "Choose exactly one shopping list or a title for a new one."
 msgstr "Wähle entweder eine Einkaufsliste oder einen Titel für eine neue Liste."
+
+msgid "Planned meals this week"
+msgstr "Geplante Gerichte dieser Woche"
+
+msgid "No meals planned for this week yet."
+msgstr "Für diese Woche sind noch keine Gerichte geplant."
+
+msgid "View meal planner"
+msgstr "Zum Wochenplaner"

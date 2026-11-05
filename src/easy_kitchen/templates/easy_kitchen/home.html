@@ -1,10 +1,19 @@
 {% extends "easy_kitchen/base.html" %}
 {% load i18n static %}
 {% block content %}
-<section class="mb-5">
-  <div class="d-flex justify-content-between align-items-baseline gap-3 mb-3">
+<section class="mb-5 pb-5 border-bottom border-secondary-subtle">
+  <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
     <h1 class="h3 mb-0">{% translate "Shopping lists" %}</h1>
-    <a class="home-more" href="{% url 'easy_kitchen:list' %}">{% translate "See all lists" %} <i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+    <div class="d-flex align-items-center gap-2 ms-auto flex-shrink-0">
+      <a href="{% url 'easy_kitchen:create' %}" class="btn btn-primary" aria-label="{% translate 'New list' %}">
+        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+        <span class="d-none d-md-inline">{% translate "New list" %}</span>
+      </a>
+      <a class="btn btn-outline-secondary" href="{% url 'easy_kitchen:list' %}" aria-label="{% translate 'See all lists' %}">
+        <i class="bi bi-card-checklist" aria-hidden="true"></i>
+        <span class="d-none d-md-inline">{% translate "See all lists" %}</span>
+      </a>
+    </div>
   </div>
   {% if shopping_lists %}
     <div class="row g-3">
@@ -30,15 +39,20 @@
   {% else %}
     <p class="text-secondary mb-0">{% translate "No shopping list yet" %}</p>
   {% endif %}
-  <a href="{% url 'easy_kitchen:create' %}" class="btn btn-primary mt-3" aria-label="{% translate 'New list' %}">
-    <i class="bi bi-plus-lg" aria-hidden="true"></i>
-    {% translate "New list" %}
-  </a>
 </section>
-<section class="mb-4">
-  <div class="d-flex justify-content-between align-items-baseline gap-3 mb-3">
+<section class="mb-5 pb-5 border-bottom border-secondary-subtle">
+  <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
     <h2 class="h3 mb-0">{% translate "Recipes" %}</h2>
-    <a class="home-more" href="{% url 'easy_kitchen:recipes' %}">{% translate "See all recipes" %} <i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+    <div class="d-flex align-items-center gap-2 ms-auto flex-shrink-0">
+      <a href="{% url 'easy_kitchen:recipe-create' %}" class="btn btn-primary" aria-label="{% translate 'New recipe' %}">
+        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+        <span class="d-none d-md-inline">{% translate "New recipe" %}</span>
+      </a>
+      <a class="btn btn-outline-secondary" href="{% url 'easy_kitchen:recipes' %}" aria-label="{% translate 'See all recipes' %}">
+        <i class="bi bi-journal-text" aria-hidden="true"></i>
+        <span class="d-none d-md-inline">{% translate "See all recipes" %}</span>
+      </a>
+    </div>
   </div>
   {% if recipes %}
     <div class="row g-3">
@@ -57,9 +71,36 @@
   {% else %}
     <p class="text-secondary mb-0">{% translate "No recipes yet" %}</p>
   {% endif %}
-  <a href="{% url 'easy_kitchen:recipe-create' %}" class="btn btn-primary mt-3" aria-label="{% translate 'New recipe' %}">
-    <i class="bi bi-plus-lg" aria-hidden="true"></i>
-    {% translate "New recipe" %}
-  </a>
+</section>
+<section id="home-meal-plan" class="mb-5" aria-labelledby="home-meal-plan-title">
+  <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+    <div>
+      <h2 id="home-meal-plan-title" class="h3 mb-1">{% translate "Planned meals this week" %}</h2>
+      <span class="text-secondary small">{{ week_start|date:"SHORT_DATE_FORMAT" }} – {{ week_end|date:"SHORT_DATE_FORMAT" }}</span>
+    </div>
+    <a class="btn btn-outline-secondary ms-auto flex-shrink-0" href="{% url 'easy_kitchen:planner' %}" aria-label="{% translate 'View meal planner' %}">
+      <i class="bi bi-calendar-week" aria-hidden="true"></i>
+      <span class="d-none d-md-inline">{% translate "View meal planner" %}</span>
+    </a>
+  </div>
+  {% if planned_meals %}
+    <div class="row g-3">
+      {% for entry in planned_meals %}
+        <div class="col-12 col-lg-6 col-xxl-4">
+          <article class="card h-100 list-card position-relative">
+            <div class="card-body d-flex align-items-start gap-3">
+              <img class="planner-recipe-picture" src="{% if entry.recipe.picture_url %}{{ entry.recipe.picture_url }}{% else %}{% static 'easy_kitchen/recipe-placeholder.svg' %}{% endif %}" alt="" width="96" height="96">
+              <div>
+                <div class="text-secondary small mb-1">{{ entry.date|date:"l" }}, {{ entry.date|date:"SHORT_DATE_FORMAT" }}</div>
+                <h3 class="h5 mb-0"><a class="stretched-link text-decoration-none link-dark" href="{% url 'easy_kitchen:recipe-detail' entry.recipe.pk %}">{{ entry.recipe.title }}</a></h3>
+              </div>
+            </div>
+          </article>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-secondary mb-0">{% translate "No meals planned for this week yet." %}</p>
+  {% endif %}
 </section>
 {% endblock %}
