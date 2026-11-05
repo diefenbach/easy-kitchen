@@ -1,0 +1,2 @@
+# Preserve npm file bytes, including upstream license line endings, on every platform.
+src/easy_kitchen/static/easy_kitchen/vendor/** -text whitespace=cr-at-eol

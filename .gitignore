@@ -12,3 +12,6 @@ db.sqlite3
 *.code-workspace
 
 node_modules/
+
+# Temporary staging and rollback copies for vendor builds.
+.vendor-stage-*/

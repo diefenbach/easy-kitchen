@@ -8,3 +8,6 @@ staticfiles
 db.sqlite3
 
 node_modules/
+
+# Temporary staging and rollback copies for vendor builds.
+.vendor-stage-*/

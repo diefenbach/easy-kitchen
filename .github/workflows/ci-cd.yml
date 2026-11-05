@@ -52,7 +52,9 @@ jobs:
         with:
           node-version: "24"
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
+      - run: npm run test:vendor
+      - run: npm run vendor:check
       - run: npm run lint
       - run: npm run format:check
 
