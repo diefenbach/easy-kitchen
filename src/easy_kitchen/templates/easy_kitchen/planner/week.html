@@ -2,9 +2,14 @@
 {% load i18n static %}
 {% block title %}{% translate "Meal planner" %} · EasyKitchen{% endblock %}
 {% block content %}
-<div class="d-flex flex-column flex-sm-row flex-wrap gap-2 align-items-sm-center justify-content-between mb-4">
+<div class="d-flex gap-3 align-items-center justify-content-between mb-4">
   <h1 class="h2 mb-0">{% translate "Meal planner" %}</h1>
-  <div class="d-flex flex-wrap gap-2 align-items-center">
+  <button type="button" class="btn btn-primary flex-shrink-0" data-bs-toggle="modal" data-bs-target="#planner-list-modal" aria-label="{% translate 'Create shopping list from plan' %}">
+  <i class="bi bi-cart-plus" aria-hidden="true"></i>
+  <span class="d-none d-md-inline">{% translate "Create shopping list from plan" %}</span>
+</button>
+</div>
+<div class="d-flex flex-wrap gap-2 align-items-center mb-4">
     <a class="btn btn-outline-secondary btn-sm" href="{% url 'easy_kitchen:planner' %}">{% translate "Current week" %}</a>
     <a class="btn btn-outline-secondary btn-sm" href="{% url 'easy_kitchen:planner' %}?week={{ prev_week|date:'Y-m-d' }}" aria-label="{% translate 'Previous week' %}">
       <i class="bi bi-chevron-left" aria-hidden="true"></i>
@@ -17,10 +22,8 @@
       <span class="d-none d-md-inline">{% translate "Next week" %}</span>
       <i class="bi bi-chevron-right" aria-hidden="true"></i>
     </a>
-  </div>
 </div>
 
-<p id="recipe-search-help" class="text-secondary small">{% translate "Search recipe titles." %}</p>
 <section class="card shadow-sm mb-4">
   <div class="list-group list-group-flush">
     {% for day in days %}
@@ -47,7 +50,7 @@
               <label class="form-label visually-hidden recipe-select-label" for="{{ day.form.recipe.id_for_label }}">{{ day.form.recipe.label }}</label>
               {{ day.form.recipe }}
               <label class="form-label visually-hidden" for="{{ day.form.recipe.id_for_label }}-search">{{ day.form.recipe.label }}</label>
-              <input type="text" id="{{ day.form.recipe.id_for_label }}-search" class="form-control recipe-search" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="{{ day.form.recipe.id_for_label }}-suggestions" aria-describedby="recipe-search-help" placeholder="{% translate 'Search recipes' %}" data-selection-message="{% translate 'Choose a recipe from the suggestions.' %}" hidden>
+              <input type="text" id="{{ day.form.recipe.id_for_label }}-search" class="form-control recipe-search" role="combobox" autocomplete="off" aria-autocomplete="list" aria-expanded="false" aria-controls="{{ day.form.recipe.id_for_label }}-suggestions" placeholder="{% translate 'Search recipes' %}" data-selection-message="{% translate 'Choose a recipe from the suggestions.' %}" hidden>
               <ul id="{{ day.form.recipe.id_for_label }}-suggestions" class="recipe-suggestions" role="listbox" aria-label="{% translate 'Recipe suggestions' %}" data-placeholder-picture="{% static 'easy_kitchen/recipe-placeholder.svg' %}" hidden></ul>
             </div>
             <button type="submit" class="btn btn-primary btn-sm" aria-label="{% translate 'Save plan' %}">
@@ -72,37 +75,8 @@
   </div>
 </section>
 
-<section class="card shadow-sm">
-  <div class="card-body">
-    <h2 class="h4">{% translate "Create shopping list from plan" %}</h2>
-    <p class="text-secondary">{% translate "Ingredients from all planned recipes this week are merged onto one list." %}</p>
-    <form method="post" action="{% url 'easy_kitchen:planner-add-to-list' %}">
-      {% csrf_token %}
-      <input type="hidden" name="week_start" value="{{ week_start|date:'Y-m-d' }}">
-      {% for error in add_to_list_form.non_field_errors %}
-        <div class="alert alert-danger">{{ error }}</div>
-      {% endfor %}
-      <div class="row g-2 align-items-end">
-        <div class="col-12 col-md">
-          <label class="form-label" for="{{ add_to_list_form.shopping_list.id_for_label }}">{{ add_to_list_form.shopping_list.label }}</label>
-          {{ add_to_list_form.shopping_list }}
-          {{ add_to_list_form.shopping_list.errors }}
-        </div>
-        <div class="col-12 col-md">
-          <label class="form-label" for="{{ add_to_list_form.title.id_for_label }}">{{ add_to_list_form.title.label }}</label>
-          {{ add_to_list_form.title }}
-          {{ add_to_list_form.title.errors }}
-        </div>
-        <div class="col-12 col-md-auto">
-          <button class="btn btn-primary" aria-label="{% translate 'Create shopping list' %}">
-            <i class="bi bi-cart-plus" aria-hidden="true"></i>
-            <span class="d-none d-md-inline">{% translate "Create shopping list" %}</span>
-          </button>
-        </div>
-      </div>
-    </form>
-  </div>
-</section>
+
+{% include "easy_kitchen/planner/partials/add_to_list_modal.html" %}
 {% endblock %}
 {% block scripts %}
 {{ recipe_search_data|json_script:"recipe-search-data" }}
