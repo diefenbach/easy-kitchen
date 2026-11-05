@@ -8,45 +8,6 @@ from easy_kitchen.services import create_recipe
 pytestmark = [pytest.mark.e2e, pytest.mark.django_db(transaction=True)]
 
 
-@pytest.mark.parametrize("kind", ["recipe", "list"])
-@pytest.mark.parametrize("direct", [False, True])
-def test_editors_work_without_sortable(authenticated_page, user, live_server, kind, direct):
-    page = authenticated_page
-    errors = []
-    page.on("pageerror", lambda error: errors.append(str(error)))
-    page.route("**/Sortable.min.js", lambda route: route.abort())
-    if kind == "recipe":
-        collection = create_recipe(user, title="Soup", ingredients=[{"name": "First"}, {"name": "Second"}], steps=["Chop"])
-        detail = f"{live_server.url}/recipes/{collection.pk}/"
-        prefix, label, remove, add = "ingredients", "Ingredient", "Remove ingredient", "Add ingredient"
-    else:
-        collection = ShoppingList.objects.create(user=user, title="Market")
-        for name in ("First", "Second"):
-            ShoppingItem.objects.create(shopping_list=collection, name=name)
-        detail = f"{live_server.url}/lists/{collection.pk}/"
-        prefix, label, remove, add = "items", "Item", "Remove item", "Add item"
-    page.goto(detail + "edit/" if direct else detail)
-    if not direct:
-        page.get_by_role("link", name="Edit recipe" if kind == "recipe" else "Edit list", exact=True).click()
-    rows = page.locator(f'[data-editor-lines="{prefix}"] .editor-line:not([hidden])')
-    expect(rows.first.locator("[data-editor-up]")).to_be_disabled()
-    expect(rows.first.locator(".editor-drag")).to_be_hidden()
-    rows.first.get_by_role("button", name=remove, exact=True).click()
-    page.get_by_role("button", name=add, exact=True).click()
-    rows.last.get_by_label(label, exact=True).fill("Third")
-    rows.last.get_by_role("button", name="Move up", exact=True).click()
-    if kind == "recipe":
-        page.get_by_role("button", name="Add step", exact=True).click()
-        page.get_by_label("Step", exact=True).last.fill("Serve")
-    page.get_by_role("button", name="Save", exact=True).first.click()
-    expect(page).to_have_url(detail)
-    manager = collection.ingredients if kind == "recipe" else collection.items
-    assert list(manager.values_list("name", flat=True)) == ["Third", "Second"]
-    if kind == "recipe":
-        assert list(collection.steps.values_list("text", flat=True)) == ["Chop", "Serve"]
-    assert errors == []
-
-
 @pytest.mark.parametrize("kind", ["lists", "recipes", "recipe-editor", "list-editor"])
 def test_sortables_are_destroyed_once_when_htmx_replaces_their_elements(authenticated_page, user, live_server, kind):
     recipe = create_recipe(user, title="Soup", ingredients=[{"name": "Onion"}], steps=["Chop"])

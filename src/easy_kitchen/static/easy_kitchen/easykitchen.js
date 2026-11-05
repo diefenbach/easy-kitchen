@@ -21,9 +21,9 @@ export function showSaveError() {
   }
 }
 
-// Optional drag support owns its cleanup, regardless of the calling page.
+// Sortable instances own their cleanup, regardless of the calling page.
 export function createSortable(element, options) {
-  if (!element || typeof globalThis.Sortable !== "function") return;
+  if (!element) return;
   const sortable = new globalThis.Sortable(element, { animation: 150, ...options });
   function cleanup(event) {
     if (event.target !== element) return;

@@ -41,9 +41,8 @@ tooling configuration. ESLint checks browser globals and correctness rules acros
 all source JavaScript. The `javascript` CI job checks lint and formatting; the
 production build requires this job as well as the Python and browser tests.
 
-Cards and editor rows use `createSortable`, which returns the optional SortableJS
-instance and destroys it during HTMX cleanup. Editors retain their add, remove,
-move-up, move-down, cancel, and save controls when SortableJS is unavailable.
+Cards and editor rows use `createSortable`, which returns the SortableJS instance
+and destroys it during HTMX cleanup.
 Article and recipe suggestion lists display at most 20 matches. Typing a more
 specific query still searches the complete catalog.
 

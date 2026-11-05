@@ -45,7 +45,6 @@ function bindCollectionEditor() {
       visible.forEach((row, index) => {
         row.querySelector('[name$="-ORDER"]').value = index + 1;
         row.querySelector("[data-editor-number]").textContent = `${index + 1}.`;
-        row.querySelector(".editor-drag").hidden = !sortable;
         row.querySelector("[data-editor-up]").disabled = index === 0;
         row.querySelector("[data-editor-down]").disabled = index === visible.length - 1;
       });
@@ -81,7 +80,7 @@ function bindCollectionEditor() {
       reorder();
       state.dirty = true;
     });
-    const sortable = createSortable(container, {
+    createSortable(container, {
       handle: ".editor-drag",
       draggable: ".editor-line:not([hidden])",
       onEnd() {
