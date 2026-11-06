@@ -1218,3 +1218,6 @@ msgstr "Deine ungespeicherten Rezeptänderungen verwerfen?"
 
 msgid "Discard your unsaved shopping list changes?"
 msgstr "Deine ungespeicherten Änderungen an der Einkaufsliste verwerfen?"
+
+msgid "Your changes could not be saved. Please try again."
+msgstr "Deine Änderungen konnten nicht gespeichert werden. Bitte versuche es erneut."

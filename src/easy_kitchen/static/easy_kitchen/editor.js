@@ -64,6 +64,7 @@ function bindCollectionEditor() {
       const button = event.target.closest("button");
       const row = button?.closest(".editor-line");
       if (!row) return;
+      if (editor.getAttribute("aria-busy") === "true") return;
       const visible = rows();
       const index = visible.indexOf(row);
       if (button.hasAttribute("data-editor-remove")) {
@@ -80,13 +81,16 @@ function bindCollectionEditor() {
       reorder();
       state.dirty = true;
     });
-    createSortable(container, {
+    const sortable = createSortable(container, {
       handle: ".editor-drag",
       draggable: ".editor-line:not([hidden])",
       onEnd() {
         reorder();
         state.dirty = true;
       },
+    });
+    editor.addEventListener("easykitchen:pending", (event) => {
+      sortable.option("disabled", event.detail);
     });
     reorder();
   }
@@ -148,15 +152,32 @@ window.addEventListener("beforeunload", (event) => {
   event.preventDefault();
   event.returnValue = "";
 });
+const validationFiles = new WeakMap();
 document.addEventListener("htmx:beforeSwap", (event) => {
   if (
     event.detail.xhr.status === 422 &&
     (event.detail.xhr.getResponseHeader("X-Recipe-Editor") === "true" ||
       event.detail.xhr.getResponseHeader("X-List-Editor") === "true")
   ) {
+    const files = [...(activeEditor?.editor.querySelectorAll('input[type="file"]') ?? [])].map(
+      (input) => ({ name: input.name, files: [...input.files] }),
+    );
+    validationFiles.set(event.detail.xhr, files);
     event.detail.shouldSwap = true;
     event.detail.isError = false;
   }
+});
+document.addEventListener("htmx:afterSwap", (event) => {
+  for (const saved of validationFiles.get(event.detail.xhr) ?? []) {
+    const input = [...document.querySelectorAll('input[type="file"]')].find(
+      (field) => field.name === saved.name,
+    );
+    if (!input) continue;
+    const transfer = new DataTransfer();
+    saved.files.forEach((file) => transfer.items.add(file));
+    input.files = transfer.files;
+  }
+  validationFiles.delete(event.detail.xhr);
 });
 document.addEventListener("htmx:load", bindCollectionEditor);
 document.addEventListener("htmx:historyRestore", bindCollectionEditor);
