@@ -12,6 +12,7 @@ from django.db.models import F, Manager, Max, Model
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
+from .departments import Department
 from .models import (
     Article,
     MealPlanEntry,
@@ -96,31 +97,39 @@ def _merge_quantities(quantity_entries: Sequence[str]) -> str:
     return ", ".join(rendered)
 
 
-def remember_article(user: AbstractBaseUser, name: str) -> Article | None:
+def remember_article(user: AbstractBaseUser, name: str, department: str | None = None) -> Article | None:
     """Store the item name for later suggestions, reusing a case-insensitive match."""
+    if department is not None and department not in {"", *Department.values}:
+        raise ValueError(_("Invalid department."))
     name = _normalized_name(name)
     if not name:
         return None
     existing = user.articles.filter(name__iexact=name).order_by("id").first()
     if existing is not None:
+        if department is not None and existing.department != department:
+            existing.department = department
+            existing.save(update_fields=["department", "updated_at"])
         return existing
     try:
         with transaction.atomic():
-            return user.articles.create(name=name)
+            return user.articles.create(name=name, department=department or "")
     except IntegrityError:
         existing = user.articles.filter(name__iexact=name).order_by("id").first()
         if existing is None:
             raise
-        return existing
+        return remember_article(user, name, department)
 
 
-def save_article(user: AbstractBaseUser, name: str, article: Article | None = None) -> Article:
+def save_article(user: AbstractBaseUser, name: str, article: Article | None = None,
+                 department: str | None = None) -> Article:
     """Create an article, or rename the given one."""
     name = _normalized_name(name)
     if article is None:
-        return user.articles.create(name=name)
+        return user.articles.create(name=name, department=department or "")
     article.name = name
-    article.save(update_fields=["name", "updated_at"])
+    if department is not None:
+        article.department = department
+    article.save(update_fields=["name", "department", "updated_at"])
     return article
 
 
@@ -136,6 +145,7 @@ def create_item(
     quantity: str = "",
     checked: bool = False,
     position: int | None = None,
+    department: str | None = None,
 ) -> ShoppingItem:
     """Add an item, or merge the quantity into the existing line with the same name."""
     name = _normalized_name(name)
@@ -143,7 +153,7 @@ def create_item(
     # Lock a row that exists even before the first item is added. All additions
     # to this list then observe the preceding committed quantity and article.
     ShoppingList.objects.select_for_update().get(pk=shopping_list.pk)
-    remember_article(shopping_list.user, name)
+    article = remember_article(shopping_list.user, name, department)
     existing = next(
         (
             item
@@ -160,7 +170,9 @@ def create_item(
         _validate_item_quantity(merged)
         existing.quantity = merged
         existing.checked = False
-        existing.save(update_fields=["quantity", "checked", "updated_at"])
+        if department is not None:
+            existing.department = department
+        existing.save(update_fields=["quantity", "checked", "department", "updated_at"])
         return existing
     if position is None:
         position = (shopping_list.items.aggregate(last=Max("position"))["last"] or 0) + 1
@@ -169,6 +181,7 @@ def create_item(
         shopping_list=shopping_list,
         name=name,
         quantity=quantity,
+        department=article.department if article else "",
         checked=checked,
         position=position,
     )
@@ -591,13 +604,14 @@ def add_item_to_owned_list(
     quantity: str = "",
     list_id: int | None = None,
     list_title: str = "",
+    department: str | None = None,
 ) -> ShoppingItem:
     """Add an item to a list belonging to this user."""
     name = _normalized_name(name)
     if not name:
         raise ValueError(_("Enter an item name."))
     shopping_list = owned_or_today_list(user, list_id=list_id, title=list_title)
-    return create_item(shopping_list, name=name, quantity=quantity)
+    return create_item(shopping_list, name=name, quantity=quantity, department=department)
 
 
 def _recipe_lines(recipe: Recipe, kind: Literal["ingredient", "step"]) -> Manager:
@@ -645,7 +659,7 @@ def shopping_list_export_data(shopping_list: ShoppingList) -> dict[str, Any]:
         "icon": shopping_list.icon,
         "date": shopping_list.date.isoformat(),
         "items": [
-            {"name": item.name, "quantity": item.quantity, "checked": item.checked}
+            {"name": item.name, "quantity": item.quantity, "checked": item.checked, "department": item.department}
             for item in shopping_list.items.all()
         ],
     }

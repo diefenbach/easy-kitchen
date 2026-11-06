@@ -6,6 +6,8 @@ from django.db.models.functions import Lower
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from .departments import Department
+
 
 def _place_new_record_first(instance):
     """Shift this user's existing records down so a new one without a position is stored first."""
@@ -90,6 +92,9 @@ class ShoppingItem(models.Model):
 
     shopping_list = models.ForeignKey(ShoppingList, on_delete=models.CASCADE, related_name="items")
     name = models.CharField(_("item"), max_length=255)
+    department = models.CharField(
+        _("Department"), max_length=20, choices=Department.choices, blank=True, default=""
+    )
     quantity = models.CharField(_("quantity"), max_length=100, blank=True)
     checked = models.BooleanField(_("completed"), default=False)
     position = models.PositiveIntegerField(default=0)
@@ -112,6 +117,9 @@ class Article(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="articles"
     )
     name = models.CharField(_("article"), max_length=255)
+    department = models.CharField(
+        _("Department"), max_length=20, choices=Department.choices, blank=True, default=""
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

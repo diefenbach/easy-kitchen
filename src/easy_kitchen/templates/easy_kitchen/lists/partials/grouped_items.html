@@ -1,0 +1,10 @@
+{% load i18n departments %}
+{% department_groups shopping_list as groups %}
+{% for group in groups %}
+  <section class="department-group mb-4" data-department="{{ group.value }}" aria-labelledby="department-{{ group.value|default:'none' }}">
+    <h2 class="h5 mb-3" id="department-{{ group.value|default:'none' }}">{{ group.label }}</h2>
+    {% for item in group.items %}{% include "easy_kitchen/lists/partials/item.html" %}{% endfor %}
+  </section>
+{% empty %}
+  <p id="empty-message" class="text-center text-secondary py-4 mb-0">{% translate "No items yet." %}</p>
+{% endfor %}

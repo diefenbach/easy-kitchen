@@ -174,7 +174,7 @@ def test_mcp_lists_only_the_token_owners_lists_and_recipes(user, other_user):
     assert [entry["title"] for entry in lists] == ["Week"]
     assert lists[0]["id"] == own_list.id
     assert lists[0]["items"] == [
-        {"id": own_list.items.get().id, "name": "Milk", "quantity": "1 l", "checked": False}
+        {"id": own_list.items.get().id, "name": "Milk", "quantity": "1 l", "department": "", "checked": False}
     ]
     assert [entry["title"] for entry in recipes] == ["Pasta"]
     assert recipes[0]["ingredients"] == [{"name": "Nudeln", "quantity": "500 g"}]
@@ -295,7 +295,7 @@ def test_mcp_read_and_update_tools_do_not_accept_a_user_argument():
         "list_recipes": set(),
         "set_item_checked": {"name", "checked", "list_id"},
         "add_recipe_to_list": {"recipe_id", "recipe_title", "list_id", "list_title"},
-        "add_item_to_list": {"name", "quantity", "list_id", "list_title"},
+        "add_item_to_list": {"name", "quantity", "department", "list_id", "list_title"},
     }
     tools = {tool.name: tool for tool in mcp._tool_manager.list_tools()}
     for name, properties in names.items():

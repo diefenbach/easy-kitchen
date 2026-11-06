@@ -7,6 +7,7 @@ from django.core.validators import URLValidator
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError as DRFValidationError
 
+from .departments import Department
 from .api.serializers import RecipeSerializer, ShoppingListSerializer
 from .models import Recipe, RecipeIngredient, RecipeStep, ShoppingItem, ShoppingList
 from .services import _normalized_name, save_article
@@ -42,7 +43,7 @@ class ShoppingItemForm(forms.ModelForm):
 
     class Meta:
         model = ShoppingItem
-        fields = ("name", "quantity")
+        fields = ("name", "quantity", "department")
         widgets = {
             "name": forms.TextInput(
                 attrs={
@@ -54,11 +55,20 @@ class ShoppingItemForm(forms.ModelForm):
             )
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["department"].choices = [("", _("Without department")), *Department.choices]
+
 
 class ArticleForm(forms.Form):
     """Create or rename a saved article, rejecting a duplicate name for this user."""
 
     name = forms.CharField(label=_("Article"), max_length=255)
+    department = forms.ChoiceField(
+        label=_("Department"),
+        choices=[("", _("Without department")), *Department.choices],
+        required=False,
+    )
 
     def __init__(self, *args, user, instance=None, **kwargs):
         self.user = user
@@ -79,7 +89,10 @@ class ArticleForm(forms.Form):
 
     def save(self):
         """Create the article, or rename the instance this form was given."""
-        return save_article(self.user, self.cleaned_data["name"], article=self.instance)
+        return save_article(
+            self.user, self.cleaned_data["name"], article=self.instance,
+            department=self.cleaned_data["department"] if "department" in self.data else None,
+        )
 
 
 _RECIPE_KEYS = {
@@ -356,6 +369,8 @@ class OrderedEditorLineFormSet(BaseInlineFormSet):
     def add_fields(self, form, index):
         super().add_fields(form, index)
         form.fields["id"].queryset = self.get_queryset()
+        if "department" in form.fields:
+            form.fields["department"].choices = [("", _("Without department")), *Department.choices]
 
     def save_ordered(self):
         for form in self.deleted_forms:
@@ -385,10 +400,11 @@ RecipeStepEditorFormSet = inlineformset_factory(
 
 ShoppingItemEditorFormSet = inlineformset_factory(
     ShoppingList, ShoppingItem, formset=OrderedEditorLineFormSet,
-    fields=("name", "quantity", "checked"), extra=0, can_delete=True, can_order=True,
+    fields=("name", "quantity", "department", "checked"), extra=0, can_delete=True, can_order=True,
     widgets={
         "name": forms.TextInput(attrs={"class": "form-control"}),
         "quantity": forms.TextInput(attrs={"class": "form-control"}),
+        "department": forms.Select(attrs={"class": "form-select"}),
         "checked": forms.CheckboxInput(attrs={"class": "form-check-input"}),
     },
 )

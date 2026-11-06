@@ -470,7 +470,7 @@ def test_user_can_export_selected_lists_and_recipes(authenticated_page, user):
     payload = json.loads(download_info.value.path().read_text())
 
     assert payload["lists"][0]["title"] == "Weekend shop"
-    assert payload["lists"][0]["items"] == [{"name": "Apples", "quantity": "1 kg", "checked": False}]
+    assert payload["lists"][0]["items"] == [{"name": "Apples", "quantity": "1 kg", "checked": False, "department": ""}]
     assert payload["recipes"][0]["title"] == "Pancakes"
 
 

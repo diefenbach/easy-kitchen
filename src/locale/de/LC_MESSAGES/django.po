@@ -1224,3 +1224,75 @@ msgstr "Deine ungespeicherten Änderungen an der Einkaufsliste verwerfen?"
 
 msgid "Your changes could not be saved. Please try again."
 msgstr "Deine Änderungen konnten nicht gespeichert werden. Bitte versuche es erneut."
+
+msgid "Department"
+msgstr "Abteilung"
+
+msgid "Without department"
+msgstr "Ohne Abteilung"
+
+msgid "Invalid department."
+msgstr "Ungültige Abteilung."
+
+msgid "Fruit & vegetables"
+msgstr "Obst & Gemüse"
+
+msgid "Fresh food"
+msgstr "Frischwaren"
+
+msgid "Meat & sausages"
+msgstr "Fleisch & Wurst"
+
+msgid "Bread"
+msgstr "Brot"
+
+msgid "Dairy products"
+msgstr "Milchprodukte"
+
+msgid "Fish"
+msgstr "Fisch"
+
+msgid "Oil & sauces"
+msgstr "Öl & Soßen"
+
+msgid "Spices"
+msgstr "Gewürze"
+
+msgid "Pasta & rice"
+msgstr "Nudeln & Reis"
+
+msgid "Canned food"
+msgstr "Konserven"
+
+msgid "Baking ingredients"
+msgstr "Backzutaten"
+
+msgid "Breakfast"
+msgstr "Frühstück"
+
+msgid "Frozen food"
+msgstr "Tiefkühlwaren"
+
+msgid "Sweets & snacks"
+msgstr "Süßigkeiten & Snacks"
+
+msgid "Cosmetics & personal care"
+msgstr "Kosmetik & Körperpflege"
+
+msgid "Baby"
+msgstr "Baby"
+
+msgid "Cleaning products"
+msgstr "Reinigungsmittel"
+
+msgid "Household goods"
+msgstr "Haushaltswaren"
+
+msgid "Pet supplies"
+msgstr "Tierbedarf"
+
+msgid "Stationery"
+msgstr "Schreibwaren"
+
+msgid "Drinks"
+msgstr "Getränke"

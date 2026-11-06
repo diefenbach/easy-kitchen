@@ -227,8 +227,9 @@ class ShoppingListUpdateView(UserListMixin, View):
         if all(valid):
             with transaction.atomic():
                 form.save()
-                for item in items.save_ordered():
-                    remember_article(request.user, item.name)
+                for line_form, item in zip(items.ordered_forms, items.save_ordered()):
+                    changed = {"name", "department"} & set(line_form.changed_data)
+                    remember_article(request.user, item.name, item.department if changed else None)
             messages.success(request, _("Shopping list updated."))
             if request.headers.get("HX-Request") == "true":
                 view = ShoppingListListView() if request.GET.get("return_to") == "overview" else ShoppingListDetailView()
@@ -253,6 +254,7 @@ class ShoppingListUpdateView(UserListMixin, View):
         response = render(request, "easy_kitchen/lists/editor.html", {
             "object": shopping_list, "shopping_list": shopping_list, "form": form,
             "item_formset": items if items is not None else ShoppingItemEditorFormSet(instance=shopping_list, prefix="items"),
+            "articles": request.user.articles.all(),
             "cancel_url": self.return_url(request, shopping_list),
         }, status=status)
         response["X-List-Editor"] = "true"
@@ -279,25 +281,22 @@ class ItemCreateView(LoginRequiredMixin, View):
         shopping_list = get_object_or_404(ShoppingList, pk=list_pk, user=request.user)
         form = ShoppingItemForm(request.POST)
         if form.is_valid():
-            existing_ids = set(shopping_list.items.values_list("id", flat=True))
             try:
-                item = create_item(
+                create_item(
                     shopping_list,
                     name=form.cleaned_data["name"],
                     quantity=form.cleaned_data["quantity"],
+                    department=form.cleaned_data["department"] if "department" in request.POST else None,
                 )
             except QuantityOverflowError as error:
                 form.add_error("quantity", str(error))
             else:
                 if request.headers.get("HX-Request"):
                     response = render(
-                        request,
-                        "easy_kitchen/lists/partials/item.html",
-                        {
-                            "item": item,
-                            "shopping_list": shopping_list,
-                        },
+                        request, "easy_kitchen/lists/partials/grouped_items.html",
+                        {"shopping_list": shopping_list},
                     )
+                    response["HX-Reswap"] = "innerHTML"
                     response.content += render_to_string(
                         "easy_kitchen/lists/partials/item_form.html",
                         {
@@ -306,11 +305,6 @@ class ItemCreateView(LoginRequiredMixin, View):
                         },
                         request=request,
                     ).encode()
-                    if item.id in existing_ids:
-                        response["HX-Retarget"] = f'.shopping-item[data-item-id="{item.id}"]'
-                        response["HX-Reswap"] = "outerHTML"
-                    elif not existing_ids:
-                        response["HX-Reswap"] = "innerHTML"
                     return response
                 return redirect("easy_kitchen:detail", pk=shopping_list.pk)
         if request.headers.get("HX-Request"):
@@ -355,13 +349,17 @@ class ItemUpdateView(LoginRequiredMixin, View):
         item = self.get_item(request, list_pk, pk)
         form = ShoppingItemForm(request.POST, instance=item, auto_id=f"item-{item.pk}-%s")
         if form.is_valid():
-            form.save()
-            remember_article(request.user, item.name)
-            return render(
-                request,
-                "easy_kitchen/lists/partials/item.html",
-                {"item": item, "shopping_list": item.shopping_list},
+            with transaction.atomic():
+                form.save()
+                changed = {"name", "department"} & set(form.changed_data)
+                remember_article(request.user, item.name, item.department if changed else None)
+            response = render(
+                request, "easy_kitchen/lists/partials/grouped_items.html",
+                {"shopping_list": item.shopping_list},
             )
+            response["HX-Retarget"] = "#items"
+            response["HX-Reswap"] = "innerHTML"
+            return response
         response = render(
             request,
             "easy_kitchen/lists/partials/item_edit_form.html",

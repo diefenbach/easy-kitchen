@@ -1,5 +1,5 @@
 {% extends "easy_kitchen/base.html" %}
-{% load i18n %}
+{% load i18n departments %}
 {% block title %}{% translate "Articles" %} · EasyKitchen{% endblock %}
 {% block content %}
 <a class="btn btn-outline-secondary btn-sm list-back-button mb-3" href="{% if return_list %}{% url 'easy_kitchen:detail' return_list.pk %}{% else %}{% url 'easy_kitchen:list' %}{% endif %}" aria-label="{% if return_list %}{{ return_list.title }}{% else %}{% translate 'Shopping lists' %}{% endif %}">
@@ -14,9 +14,10 @@
   <div class="card-body">
     {% csrf_token %}
     {% if return_list %}<input type="hidden" name="return_list" value="{{ return_list.pk }}">{% endif %}
-    <label class="form-label" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
-    {{ form.name }}
-    {{ form.name.errors }}
+    {% for field in form %}
+      <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}{{ field.errors }}
+    {% endfor %}
   </div>
   <div class="card-footer bg-white">
     <button class="btn btn-primary" aria-label="{% translate 'Add' %}">
@@ -25,12 +26,13 @@
     </button>
   </div>
 </form>
+{% department_choices as departments %}
 {% if articles %}
   <div class="list-group shadow-sm">
     {% for article in articles %}
       <div class="list-group-item bg-white">
-        <div class="article-row d-flex align-items-center gap-2">
-          <form method="post" action="{% url 'easy_kitchen:article-update' article.pk %}" class="article-name-form d-flex flex-grow-1 align-items-center gap-2">
+        <div class="article-row d-flex align-items-start gap-2">
+          <form method="post" action="{% url 'easy_kitchen:article-update' article.pk %}" class="article-name-form flex-grow-1 gap-2">
             {% csrf_token %}
             {% if return_list %}<input type="hidden" name="return_list" value="{{ return_list.pk }}">{% endif %}
             <label class="visually-hidden" for="article-{{ article.pk }}">{% blocktranslate with name=article.name %}Edit {{ name }}{% endblocktranslate %}</label>
@@ -40,6 +42,13 @@
             {% else %}
               <input id="article-{{ article.pk }}" name="name" value="{{ article.name }}" maxlength="255" required>
             {% endif %}
+            <label class="visually-hidden" for="article-department-{{ article.pk }}">{% translate "Department" %}</label>
+            <select id="article-department-{{ article.pk }}" name="department" class="form-select">
+              {% for value, label in departments %}
+                <option value="{{ value }}"{% if edit_form and edit_form.instance.pk == article.pk %}{% if edit_form.department.value == value %} selected{% endif %}{% elif article.department == value %} selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            {% if edit_form and edit_form.instance.pk == article.pk %}{{ edit_form.department.errors }}{% endif %}
             <button class="btn btn-outline-secondary flex-shrink-0" aria-label="{% translate 'Save' %}">
               <i class="bi bi-check-lg" aria-hidden="true"></i>
             </button>

@@ -47,7 +47,7 @@ class ShoppingItemSerializer(CompleteChildSerializer):
 
     class Meta:
         model = ShoppingItem
-        fields = ("id", "name", "quantity", "checked", "position")
+        fields = ("id", "name", "quantity", "department", "checked", "position")
         read_only_fields = ("id",)
 
 

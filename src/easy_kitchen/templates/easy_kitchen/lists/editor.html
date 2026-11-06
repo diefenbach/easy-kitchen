@@ -12,6 +12,7 @@
         <button type="submit" form="list-editor-form" class="btn btn-primary">{% translate "Save" %}</button>
       </div>
     </div>
+    {% include "easy_kitchen/lists/partials/article_options.html" %}
     <form id="list-editor-form" method="post" action="{{ request.get_full_path }}" hx-post="{{ request.get_full_path }}" hx-target="main" hx-select="main" hx-swap="outerHTML show:none focus-scroll:false" hx-push-url="false" hx-sync="this:drop" hx-history="false" data-bound="{{ form.is_bound|yesno:'true,false' }}" data-discard-message="{% translate 'Discard your unsaved shopping list changes?' %}">
       {% csrf_token %}
       {% if form.errors or item_formset.errors or item_formset.non_form_errors %}

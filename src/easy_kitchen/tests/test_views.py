@@ -235,8 +235,7 @@ def test_adding_the_same_item_updates_the_existing_row(client, user, shopping_li
 
     item = ShoppingItem.objects.get(shopping_list=shopping_list)
     assert response.status_code == 200
-    assert response["HX-Retarget"] == f'.shopping-item[data-item-id="{item.id}"]'
-    assert response["HX-Reswap"] == "outerHTML"
+    assert response["HX-Reswap"] == "innerHTML"
     content = response.content.decode()
     assert "1 l, 500 ml" in content
     assert f'id="delete-item-modal-{item.id}"' not in content
@@ -731,7 +730,7 @@ def test_export_downloads_selected_lists_and_recipes_as_importable_json(
                 "title": "Wocheneinkauf",
                 "icon": "basket",
                 "date": shopping_list.date.isoformat(),
-                "items": [{"name": "Milk", "quantity": "1 l", "checked": False}],
+                "items": [{"name": "Milk", "quantity": "1 l", "checked": False, "department": ""}],
             }
         ],
         "recipes": [

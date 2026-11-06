@@ -1,5 +1,5 @@
 <datalist id="articles"{% if oob %} hx-swap-oob="outerHTML"{% endif %}>
   {% for article in articles %}
-    <option value="{{ article.name }}"></option>
+    <option value="{{ article.name }}"{% if article.department %} data-department="{{ article.department }}"{% endif %}></option>
   {% endfor %}
 </datalist>
