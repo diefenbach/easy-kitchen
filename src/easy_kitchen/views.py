@@ -22,6 +22,7 @@ from django.views.generic import (
 from .forms import ArticleForm, ExportForm, ImportForm, ShoppingItemForm, ShoppingListForm, ShoppingItemEditorFormSet
 from .models import Article, ShoppingItem, ShoppingList
 from .services import (
+    QuantityOverflowError,
     create_item,
     delete_completed_items,
     export_records,
@@ -154,7 +155,11 @@ class ImportView(LoginRequiredMixin, View):
         lists = imported["lists"]
         recipes = imported["recipes"]
         if lists is not None:
-            count = len(import_shopping_lists(request.user, lists))
+            try:
+                count = len(import_shopping_lists(request.user, lists))
+            except QuantityOverflowError as error:
+                form.add_error("json_data", str(error))
+                return render(request, self.template_name, {"form": form}, status=422)
             messages.success(
                 request,
                 ngettext(
@@ -275,33 +280,37 @@ class ItemCreateView(LoginRequiredMixin, View):
         form = ShoppingItemForm(request.POST)
         if form.is_valid():
             existing_ids = set(shopping_list.items.values_list("id", flat=True))
-            item = create_item(
-                shopping_list,
-                name=form.cleaned_data["name"],
-                quantity=form.cleaned_data["quantity"],
-            )
-            if request.headers.get("HX-Request"):
-                response = render(
-                    request,
-                    "easy_kitchen/lists/partials/item.html",
-                    {
-                        "item": item,
-                        "shopping_list": shopping_list,
-                    },
+            try:
+                item = create_item(
+                    shopping_list,
+                    name=form.cleaned_data["name"],
+                    quantity=form.cleaned_data["quantity"],
                 )
-                response.content += render_to_string(
-                    "easy_kitchen/lists/partials/item_form.html",
-                    {
-                        "form": ShoppingItemForm(), "shopping_list": shopping_list,
-                        "articles": request.user.articles.all(), "oob": True,
-                    },
-                    request=request,
-                ).encode()
-                if item.id in existing_ids:
-                    response["HX-Retarget"] = f'.shopping-item[data-item-id="{item.id}"]'
-                    response["HX-Reswap"] = "outerHTML"
-                return response
-            return redirect("easy_kitchen:detail", pk=shopping_list.pk)
+            except QuantityOverflowError as error:
+                form.add_error("quantity", str(error))
+            else:
+                if request.headers.get("HX-Request"):
+                    response = render(
+                        request,
+                        "easy_kitchen/lists/partials/item.html",
+                        {
+                            "item": item,
+                            "shopping_list": shopping_list,
+                        },
+                    )
+                    response.content += render_to_string(
+                        "easy_kitchen/lists/partials/item_form.html",
+                        {
+                            "form": ShoppingItemForm(), "shopping_list": shopping_list,
+                            "articles": request.user.articles.all(), "oob": True,
+                        },
+                        request=request,
+                    ).encode()
+                    if item.id in existing_ids:
+                        response["HX-Retarget"] = f'.shopping-item[data-item-id="{item.id}"]'
+                        response["HX-Reswap"] = "outerHTML"
+                    return response
+                return redirect("easy_kitchen:detail", pk=shopping_list.pk)
         if request.headers.get("HX-Request"):
             response = render(
                 request,
@@ -317,7 +326,11 @@ class ItemCreateView(LoginRequiredMixin, View):
             response["HX-Retarget"] = "#item-form"
             response["HX-Reswap"] = "innerHTML"
             return response
-        return redirect("easy_kitchen:detail", pk=shopping_list.pk)
+        return render(request, "easy_kitchen/lists/detail.html", {
+            "object": shopping_list, "shopping_list": shopping_list,
+            "form": form, "articles": request.user.articles.all(),
+            "completed_item_count": shopping_list.items.filter(checked=True).count(),
+        }, status=422)
 
 
 class ItemUpdateView(LoginRequiredMixin, View):

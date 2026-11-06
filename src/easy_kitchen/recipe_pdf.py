@@ -99,10 +99,11 @@ def build_recipe_pdf(recipe: Recipe) -> bytes:
     if recipe.image:
         image = Image(recipe.image.path)
         max_width = 160 * mm
-        if image.imageWidth > max_width:
-            scale = max_width / image.imageWidth
-            image.drawWidth = max_width
-            image.drawHeight = image.imageHeight * scale
+        # Default frames have 6pt padding on either side. An image can move to
+        # the next page, but must fit a completely empty frame there.
+        scale = min(1, max_width / image.imageWidth, (doc.height - 12) / image.imageHeight)
+        image.drawWidth = image.imageWidth * scale
+        image.drawHeight = image.imageHeight * scale
         story.extend([image, Spacer(1, 10)])
 
     story.append(_paragraph(_("Ingredients"), heading_style))

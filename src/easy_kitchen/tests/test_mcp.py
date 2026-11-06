@@ -37,6 +37,21 @@ def authorization_context(token):
 
 
 @pytest.mark.django_db
+def test_quantity_overflow_is_a_tool_error_and_preserves_existing_data(user):
+    token = Token.objects.create(user=user)
+    shopping_list = save_shopping_list(
+        user, title="Shop", date=date.today(),
+        items=[{"name": "Milk", "quantity": "1 " + "a" * 98}],
+    )
+    with pytest.raises(ToolError, match="100"):
+        add_item_to_list(
+            name="Milk", quantity="1 " + "b" * 98, list_id=shopping_list.pk,
+            ctx=authorization_context(token),
+        )
+    assert shopping_list.items.get().quantity == "1 " + "a" * 98
+
+
+@pytest.mark.django_db
 def test_mcp_creates_a_list_for_the_token_owner(user, other_user):
     token = Token.objects.create(user=user)
     Token.objects.create(user=other_user)
