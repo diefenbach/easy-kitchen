@@ -14,6 +14,24 @@ def open_list(page, user, live_server):
     return shopping_list
 
 
+def test_first_item_replaces_the_empty_message(authenticated_page, user, live_server):
+    shopping_list = ShoppingList.objects.create(user=user, title="Groceries")
+    page = authenticated_page
+    page.goto(f"{live_server.url}/lists/{shopping_list.pk}/")
+    expect(page.get_by_text("No items yet.", exact=True)).to_be_visible()
+
+    name = page.get_by_role("combobox", name="Item")
+    for article in ["Apple", "Bread"]:
+        name.fill(article)
+        page.get_by_role("button", name="Add", exact=True).click()
+        expect(page.locator(".shopping-item", has_text=article)).to_be_visible()
+        expect(page.locator("#empty-message")).to_have_count(0)
+    expect(page.locator(".shopping-item")).to_have_count(2)
+    page.reload()
+    expect(page.locator(".shopping-item")).to_have_count(2)
+    expect(page.get_by_text("No items yet.", exact=True)).to_have_count(0)
+
+
 def test_article_suggestions_require_input(authenticated_page, user, live_server):
     Article.objects.create(user=user, name="Apple")
     page = authenticated_page

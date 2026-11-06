@@ -247,6 +247,7 @@ def test_htmx_item_create_and_toggle(client, user, shopping_list):
     client.force_login(user)
     response = client.post(reverse("easy_kitchen:item-create", args=[shopping_list.pk]), {"name": "Tofu", "quantity": "400 g"}, HTTP_HX_REQUEST="true")
     assert response.status_code == 200
+    assert response["HX-Reswap"] == "innerHTML"
     item = ShoppingItem.objects.get(shopping_list=shopping_list)
     response = client.post(reverse("easy_kitchen:item-toggle", args=[shopping_list.pk, item.pk]), HTTP_HX_REQUEST="true")
     item.refresh_from_db()
