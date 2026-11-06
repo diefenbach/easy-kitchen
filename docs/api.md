@@ -24,6 +24,25 @@ curl -X POST -H "Authorization: Token <token>" -H "Content-Type: application/jso
   http://localhost:8000/api/v1/shopping-lists/import_json/
 ```
 
+## Replacement collections
+
+For shopping-list and recipe updates, omitted `items`, `ingredients`, or `steps`
+stay unchanged. A supplied collection replaces the entire corresponding
+collection, including during PATCH. Each supplied item/ingredient requires a
+`name`; each supplied step requires `text`. Incomplete replacement children
+return field-specific HTTP 400 errors without changing existing data. An explicit
+empty array (`[]`) intentionally clears that collection.
+
+List/recipe creation and replacement run in transactions, so failed child writes
+roll back metadata and children together. Accumulated shopping quantities must
+fit the 100-character limit; overflow returns a validation error rather than
+truncating data. Automatic addition applies only to simple decimal amounts with
+compatible units. Fractions, mixed numbers and ranges are preserved as separate
+quantity expressions, including repeated contributions.
+
+Item/ingredient/step reorder requests must contain every current child ID exactly
+once. Missing, duplicate and foreign IDs are rejected without changing order.
+
 ## Recipes
 
 - Collection: `/api/v1/recipes/`

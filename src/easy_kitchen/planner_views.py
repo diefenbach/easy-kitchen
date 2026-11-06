@@ -20,6 +20,7 @@ from .services import (
     set_meal_plan_recipe,
     week_dates,
     week_start_for,
+    _complete_meal_plan_week,
 )
 
 
@@ -27,7 +28,7 @@ def _week_start_from_request(request) -> date:
     raw = request.GET.get("week") or request.POST.get("week_start")
     if raw:
         try:
-            return week_start_for(date.fromisoformat(raw))
+            return _complete_meal_plan_week(date.fromisoformat(raw))
         except ValueError:
             pass
     return week_start_for(timezone.localdate())
@@ -68,8 +69,8 @@ def _planner_context(request, *, add_to_list_form=None):
     return {
         "week_start": week_start,
         "week_end": week_dates(week_start)[-1],
-        "prev_week": week_start - timedelta(days=7),
-        "next_week": week_start + timedelta(days=7),
+        "prev_week": _adjacent_week(week_start, -7),
+        "next_week": _adjacent_week(week_start, 7),
         "days": days,
         "recipe_search_data": recipe_search_documents(request.user),
         "add_to_list_form": (
@@ -77,6 +78,13 @@ def _planner_context(request, *, add_to_list_form=None):
             else AddRecipeToListForm(user=request.user)
         ),
     }
+
+
+def _adjacent_week(week_start, offset):
+    try:
+        return _complete_meal_plan_week(week_start + timedelta(days=offset))
+    except (OverflowError, ValueError):
+        return None
 
 
 class MealPlanAssignView(LoginRequiredMixin, View):

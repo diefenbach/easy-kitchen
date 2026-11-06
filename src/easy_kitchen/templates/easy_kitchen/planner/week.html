@@ -11,17 +11,17 @@
 </div>
 <div class="d-flex flex-wrap gap-2 align-items-center mb-4">
     <a class="btn btn-outline-secondary btn-sm" href="{% url 'easy_kitchen:planner' %}">{% translate "Current week" %}</a>
-    <a class="btn btn-outline-secondary btn-sm" href="{% url 'easy_kitchen:planner' %}?week={{ prev_week|date:'Y-m-d' }}" aria-label="{% translate 'Previous week' %}">
+    {% if prev_week %}<a class="btn btn-outline-secondary btn-sm" href="{% url 'easy_kitchen:planner' %}?week={{ prev_week|date:'Y-m-d' }}" aria-label="{% translate 'Previous week' %}">
       <i class="bi bi-chevron-left" aria-hidden="true"></i>
       <span class="d-none d-md-inline">{% translate "Previous week" %}</span>
-    </a>
+    </a>{% endif %}
     <span class="text-secondary small">
       {{ week_start|date:"SHORT_DATE_FORMAT" }} – {{ week_end|date:"SHORT_DATE_FORMAT" }}
     </span>
-    <a class="btn btn-outline-secondary btn-sm" href="{% url 'easy_kitchen:planner' %}?week={{ next_week|date:'Y-m-d' }}" aria-label="{% translate 'Next week' %}">
+    {% if next_week %}<a class="btn btn-outline-secondary btn-sm" href="{% url 'easy_kitchen:planner' %}?week={{ next_week|date:'Y-m-d' }}" aria-label="{% translate 'Next week' %}">
       <span class="d-none d-md-inline">{% translate "Next week" %}</span>
       <i class="bi bi-chevron-right" aria-hidden="true"></i>
-    </a>
+    </a>{% endif %}
 </div>
 
 <section class="card shadow-sm mb-4">

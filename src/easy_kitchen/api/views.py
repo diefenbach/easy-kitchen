@@ -5,9 +5,11 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from easy_kitchen.models import Recipe, ShoppingList
 from easy_kitchen.services import (
+    QuantityOverflowError,
     add_meal_plan_to_owned_list,
     clear_meal_plan_day,
     meal_plan_week_data,
@@ -50,6 +52,11 @@ class ShoppingListViewSet(viewsets.ModelViewSet):
     """Shopping lists of the authenticated user, including reorder and JSON import."""
 
     serializer_class = ShoppingListSerializer
+
+    def handle_exception(self, exc):
+        if isinstance(exc, QuantityOverflowError):
+            exc = ValidationError({"quantity": str(exc)})
+        return super().handle_exception(exc)
 
     def get_queryset(self):
         return ShoppingList.objects.filter(user=self.request.user).prefetch_related("items")
