@@ -160,13 +160,11 @@ def test_articles_can_be_managed_without_changing_list_items(client, user, other
     assert overview.status_code == 200
     content = overview.content.decode()
     assert ">Edit articles</span>" in content
-    assert 'aria-label="Save"' in content
-    assert 'class="bi bi-check-lg"' in content
-    assert 'aria-label="Delete"' in content
+    assert 'id="article-editor-form"' in content
+    assert 'article-editor-footer' in content
+    assert 'aria-label="Remove article"' in content
     assert 'data-edit-toggle aria-pressed' not in content
-    assert 'class="bi bi-trash"' in content
-    assert ">Save</button>" not in content
-    assert ">Delete</button>" not in content
+    assert '>Save</button>' in content
     created = client.post(reverse("easy_kitchen:articles"), {"name": "Reis"})
     assert created.status_code == 302
     assert Article.objects.filter(user=user, name="Reis").exists()

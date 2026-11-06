@@ -3,7 +3,7 @@ import json
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -19,10 +19,11 @@ from django.views.generic import (
     TemplateView,
 )
 
-from .forms import ArticleForm, ExportForm, ImportForm, ShoppingItemForm, ShoppingListForm, ShoppingItemEditorFormSet
+from .forms import ArticleEditorFormSet, ArticleForm, ExportForm, ImportForm, ShoppingItemForm, ShoppingListForm, ShoppingItemEditorFormSet
 from .models import Article, ShoppingItem, ShoppingList
 from .services import (
     QuantityOverflowError,
+    save_articles,
     create_item,
     delete_completed_items,
     export_records,
@@ -432,26 +433,57 @@ def redirect_to_articles(request):
 
 
 class ArticleListView(LoginRequiredMixin, View):
-    """Show and create saved article names for the signed-in user."""
+    """Edit the user's article catalog as a single atomic draft."""
 
     template_name = "easy_kitchen/lists/articles.html"
 
     def get(self, request):
-        return render(request, self.template_name, self._context(request))
+        return self.render_editor(request)
 
     def post(self, request):
-        form = ArticleForm(request.POST, user=request.user)
-        if form.is_valid():
-            form.save()
-            return redirect_to_articles(request)
-        return render(request, self.template_name, self._context(request, form=form), status=422)
+        # Keep existing single-article clients working; the web editor posts a formset.
+        if "name" in request.POST and "articles-TOTAL_FORMS" not in request.POST:
+            form = ArticleForm(request.POST, user=request.user)
+            if form.is_valid():
+                form.save()
+                return redirect_to_articles(request)
+            return self.render_editor(request, legacy_error=form, status=422)
+        formset = ArticleEditorFormSet(request.POST, user=request.user, prefix="articles")
+        if formset.is_valid():
+            records, deleted_ids = [], []
+            for form in formset.forms:
+                data = form.cleaned_data
+                if not data:
+                    continue
+                article = data.get("id")
+                if data.get("DELETE"):
+                    if article:
+                        deleted_ids.append(article.pk)
+                elif data.get("name"):
+                    records.append({"id": article.pk if article else None,
+                                    "name": data["name"], "department": data["department"]})
+            try:
+                save_articles(request.user, records, deleted_ids)
+            except (ValueError, IntegrityError):
+                formset.non_form_errors().append(_("The articles could not be saved. Check for duplicate names and try again."))
+            else:
+                messages.success(request, _("Articles updated."))
+                return redirect_to_articles(request)
+        return self.render_editor(request, formset=formset, status=422)
 
-    def _context(self, request, form=None, edit_form=None):
+    def render_editor(self, request, *, formset=None, legacy_error=None, status=200):
+        response = render(request, self.template_name, self._context(request, formset=formset, edit_form=legacy_error), status=status)
+        response["X-Article-Editor"] = "true"
+        return response
+
+    def _context(self, request, form=None, edit_form=None, formset=None):
+        shopping_list = return_list_for(request)
+        cancel_url = reverse("easy_kitchen:detail", args=[shopping_list.pk]) if shopping_list else reverse("easy_kitchen:list")
         return {
-            "articles": request.user.articles.all(),
-            "form": form or ArticleForm(user=request.user),
-            "edit_form": edit_form,
-            "return_list": return_list_for(request),
+            "article_formset": formset if formset is not None else ArticleEditorFormSet(user=request.user, prefix="articles"),
+            "legacy_error": edit_form or form,
+            "return_list": shopping_list,
+            "cancel_url": cancel_url,
         }
 
 

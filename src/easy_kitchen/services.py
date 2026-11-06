@@ -3,6 +3,7 @@ from collections.abc import Mapping, Sequence
 from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any, Literal
+from uuid import uuid4
 
 from django.contrib.auth.models import AbstractBaseUser
 from django.core.exceptions import ValidationError
@@ -131,6 +132,36 @@ def save_article(user: AbstractBaseUser, name: str, article: Article | None = No
         article.department = department
     article.save(update_fields=["name", "department", "updated_at"])
     return article
+
+
+@transaction.atomic
+def save_articles(user: AbstractBaseUser, records: Sequence[Mapping[str, Any]], deleted_ids: Sequence[int]) -> None:
+    """Save an article draft atomically, permitting name swaps and name reuse after deletion."""
+    existing = {article.pk: article for article in user.articles.select_for_update()}
+    ids = [record["id"] for record in records if record["id"] is not None]
+    all_ids = [*ids, *deleted_ids]
+    if len(all_ids) != len(set(all_ids)) or not set(all_ids) <= existing.keys():
+        raise ValueError(_("Invalid article selection."))
+    names = {article.name.casefold() for pk, article in existing.items() if pk not in all_ids}
+    for record in records:
+        name = _normalized_name(record["name"])
+        if not name:
+            raise ValueError(_("Enter an article name."))
+        if name.casefold() in names:
+            raise ValueError(_("An article with this name already exists."))
+        if record["department"] not in {"", *Department.values}:
+            raise ValueError(_("Invalid department."))
+        names.add(name.casefold())
+    user.articles.filter(pk__in=deleted_ids).delete()
+    changed = [record for record in records if record["id"] is None or
+               (existing[record["id"]].name, existing[record["id"]].department) !=
+               (record["name"], record["department"])]
+    # Free names before applying renames so two existing articles can exchange names.
+    for record in changed:
+        if record["id"] is not None:
+            user.articles.filter(pk=record["id"]).update(name=f"__article_draft_{uuid4().hex}")
+    for record in changed:
+        save_article(user, record["name"], article=existing.get(record["id"]), department=record["department"])
 
 
 class QuantityOverflowError(ValueError):

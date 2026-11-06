@@ -1296,3 +1296,21 @@ msgstr "Schreibwaren"
 
 msgid "Drinks"
 msgstr "Getränke"
+
+msgid "Invalid article selection."
+msgstr "Ungültige Artikelauswahl."
+
+msgid "The articles could not be saved. Check for duplicate names and try again."
+msgstr "Die Artikel konnten nicht gespeichert werden. Prüfe auf doppelte Namen und versuche es erneut."
+
+msgid "Articles updated."
+msgstr "Artikel aktualisiert."
+
+msgid "Discard your unsaved article changes?"
+msgstr "Nicht gespeicherte Artikeländerungen verwerfen?"
+
+msgid "Add article"
+msgstr "Artikel hinzufügen"
+
+msgid "Remove article"
+msgstr "Artikel entfernen"

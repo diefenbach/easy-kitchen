@@ -4,7 +4,7 @@ const boundEditors = new WeakMap();
 let activeEditor = null;
 
 function bindCollectionEditor() {
-  const editor = document.querySelector("#recipe-editor-form, #list-editor-form");
+  const editor = document.querySelector("#recipe-editor-form, #list-editor-form, #article-editor-form");
   if (!editor) {
     activeEditor = null;
     return;
@@ -35,6 +35,7 @@ function bindCollectionEditor() {
   });
   for (const section of editor.querySelectorAll("[data-editor-lines]")) {
     const prefix = section.dataset.editorLines;
+    const ordered = !section.hasAttribute("data-editor-unordered");
     const container = section.querySelector("[data-editor-rows]");
     const total = section.querySelector(`[name="${prefix}-TOTAL_FORMS"]`);
     const max = Number(section.querySelector(`[name="${prefix}-MAX_NUM_FORMS"]`).value);
@@ -42,7 +43,7 @@ function bindCollectionEditor() {
     const rows = () => [...container.querySelectorAll(".editor-line:not([hidden])")];
     function reorder() {
       const visible = rows();
-      visible.forEach((row, index) => {
+      if (ordered) visible.forEach((row, index) => {
         row.querySelector('[name$="-ORDER"]').value = index + 1;
         row.querySelector("[data-editor-number]").textContent = `${index + 1}.`;
         row.querySelector("[data-editor-up]").disabled = index === 0;
@@ -85,16 +86,16 @@ function bindCollectionEditor() {
       }
       state.dirty = true;
     });
-    const sortable = createSortable(container, {
+    const sortable = ordered ? createSortable(container, {
       handle: ".editor-drag",
       draggable: ".editor-line:not([hidden])",
       onEnd() {
         reorder();
         state.dirty = true;
       },
-    });
+    }) : null;
     editor.addEventListener("easykitchen:pending", (event) => {
-      sortable.option("disabled", event.detail);
+      sortable?.option("disabled", event.detail);
     });
     reorder();
   }
@@ -146,7 +147,7 @@ window.addEventListener(
 
 document.addEventListener("htmx:beforeRequest", (event) => {
   if (!hasUnsavedChanges() || !event.detail.target?.contains(activeEditor.editor)) return;
-  if (event.detail.elt.matches("#recipe-editor-form, #list-editor-form, [data-editor-cancel]"))
+  if (event.detail.elt.matches("#recipe-editor-form, #list-editor-form, #article-editor-form, [data-editor-cancel]"))
     return;
   if (!window.confirm(activeEditor.editor.dataset.discardMessage)) event.preventDefault();
 });
@@ -161,7 +162,8 @@ document.addEventListener("htmx:beforeSwap", (event) => {
   if (
     event.detail.xhr.status === 422 &&
     (event.detail.xhr.getResponseHeader("X-Recipe-Editor") === "true" ||
-      event.detail.xhr.getResponseHeader("X-List-Editor") === "true")
+      event.detail.xhr.getResponseHeader("X-List-Editor") === "true" ||
+      event.detail.xhr.getResponseHeader("X-Article-Editor") === "true")
   ) {
     const files = [...(activeEditor?.editor.querySelectorAll('input[type="file"]') ?? [])].map(
       (input) => ({ name: input.name, files: [...input.files] }),
@@ -192,7 +194,7 @@ const editorRequests = new WeakMap();
 document.addEventListener("htmx:beforeRequest", (event) => {
   if (
     event.detail.elt.matches(
-      "[data-editor-open], [data-editor-cancel], #recipe-editor-form, #list-editor-form",
+      "[data-editor-open], [data-editor-cancel], #recipe-editor-form, #list-editor-form, #article-editor-form",
     )
   ) {
     editorRequests.set(event.detail.xhr, {});
