@@ -44,6 +44,7 @@ def test_saved_articles_are_suggested_and_can_be_renamed(authenticated_page):
     expect(name).to_have_value("Naturtofu")
     name.fill("Räuchertofu")
     page.locator(".article-editor-footer").get_by_role("button", name="Save", exact=True).click()
+    expect(page.get_by_role("alert").filter(has_text="Articles updated.")).to_be_visible()
     expect(page.get_by_label("Article", exact=True)).to_have_value("Räuchertofu")
 
     page.get_by_role("link", name="Easy Kitchen").click()
@@ -116,6 +117,7 @@ def test_article_editor_save_stays_at_the_bottom_on_a_phone(authenticated_page):
     expect(footer.get_by_role("button", name="Save", exact=True)).to_be_visible()
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
     footer.get_by_role("button", name="Save", exact=True).click()
+    expect(page.get_by_role("alert").filter(has_text="Articles updated.")).to_be_visible()
     expect(page.get_by_label("Article", exact=True)).to_have_value("Apfel")
 
 
