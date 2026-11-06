@@ -1,7 +1,7 @@
 import pytest
 from playwright.sync_api import expect
 
-from easy_kitchen.models import Article, ShoppingList
+from easy_kitchen.models import Department, Article, ShoppingList
 from easy_kitchen.services import create_item
 
 pytestmark = [pytest.mark.e2e, pytest.mark.django_db(transaction=True)]
@@ -9,7 +9,7 @@ pytestmark = [pytest.mark.e2e, pytest.mark.django_db(transaction=True)]
 
 @pytest.mark.parametrize("selection", ["typing", "mouse", "keyboard"])
 def test_department_defaults_and_grouping(authenticated_page, user, live_server, selection):
-    Article.objects.create(user=user, name="Milk", department="dairy")
+    Article.objects.create(user=user, name="Milk", department=Department.objects.get(code="dairy"))
     shopping_list = ShoppingList.objects.create(user=user, title="Groceries")
     create_item(shopping_list, name="Mystery", department="")
     page = authenticated_page
@@ -36,7 +36,7 @@ def test_department_defaults_and_grouping(authenticated_page, user, live_server,
     expect(fresh).to_have_count(0)
     dairy = page.locator('.department-group[data-department="dairy"]')
     expect(dairy.locator(".shopping-item")).to_have_count(1)
-    assert Article.objects.get(user=user, name="Milk").department == "dairy"
+    assert Article.objects.get(user=user, name="Milk").department_code == "dairy"
     page.reload()
     expect(dairy).to_contain_text("Milk")
     page.get_by_role("button", name="Hide completed", exact=True).click()
@@ -47,7 +47,7 @@ def test_department_defaults_and_grouping(authenticated_page, user, live_server,
 
 
 def test_editor_prefills_and_saves_departments(authenticated_page, user, live_server):
-    Article.objects.create(user=user, name="Apple", department="produce")
+    Article.objects.create(user=user, name="Apple", department=Department.objects.get(code="produce"))
     shopping_list = ShoppingList.objects.create(user=user, title="Groceries")
     create_item(shopping_list, name="Milk", department="dairy")
     page = authenticated_page
@@ -60,6 +60,6 @@ def test_editor_prefills_and_saves_departments(authenticated_page, user, live_se
     line.get_by_label("Department", exact=True).select_option("fresh")
     page.get_by_role("button", name="Save", exact=True).first.click()
     expect(page.locator('.department-group[data-department="fresh"]')).to_contain_text("Apple")
-    assert Article.objects.get(user=user, name="Apple").department == "fresh"
+    assert Article.objects.get(user=user, name="Apple").department_code == "fresh"
     page.reload()
     expect(page.locator('.department-group[data-department="fresh"]')).to_contain_text("Apple")

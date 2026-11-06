@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.db import transaction
-from easy_kitchen.models import Recipe, RecipeIngredient, RecipeStep, ShoppingItem, ShoppingList
+from django.utils.translation import gettext_lazy as _
+from easy_kitchen.models import Department, Recipe, RecipeIngredient, RecipeStep, ShoppingItem, ShoppingList
 from easy_kitchen.services import create_item, create_recipe, create_shopping_list
 
 
@@ -44,6 +45,18 @@ class ShoppingItemSerializer(CompleteChildSerializer):
     """One shopping-list line for the API."""
 
     required_replacement_field = "name"
+    department = serializers.CharField(source="department_code", required=False, allow_blank=True, max_length=20)
+
+    def validate_department(self, value):
+        if value and not Department.objects.filter(code=value).exists():
+            raise serializers.ValidationError(_("Invalid department."))
+        return value
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        if "department_code" in attrs:
+            attrs["department"] = attrs.pop("department_code")
+        return attrs
 
     class Meta:
         model = ShoppingItem

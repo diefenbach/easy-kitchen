@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 from django.urls import reverse
 
-from easy_kitchen.models import Article
+from easy_kitchen.models import Department, Article
 from easy_kitchen.services import create_item
 
 pytestmark = pytest.mark.django_db
@@ -14,23 +14,23 @@ def editor_data(user, **overrides):
     data = {"articles-TOTAL_FORMS": str(len(articles)), "articles-INITIAL_FORMS": str(len(articles))}
     for index, article in enumerate(articles):
         data.update({f"articles-{index}-id": str(article.pk), f"articles-{index}-name": article.name,
-                     f"articles-{index}-department": article.department})
+                     f"articles-{index}-department": article.department_code})
     return data | overrides
 
 
 def test_all_article_changes_are_saved_together(client, user, shopping_list):
     item = create_item(shopping_list, name="Apple", department="produce")
-    removed = Article.objects.create(user=user, name="Bread", department="bread")
+    removed = Article.objects.create(user=user, name="Bread", department=Department.objects.get(code="bread"))
     client.force_login(user)
     response = client.post(reverse("easy_kitchen:articles"), editor_data(user, **{
         "articles-TOTAL_FORMS": "3", "articles-0-name": "Green apple", "articles-0-department": "fresh",
         "articles-1-DELETE": "on", "articles-2-name": " Milk ", "articles-2-department": "dairy",
     }))
     assert response.status_code == 302
-    assert list(user.articles.values_list("name", "department")) == [("Green apple", "fresh"), ("Milk", "dairy")]
+    assert list(user.articles.values_list("name", "department__code")) == [("Green apple", "fresh"), ("Milk", "dairy")]
     assert not Article.objects.filter(pk=removed.pk).exists()
     item.refresh_from_db()
-    assert item.name == "Apple" and item.department == "produce"
+    assert item.name == "Apple" and item.department_code == "produce"
 
 
 @pytest.mark.parametrize("invalid", [
@@ -111,4 +111,4 @@ def test_deleted_names_can_be_reused_and_duplicate_ids_are_rejected(client, user
     data["articles-1-id"] = ""
     assert client.post(reverse("easy_kitchen:articles"), data).status_code == 302
     assert not Article.objects.filter(pk=article.pk).exists()
-    assert user.articles.get().department == "produce"
+    assert user.articles.get().department_code == "produce"

@@ -2,19 +2,19 @@ import pytest
 from django.urls import reverse
 
 from easy_kitchen.api.serializers import ShoppingListSerializer
-from easy_kitchen.models import Article, ShoppingItem, ShoppingList
+from easy_kitchen.models import Department, Article, ShoppingItem, ShoppingList
 from easy_kitchen.services import create_item, shopping_list_export_data
 
 pytestmark = pytest.mark.django_db
 
 
 def test_item_inherits_only_its_owners_article_department(shopping_list, other_user):
-    Article.objects.create(user=other_user, name="Milk", department="fish")
-    own = Article.objects.create(user=shopping_list.user, name="Milk", department="dairy")
+    Article.objects.create(user=other_user, name="Milk", department=Department.objects.get(code="fish"))
+    own = Article.objects.create(user=shopping_list.user, name="Milk", department=Department.objects.get(code="dairy"))
     item = create_item(shopping_list, name=" MILK ")
-    assert item.department == "dairy"
+    assert item.department_code == "dairy"
     own.refresh_from_db()
-    assert own.department == "dairy"
+    assert own.department_code == "dairy"
 
 
 def test_department_changes_update_default_but_preserve_other_lists(shopping_list):
@@ -22,13 +22,13 @@ def test_department_changes_update_default_but_preserve_other_lists(shopping_lis
     second_list = ShoppingList.objects.create(user=shopping_list.user, title="Other")
     second = create_item(second_list, name="Milk", department="fresh")
     first.refresh_from_db()
-    assert first.department == "dairy"
-    assert second.department == "fresh"
-    assert Article.objects.get(user=shopping_list.user, name="Milk").department == "fresh"
+    assert first.department_code == "dairy"
+    assert second.department_code == "fresh"
+    assert Article.objects.get(user=shopping_list.user, name="Milk").department_code == "fresh"
     merged = create_item(second_list, name="milk", quantity="2", department="")
     assert merged.pk == second.pk
-    assert merged.department == ""
-    assert Article.objects.get(user=shopping_list.user, name="Milk").department == ""
+    assert merged.department_code == ""
+    assert Article.objects.get(user=shopping_list.user, name="Milk").department_code == ""
 
 
 def test_grouping_is_ordered_and_has_a_separate_unassigned_group(client, user, shopping_list):
@@ -53,9 +53,9 @@ def test_web_create_and_edit_regroup_and_remember(client, user, shopping_list):
                            {"name": "Milk", "department": "fresh"}, HTTP_HX_REQUEST="true")
     assert response["HX-Retarget"] == "#items"
     assert 'data-department="fresh"' in response.content.decode()
-    assert Article.objects.get(user=user, name="Milk").department == "fresh"
+    assert Article.objects.get(user=user, name="Milk").department_code == "fresh"
     item.refresh_from_db()
-    assert item.department == "fresh"
+    assert item.department_code == "fresh"
 
 
 def test_invalid_department_is_rejected(client, user, shopping_list):
@@ -89,18 +89,18 @@ def test_saving_old_list_does_not_reset_article_default(client, user, shopping_l
     from easy_kitchen.tests.test_list_editor import list_editor_data
 
     item = create_item(shopping_list, name="Milk", department="dairy")
-    user.articles.filter(name="Milk").update(department="fresh")
+    user.articles.filter(name="Milk").update(department=Department.objects.get(code="fresh"))
     client.force_login(user)
     data = list_editor_data(shopping_list, title="Updated title", **{"items-0-department": "dairy"})
     response = client.post(reverse("easy_kitchen:update", args=[shopping_list.pk]), data)
     assert response.status_code == 302
-    assert user.articles.get(name="Milk").department == "fresh"
+    assert user.articles.get(name="Milk").department_code == "fresh"
     item.refresh_from_db()
-    assert item.department == "dairy"
+    assert item.department_code == "dairy"
     data["items-0-department"] = ""
     response = client.post(reverse("easy_kitchen:update", args=[shopping_list.pk]), data)
     assert response.status_code == 302
-    assert user.articles.get(name="Milk").department == ""
+    assert user.articles.get(name="Milk").department_code == ""
 
 
 def test_article_management_saves_department_without_changing_lists(client, user, shopping_list):
@@ -112,8 +112,8 @@ def test_article_management_saves_department_without_changing_lists(client, user
     assert response.status_code == 302
     article.refresh_from_db()
     item.refresh_from_db()
-    assert article.department == "fresh"
-    assert item.department == "dairy"
+    assert article.department_code == "fresh"
+    assert item.department_code == "dairy"
 
 
 def test_department_labels_are_translated(client, user, shopping_list):
@@ -139,7 +139,7 @@ def test_mcp_item_department_is_saved_and_returned(user, shopping_list):
     assert list_shopping_lists(ctx)[0]["items"][0]["department"] == "dairy"
     with pytest.raises(ToolError, match="Invalid department"):
         add_item_to_list(name="Milk", department="invalid", list_id=shopping_list.pk, ctx=ctx)
-    assert shopping_list.items.get().department == "dairy"
+    assert shopping_list.items.get().department_code == "dairy"
 
 
 @pytest.mark.parametrize("language, expected", [

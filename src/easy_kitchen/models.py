@@ -6,7 +6,6 @@ from django.db.models.functions import Lower
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from .departments import Department
 
 
 def _place_new_record_first(instance):
@@ -87,13 +86,37 @@ class ShoppingList(models.Model):
             return super().save(*args, **kwargs)
 
 
-class ShoppingItem(models.Model):
+class Department(models.Model):
+    """Shared supermarket department, referenced by articles and list entries."""
+
+    code = models.SlugField(_("code"), max_length=20, unique=True)
+    name = models.CharField(_("name"), max_length=100)
+    position = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ("position", "id")
+        verbose_name = _("Department")
+        verbose_name_plural = _("Departments")
+
+    def __str__(self):
+        return str(_(self.name))
+
+
+class DepartmentReference:
+    @property
+    def department_code(self):
+        """Stable code used by forms, JSON and MCP; an empty string means unassigned."""
+        return self.department.code if self.department_id else ""
+
+
+class ShoppingItem(DepartmentReference, models.Model):
     """One line on a shopping list."""
 
     shopping_list = models.ForeignKey(ShoppingList, on_delete=models.CASCADE, related_name="items")
     name = models.CharField(_("item"), max_length=255)
-    department = models.CharField(
-        _("Department"), max_length=20, choices=Department.choices, blank=True, default=""
+    department = models.ForeignKey(
+        Department, verbose_name=_("Department"), on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="items",
     )
     quantity = models.CharField(_("quantity"), max_length=100, blank=True)
     checked = models.BooleanField(_("completed"), default=False)
@@ -110,15 +133,16 @@ class ShoppingItem(models.Model):
         return self.name
 
 
-class Article(models.Model):
+class Article(DepartmentReference, models.Model):
     """A saved item name suggested while filling a shopping list."""
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="articles"
     )
     name = models.CharField(_("article"), max_length=255)
-    department = models.CharField(
-        _("Department"), max_length=20, choices=Department.choices, blank=True, default=""
+    department = models.ForeignKey(
+        Department, verbose_name=_("Department"), on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="articles",
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

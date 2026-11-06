@@ -58,7 +58,7 @@ class HomeView(LoginRequiredMixin, TemplateView):
         context["week_end"] = next(reversed(plan))
         context["shopping_lists"] = self.request.user.shopping_lists.order_by(
             "-created_at", "-id"
-        ).prefetch_related("items")[:3]
+        ).prefetch_related("items__department")[:3]
         context["recipes"] = self.request.user.recipes.order_by(
             "-created_at", "-id"
         ).prefetch_related("ingredients")[:3]
@@ -73,7 +73,7 @@ class ShoppingListListView(LoginRequiredMixin, ListView):
     context_object_name = "shopping_lists"
 
     def get_queryset(self):
-        return ShoppingList.objects.filter(user=self.request.user).prefetch_related("items")
+        return ShoppingList.objects.filter(user=self.request.user).prefetch_related("items__department")
 
 
 class ShoppingListReorderView(LoginRequiredMixin, View):
@@ -112,7 +112,7 @@ class ShoppingListDetailView(UserListMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context["form"] = ShoppingItemForm()
         context["shopping_list"] = self.object
-        context["articles"] = self.request.user.articles.all()
+        context["articles"] = self.request.user.articles.select_related("department")
         context["completed_item_count"] = self.object.items.filter(checked=True).count()
         return context
 
@@ -230,7 +230,7 @@ class ShoppingListUpdateView(UserListMixin, View):
                 form.save()
                 for line_form, item in zip(items.ordered_forms, items.save_ordered()):
                     changed = {"name", "department"} & set(line_form.changed_data)
-                    remember_article(request.user, item.name, item.department if changed else None)
+                    remember_article(request.user, item.name, (item.department or "") if changed else None)
             messages.success(request, _("Shopping list updated."))
             if request.headers.get("HX-Request") == "true":
                 view = ShoppingListListView() if request.GET.get("return_to") == "overview" else ShoppingListDetailView()
@@ -255,7 +255,7 @@ class ShoppingListUpdateView(UserListMixin, View):
         response = render(request, "easy_kitchen/lists/editor.html", {
             "object": shopping_list, "shopping_list": shopping_list, "form": form,
             "item_formset": items if items is not None else ShoppingItemEditorFormSet(instance=shopping_list, prefix="items"),
-            "articles": request.user.articles.all(),
+            "articles": request.user.articles.select_related("department"),
             "cancel_url": self.return_url(request, shopping_list),
         }, status=status)
         response["X-List-Editor"] = "true"
@@ -287,7 +287,7 @@ class ItemCreateView(LoginRequiredMixin, View):
                     shopping_list,
                     name=form.cleaned_data["name"],
                     quantity=form.cleaned_data["quantity"],
-                    department=form.cleaned_data["department"] if "department" in request.POST else None,
+                    department=(form.cleaned_data["department"] or "") if "department" in request.POST else None,
                 )
             except QuantityOverflowError as error:
                 form.add_error("quantity", str(error))
@@ -302,7 +302,7 @@ class ItemCreateView(LoginRequiredMixin, View):
                         "easy_kitchen/lists/partials/item_form.html",
                         {
                             "form": ShoppingItemForm(), "shopping_list": shopping_list,
-                            "articles": request.user.articles.all(), "oob": True,
+                            "articles": request.user.articles.select_related("department"), "oob": True,
                         },
                         request=request,
                     ).encode()
@@ -315,7 +315,7 @@ class ItemCreateView(LoginRequiredMixin, View):
                 {
                     "form": form,
                     "shopping_list": shopping_list,
-                    "articles": request.user.articles.all(),
+                    "articles": request.user.articles.select_related("department"),
                 },
                 status=422,
             )
@@ -325,7 +325,7 @@ class ItemCreateView(LoginRequiredMixin, View):
             return response
         return render(request, "easy_kitchen/lists/detail.html", {
             "object": shopping_list, "shopping_list": shopping_list,
-            "form": form, "articles": request.user.articles.all(),
+            "form": form, "articles": request.user.articles.select_related("department"),
             "completed_item_count": shopping_list.items.filter(checked=True).count(),
         }, status=422)
 
@@ -353,7 +353,7 @@ class ItemUpdateView(LoginRequiredMixin, View):
             with transaction.atomic():
                 form.save()
                 changed = {"name", "department"} & set(form.changed_data)
-                remember_article(request.user, item.name, item.department if changed else None)
+                remember_article(request.user, item.name, (item.department or "") if changed else None)
             response = render(
                 request, "easy_kitchen/lists/partials/grouped_items.html",
                 {"shopping_list": item.shopping_list},

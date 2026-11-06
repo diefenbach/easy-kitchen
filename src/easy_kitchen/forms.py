@@ -2,6 +2,7 @@ import json
 from typing import Any, Literal
 
 from django import forms
+from django.db.models import Prefetch
 from django.forms import BaseInlineFormSet, BaseModelFormSet, inlineformset_factory, modelformset_factory
 from django.core.validators import URLValidator
 from django.utils.translation import gettext_lazy as _
@@ -57,7 +58,9 @@ class ShoppingItemForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["department"].to_field_name = "code"
         self.fields["department"].choices = department_choices()
+        self.initial["department"] = self.instance.department_code
 
 
 class ArticleForm(forms.Form):
@@ -105,9 +108,11 @@ class ArticleEditorForm(forms.ModelForm):
             "department": forms.Select(attrs={"class": "form-select"}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, department_options=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["department"].choices = department_choices()
+        self.fields["department"].to_field_name = "code"
+        self.fields["department"].choices = department_options if department_options is not None else department_choices()
+        self.initial["department"] = self.instance.department_code
 
     def clean_name(self):
         name = _normalized_name(self.cleaned_data["name"])
@@ -123,7 +128,11 @@ class BaseArticleEditorFormSet(BaseModelFormSet):
 
     def __init__(self, *args, user, **kwargs):
         self.user = user
-        super().__init__(*args, queryset=user.articles.all(), **kwargs)
+        self.department_options = department_choices()
+        super().__init__(*args, queryset=user.articles.select_related("department"), **kwargs)
+
+    def get_form_kwargs(self, index):
+        return {**super().get_form_kwargs(index), "department_options": self.department_options}
 
     def add_fields(self, form, index):
         super().add_fields(form, index)
@@ -359,7 +368,7 @@ class ExportForm(forms.Form):
 
     def __init__(self, *args, user, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["lists"].queryset = user.shopping_lists.prefetch_related("items")
+        self.fields["lists"].queryset = user.shopping_lists.prefetch_related(Prefetch("items", queryset=ShoppingItem.objects.select_related("department")))
         self.fields["recipes"].queryset = user.recipes.prefetch_related("ingredients", "steps")
 
     def clean(self):
@@ -438,7 +447,11 @@ class OrderedEditorLineFormSet(BaseInlineFormSet):
         super().add_fields(form, index)
         form.fields["id"].queryset = self.get_queryset()
         if "department" in form.fields:
-            form.fields["department"].choices = department_choices()
+            form.fields["department"].to_field_name = "code"
+            if not hasattr(self, "department_options"):
+                self.department_options = department_choices()
+            form.fields["department"].choices = self.department_options
+            form.initial["department"] = form.instance.department_code
 
     def save_ordered(self):
         for form in self.deleted_forms:

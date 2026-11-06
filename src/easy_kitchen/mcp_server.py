@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from datetime import date as Date
-from typing import TYPE_CHECKING, Annotated, Literal
+from typing import TYPE_CHECKING, Annotated
 
 import django
 from django.conf import settings
@@ -21,7 +21,6 @@ from mcp.types import ToolAnnotations
 from pydantic import BaseModel, Field
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import AuthenticationFailed
-from easy_kitchen.departments import Department
 from easy_kitchen.models import Recipe, ShoppingList
 from easy_kitchen.services import (
     add_item_to_owned_list,
@@ -58,7 +57,7 @@ class ShoppingItemInput(BaseModel):
 
     name: Annotated[str, Field(min_length=1, max_length=255)]
     quantity: Annotated[str, Field(max_length=100)] = ""
-    department: Department | Literal[""] | None = Field(default=None, max_length=20)
+    department: Annotated[str, Field(max_length=20)] | None = None
 
 
 class IngredientInput(BaseModel):
@@ -122,7 +121,7 @@ def _shopping_list_payload(shopping_list: ShoppingList) -> dict:
                 "id": item.id,
                 "name": item.name,
                 "quantity": item.quantity,
-                "department": item.department,
+                "department": item.department_code,
                 "checked": item.checked,
             }
             for item in shopping_list.items.all()
@@ -246,7 +245,7 @@ def create_recipe(
 def list_shopping_lists(ctx: Context) -> list[dict]:
     """List the authenticated user's shopping lists and their items."""
     user = user_from_authorization(_authorization(ctx))
-    return [_shopping_list_payload(shopping_list) for shopping_list in user.shopping_lists.prefetch_related("items")]
+    return [_shopping_list_payload(shopping_list) for shopping_list in user.shopping_lists.prefetch_related("items__department")]
 
 
 @mcp.tool(
@@ -287,7 +286,7 @@ def set_item_checked(
         "id": item.id,
         "name": item.name,
         "quantity": item.quantity,
-        "department": item.department,
+        "department": item.department_code,
         "checked": item.checked,
         "list_id": item.shopping_list_id,
     }
@@ -307,7 +306,7 @@ def add_item_to_list(
     quantity: Annotated[str, Field(max_length=100)] = "",
     list_id: int | None = None,
     list_title: Annotated[str, Field(max_length=255)] = "",
-    department: Department | Literal[""] | None = None,
+    department: Annotated[str, Field(max_length=20)] | None = None,
 ) -> dict:
     """Add an item to a list. Omit the list to use or create today's list."""
     user = user_from_authorization(_authorization(ctx))
@@ -326,7 +325,7 @@ def add_item_to_list(
         "id": item.id,
         "name": item.name,
         "quantity": item.quantity,
-        "department": item.department,
+        "department": item.department_code,
         "checked": item.checked,
         "list_id": item.shopping_list_id,
     }

@@ -13,9 +13,9 @@ from django.db.models import F, Manager, Max, Model
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from .departments import Department
 from .models import (
     Article,
+    Department,
     MealPlanEntry,
     Recipe,
     RecipeIngredient,
@@ -98,22 +98,33 @@ def _merge_quantities(quantity_entries: Sequence[str]) -> str:
     return ", ".join(rendered)
 
 
-def remember_article(user: AbstractBaseUser, name: str, department: str | None = None) -> Article | None:
+def resolve_department(value: Department | str | None) -> Department | None:
+    """Resolve a department from the shared table, accepting existing external codes."""
+    if value is None or value == "":
+        return None
+    if isinstance(value, Department):
+        value = value.code
+    try:
+        return Department.objects.get(code=value)
+    except Department.DoesNotExist:
+        raise ValueError(_("Invalid department.")) from None
+
+
+def remember_article(user: AbstractBaseUser, name: str, department: Department | str | None = None) -> Article | None:
     """Store the item name for later suggestions, reusing a case-insensitive match."""
-    if department is not None and department not in {"", *Department.values}:
-        raise ValueError(_("Invalid department."))
+    resolved_department = resolve_department(department)
     name = _normalized_name(name)
     if not name:
         return None
     existing = user.articles.filter(name__iexact=name).order_by("id").first()
     if existing is not None:
-        if department is not None and existing.department != department:
-            existing.department = department
+        if department is not None and existing.department_id != (resolved_department.pk if resolved_department else None):
+            existing.department = resolved_department
             existing.save(update_fields=["department", "updated_at"])
         return existing
     try:
         with transaction.atomic():
-            return user.articles.create(name=name, department=department or "")
+            return user.articles.create(name=name, department=resolved_department)
     except IntegrityError:
         existing = user.articles.filter(name__iexact=name).order_by("id").first()
         if existing is None:
@@ -122,14 +133,14 @@ def remember_article(user: AbstractBaseUser, name: str, department: str | None =
 
 
 def save_article(user: AbstractBaseUser, name: str, article: Article | None = None,
-                 department: str | None = None) -> Article:
+                 department: Department | str | None = None) -> Article:
     """Create an article, or rename the given one."""
     name = _normalized_name(name)
     if article is None:
-        return user.articles.create(name=name, department=department or "")
+        return user.articles.create(name=name, department=resolve_department(department))
     article.name = name
     if department is not None:
-        article.department = department
+        article.department = resolve_department(department)
     article.save(update_fields=["name", "department", "updated_at"])
     return article
 
@@ -149,8 +160,7 @@ def save_articles(user: AbstractBaseUser, records: Sequence[Mapping[str, Any]], 
             raise ValueError(_("Enter an article name."))
         if name.casefold() in names:
             raise ValueError(_("An article with this name already exists."))
-        if record["department"] not in {"", *Department.values}:
-            raise ValueError(_("Invalid department."))
+        resolve_department(record["department"])
         names.add(name.casefold())
     user.articles.filter(pk__in=deleted_ids).delete()
     changed = [record for record in records if record["id"] is None or
@@ -161,7 +171,7 @@ def save_articles(user: AbstractBaseUser, records: Sequence[Mapping[str, Any]], 
         if record["id"] is not None:
             user.articles.filter(pk=record["id"]).update(name=f"__article_draft_{uuid4().hex}")
     for record in changed:
-        save_article(user, record["name"], article=existing.get(record["id"]), department=record["department"])
+        save_article(user, record["name"], article=existing.get(record["id"]), department=record["department"] or "")
 
 
 class QuantityOverflowError(ValueError):
@@ -176,7 +186,7 @@ def create_item(
     quantity: str = "",
     checked: bool = False,
     position: int | None = None,
-    department: str | None = None,
+    department: Department | str | None = None,
 ) -> ShoppingItem:
     """Add an item, or merge the quantity into the existing line with the same name."""
     name = _normalized_name(name)
@@ -202,7 +212,7 @@ def create_item(
         existing.quantity = merged
         existing.checked = False
         if department is not None:
-            existing.department = department
+            existing.department = resolve_department(department)
         existing.save(update_fields=["quantity", "checked", "department", "updated_at"])
         return existing
     if position is None:
@@ -212,7 +222,7 @@ def create_item(
         shopping_list=shopping_list,
         name=name,
         quantity=quantity,
-        department=article.department if article else "",
+        department=article.department if article else None,
         checked=checked,
         position=position,
     )
@@ -635,7 +645,7 @@ def add_item_to_owned_list(
     quantity: str = "",
     list_id: int | None = None,
     list_title: str = "",
-    department: str | None = None,
+    department: Department | str | None = None,
 ) -> ShoppingItem:
     """Add an item to a list belonging to this user."""
     name = _normalized_name(name)
@@ -690,7 +700,7 @@ def shopping_list_export_data(shopping_list: ShoppingList) -> dict[str, Any]:
         "icon": shopping_list.icon,
         "date": shopping_list.date.isoformat(),
         "items": [
-            {"name": item.name, "quantity": item.quantity, "checked": item.checked, "department": item.department}
+            {"name": item.name, "quantity": item.quantity, "checked": item.checked, "department": item.department_code}
             for item in shopping_list.items.all()
         ],
     }

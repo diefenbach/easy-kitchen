@@ -59,7 +59,7 @@ class ShoppingListViewSet(viewsets.ModelViewSet):
         return super().handle_exception(exc)
 
     def get_queryset(self):
-        return ShoppingList.objects.filter(user=self.request.user).prefetch_related("items")
+        return ShoppingList.objects.filter(user=self.request.user).prefetch_related("items__department")
 
     @extend_schema(request=ReorderItemsSerializer, responses={200: ShoppingListSerializer})
     @action(detail=True, methods=["post"])

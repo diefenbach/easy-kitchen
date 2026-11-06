@@ -1314,3 +1314,12 @@ msgstr "Artikel hinzufügen"
 
 msgid "Remove article"
 msgstr "Artikel entfernen"
+
+msgid "Departments"
+msgstr "Abteilungen"
+
+msgid "code"
+msgstr "Schlüssel"
+
+msgid "name"
+msgstr "Name"

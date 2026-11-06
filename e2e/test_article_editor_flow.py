@@ -1,7 +1,7 @@
 import pytest
 from playwright.sync_api import expect
 
-from easy_kitchen.models import Article, ShoppingList
+from easy_kitchen.models import Department, Article, ShoppingList
 from easy_kitchen.services import create_item
 
 pytestmark = [pytest.mark.e2e, pytest.mark.django_db(transaction=True)]
@@ -11,7 +11,7 @@ pytestmark = [pytest.mark.e2e, pytest.mark.django_db(transaction=True)]
 def test_article_editor_saves_and_discards_the_whole_draft(authenticated_page, user, live_server, width):
     shopping_list = ShoppingList.objects.create(user=user, title="Market")
     create_item(shopping_list, name="Apple", department="produce", checked=True)
-    Article.objects.create(user=user, name="Bread", department="bread")
+    Article.objects.create(user=user, name="Bread", department=Department.objects.get(code="bread"))
     page = authenticated_page
     page.set_viewport_size({"width": width, "height": 844})
     url = f"{live_server.url}/articles/?list={shopping_list.pk}"
@@ -43,17 +43,17 @@ def test_article_editor_saves_and_discards_the_whole_draft(authenticated_page, u
     footer.get_by_role("button", name="Save", exact=True).click()
     expect(rows.first.get_by_label("Article", exact=True)).to_have_value("Milk")
     assert page.evaluate("window.articleEditorSentinel") is True
-    assert list(user.articles.values_list("name", "department")) == [("Milk", "dairy"), ("Pear", "fresh")]
+    assert list(user.articles.values_list("name", "department__code")) == [("Milk", "dairy"), ("Pear", "fresh")]
     item = shopping_list.items.get()
-    assert item.name == "Apple" and item.department == "produce"
+    assert item.name == "Apple" and item.department_code == "produce"
     page.reload()
     expect(rows.last.get_by_label("Article", exact=True)).to_have_value("Pear")
     expect(rows.last.get_by_label("Department", exact=True)).to_have_value("fresh")
 
 
 def test_validation_retains_the_article_draft_for_retry(authenticated_page, user, live_server):
-    Article.objects.create(user=user, name="Apple", department="produce")
-    Article.objects.create(user=user, name="Bread", department="bread")
+    Article.objects.create(user=user, name="Apple", department=Department.objects.get(code="produce"))
+    Article.objects.create(user=user, name="Bread", department=Department.objects.get(code="bread"))
     page = authenticated_page
     page.goto(f"{live_server.url}/articles/")
     rows = page.locator(".editor-line:not([hidden])")
@@ -62,8 +62,8 @@ def test_validation_retains_the_article_draft_for_retry(authenticated_page, user
     page.locator(".article-editor-footer").get_by_role("button", name="Save", exact=True).click()
     expect(rows.first).to_contain_text("An article with this name already exists.")
     expect(rows.first.get_by_label("Department", exact=True)).to_have_value("fresh")
-    assert user.articles.get(name="Apple").department == "produce"
+    assert user.articles.get(name="Apple").department_code == "produce"
     rows.first.get_by_label("Article", exact=True).fill("Pear")
     page.locator(".article-editor-footer").get_by_role("button", name="Save", exact=True).click()
     expect(rows.last.get_by_label("Article", exact=True)).to_have_value("Pear")
-    assert user.articles.get(name="Pear").department == "fresh"
+    assert user.articles.get(name="Pear").department_code == "fresh"
