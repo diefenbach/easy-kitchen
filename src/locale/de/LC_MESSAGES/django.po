@@ -1353,3 +1353,9 @@ msgstr "Die Abteilungen konnten nicht gespeichert werden. Prüfe auf doppelte Na
 
 msgid "Removing a department leaves its articles and shopping items without a department."
 msgstr "Beim Entfernen einer Abteilung bleiben ihre Artikel und Einkaufseinträge ohne Abteilung erhalten."
+
+msgid "Invalid department. More than one department matches; choose a saved code."
+msgstr "Ungültige Abteilung. Mehrere Abteilungen passen; wähle einen gespeicherten Schlüssel."
+
+msgid "Invalid department. No exact match was found; choose a saved code."
+msgstr "Ungültige Abteilung. Kein eindeutiger Treffer gefunden; wähle einen gespeicherten Schlüssel."

@@ -144,6 +144,8 @@ def test_openapi_schema_lists_every_operation(client, user):
     assert response.status_code == 200
     schema = response.json()
     paths = schema["paths"]
+    assert set(paths["/api/v1/departments/"]) == {"get"}
+    assert set(paths["/api/v1/departments/resolve/"]) == {"get"}
     assert set(paths["/api/v1/shopping-lists/"]) >= {"get", "post"}
     assert set(paths["/api/v1/recipes/"]) >= {"get", "post"}
     assert "import_json" in paths["/api/v1/recipes/import_json/"]["post"]["operationId"]

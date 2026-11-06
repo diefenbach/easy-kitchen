@@ -8,6 +8,8 @@ Tools have no user argument. Records belong to the owner of the DRF token in `Au
 
 | Tool | Purpose |
 | --- | --- |
+| `list_departments` | Read the token owner's department IDs, stable codes, names and translated labels. |
+| `resolve_department` | Resolve a code, saved name or translation without writing. Pass `name`. |
 | `list_shopping_lists` | Read the token owner's lists and items. |
 | `list_recipes` | Read the token owner's recipes, ingredients, and steps. |
 | `create_shopping_list` | Create a list. Confirm `title`, an ISO `date`, and `items` first. |
@@ -19,6 +21,16 @@ Tools have no user argument. Records belong to the owner of the DRF token in `Au
 | `set_meal_plan_recipe` | Plan one recipe for an ISO `date`, by owned `recipe_id` or unambiguous `recipe_title`. Replaces an occupied day. |
 | `clear_meal_plan_day` | Remove the planned recipe for an ISO `date`. Repeating the call leaves the day empty. |
 | `add_meal_plan_week_to_list` | Copy an ISO `week` to exactly one existing `list_id` or a new list named `title`. |
+
+## Department selection
+
+Call `list_departments` first and prefer the returned `code` when creating a list or adding an item. `department` also accepts unambiguous saved names and English/German translations, including normalized variants such as `Obst und Gemüse`, `Obst & Gemüse`, and `Obst / Gemuese`.
+
+Use `resolve_department` with `{"name": "Obst und Gemüse"}` to resolve a name before writing. It returns `id`, `code`, `name`, and `label`. Exact codes take precedence; approximate spelling matches are never assigned automatically.
+
+Unresolved or ambiguous inputs produce a tool error containing a JSON object with `code` (`department_not_found` or `department_ambiguous`), `query`, `message`, and `candidates`. The MCP SDK may prefix that JSON with the tool name. Candidates contain owned `code`, `name`, and `label` values. Ask the user to select a candidate and retry with its code; do not guess or automatically create a department. If no candidate fits, ask the user for another department or an explicit assignment without a department.
+
+An unresolved write rolls back the entire operation, including a newly created Today list or earlier items in a batch. Omitting `department` uses the article default; an empty string explicitly clears it. No aliases are stored.
 
 ## Meal planning
 

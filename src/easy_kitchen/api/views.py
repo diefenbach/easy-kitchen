@@ -7,9 +7,13 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
-from easy_kitchen.models import Recipe, ShoppingList
+from easy_kitchen.models import Department, Recipe, ShoppingList
 from easy_kitchen.services import (
     QuantityOverflowError,
+    DepartmentResolutionError,
+    department_data,
+    list_department_data,
+    resolve_department,
     add_meal_plan_to_owned_list,
     clear_meal_plan_day,
     meal_plan_week_data,
@@ -22,6 +26,8 @@ from easy_kitchen.services import (
     reorder_shopping_lists,
 )
 from .serializers import (
+    DepartmentSerializer,
+    DepartmentQuerySerializer,
     MealPlanAssignSerializer,
     MealPlanDateSerializer,
     MealPlanDaySerializer,
@@ -48,12 +54,40 @@ def _import_records(payload: Any, key: str) -> list[Any] | None:
     return None
 
 
+class DepartmentViewSet(viewsets.GenericViewSet):
+    """Read and resolve only the authenticated user's department catalogue."""
+
+    serializer_class = DepartmentSerializer
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Department.objects.none()
+        return self.request.user.departments.all()
+
+    @extend_schema(responses=DepartmentSerializer(many=True))
+    def list(self, request):
+        return Response(list_department_data(request.user))
+
+    @extend_schema(parameters=[DepartmentQuerySerializer], responses={200: DepartmentSerializer, 400: OpenApiTypes.OBJECT})
+    @action(detail=False, methods=["get"])
+    def resolve(self, request):
+        query = DepartmentQuerySerializer(data=request.query_params)
+        query.is_valid(raise_exception=True)
+        try:
+            department = resolve_department(request.user, query.validated_data["query"])
+        except DepartmentResolutionError as error:
+            raise ValidationError({"department": error.as_dict()}) from None
+        return Response(department_data(department))
+
+
 class ShoppingListViewSet(viewsets.ModelViewSet):
     """Shopping lists of the authenticated user, including reorder and JSON import."""
 
     serializer_class = ShoppingListSerializer
 
     def handle_exception(self, exc):
+        if isinstance(exc, DepartmentResolutionError):
+            exc = ValidationError({"department": exc.as_dict()})
         if isinstance(exc, QuantityOverflowError):
             exc = ValidationError({"quantity": str(exc)})
         return super().handle_exception(exc)

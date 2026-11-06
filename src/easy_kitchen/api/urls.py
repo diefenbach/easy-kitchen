@@ -3,9 +3,10 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.permissions import AllowAny
 from rest_framework.routers import DefaultRouter
 
-from .views import MealPlanViewSet, RecipeViewSet, ShoppingListViewSet
+from .views import DepartmentViewSet, MealPlanViewSet, RecipeViewSet, ShoppingListViewSet
 
 router = DefaultRouter()
+router.register("departments", DepartmentViewSet, basename="department")
 router.register("shopping-lists", ShoppingListViewSet, basename="shopping-list")
 router.register("recipes", RecipeViewSet, basename="recipe")
 router.register("meal-planner", MealPlanViewSet, basename="meal-plan")

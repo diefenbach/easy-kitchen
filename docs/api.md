@@ -10,6 +10,33 @@ uv run --env-file .env python src/manage.py drf_create_token <username>
 
 Swagger UI is public at `/api/v1/`. The OpenAPI document is at `/api/v1/schema/`. List and recipe operations stay authenticated.
 
+## Departments
+
+`GET /api/v1/departments/` lists only the token owner's departments, sorted by their displayed labels. Each entry contains `id`, the stable `code`, the stored `name`, and the translated `label`.
+
+`GET /api/v1/departments/resolve/?query=Obst%20und%20Gem%C3%BCse` resolves a code or name without changing anything. An unambiguous match returns the same department metadata. These endpoints are read-only.
+
+Shopping items accept a department code or name in `department`; responses always contain its stable code. Exact codes take precedence. Otherwise, saved names and their translations in the configured languages are compared after normalizing case, whitespace, punctuation, conjunctions (`&`, `/`, `+`, `and`, `und`), and umlaut spellings such as `ü`/`ue`. No aliases are stored. Renaming a department preserves its code and does not retain its former name as an alias.
+
+Omit `department` to use the saved article default. Send `"department": ""` to explicitly clear the assignment and update the article default.
+
+An unknown or ambiguous department returns HTTP 400 with `code` (`department_not_found` or `department_ambiguous`), `query`, `message`, and `candidates`. Candidates contain only owned departments, with `code`, `name`, and `label`. Similar names are suggestions, never automatic assignments. Ask the user to choose a candidate and retry with its code. An unresolved request does not create departments or partially save a list, import, or replacement collection.
+
+A resolver error looks like this; nested shopping items place the same detail under `items[index].department`:
+
+```json
+{
+  "department": {
+    "code": "department_not_found",
+    "query": "Obst",
+    "message": "Invalid department. No exact match was found; choose a saved code.",
+    "candidates": [
+      {"code": "produce", "name": "Fruit & vegetables", "label": "Fruit & vegetables"}
+    ]
+  }
+}
+```
+
 ## Shopping lists
 
 - Collection: `/api/v1/shopping-lists/`

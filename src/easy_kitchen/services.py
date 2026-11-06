@@ -1,10 +1,13 @@
 import re
+import unicodedata
+from difflib import SequenceMatcher
 from collections.abc import Mapping, Sequence
 from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any, Literal
 from uuid import uuid4
 
+from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
@@ -12,7 +15,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import F, Manager, Max, Model
 from django.utils import timezone
 from django.utils.text import slugify
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext as _, override
 
 from .departments import DEFAULT_DEPARTMENTS
 from .models import (
@@ -108,18 +111,91 @@ def seed_default_departments(user: AbstractBaseUser, *, using: str = "default") 
     ])
 
 
+class DepartmentResolutionError(ValueError):
+    """A department needs an explicit choice; approximate matches never authorize a write."""
+
+    def __init__(self, query: str, *, ambiguous: bool = False, candidates: list[dict] | None = None):
+        self.query = query
+        self.code = "department_ambiguous" if ambiguous else "department_not_found"
+        self.candidates = candidates or []
+        message = (_("Invalid department. More than one department matches; choose a saved code.")
+                   if ambiguous else _("Invalid department. No exact match was found; choose a saved code."))
+        super().__init__(str(message))
+
+    def as_dict(self) -> dict:
+        return {"code": self.code, "query": self.query, "message": str(self), "candidates": self.candidates}
+
+
+def department_data(department: Department) -> dict:
+    """Public department metadata; ownership is established before calling this function."""
+    return {"id": department.pk, "code": department.code, "name": department.name, "label": str(department)}
+
+
+def list_department_data(user: AbstractBaseUser) -> list[dict]:
+    """List only this user's departments, sorted by the displayed label."""
+    def sort_key(department):
+        label = unicodedata.normalize("NFKD", str(department).casefold())
+        return "".join(character for character in label if not unicodedata.combining(character))
+
+    return [department_data(department) for department in sorted(user.departments.all(), key=sort_key)]
+
+
+def _department_match_key(value: str) -> str:
+    text = unicodedata.normalize("NFKC", value).casefold()
+    text = text.translate(str.maketrans({"ä": "ae", "ö": "oe", "ü": "ue"}))
+    text = unicodedata.normalize("NFKD", text)
+    text = "".join(character for character in text if not unicodedata.combining(character))
+    text = re.sub(r"[&+/]", " and ", text)
+    words = re.findall(r"[^\W_]+", text)
+    return " ".join("and" if word == "und" else word for word in words)
+
+
 def resolve_department(user: AbstractBaseUser, value: Department | str | None) -> Department | None:
-    """Resolve a department from this user's catalogue, accepting existing external codes."""
+    """Resolve owned codes or unambiguous names; return suggestions instead of guessing."""
     if value is None or value == "":
         return None
     if isinstance(value, Department):
         if value.user_id != user.pk:
-            raise ValueError(_("Invalid department."))
-        value = value.code
-    try:
-        return user.departments.get(code=value)
-    except Department.DoesNotExist:
-        raise ValueError(_("Invalid department.")) from None
+            raise DepartmentResolutionError(value.code)
+        try:
+            return user.departments.get(pk=value.pk)
+        except Department.DoesNotExist:
+            raise DepartmentResolutionError(value.code) from None
+    query = value.strip()
+    if not query:
+        return None
+    exact = user.departments.filter(code=query).first()
+    if exact is not None:
+        return exact
+    departments = list(user.departments.all())
+    names = {department.pk: {department.code, department.name} for department in departments}
+    for language, label in settings.LANGUAGES:
+        with override(language):
+            for department in departments:
+                names[department.pk].add(str(department))
+    keys = {pk: {_department_match_key(name) for name in variants} for pk, variants in names.items()}
+    query_key = _department_match_key(query)
+    matches = [department for department in departments if query_key and query_key in keys[department.pk]]
+
+    def candidate(department):
+        return {key: value for key, value in department_data(department).items() if key != "id"}
+
+    if len(matches) == 1:
+        return matches[0]
+    if matches:
+        raise DepartmentResolutionError(query, ambiguous=True, candidates=[candidate(department) for department in matches])
+    ranked = []
+    query_words = [word for word in query_key.split() if word != "and"]
+    for department in departments:
+        score = 0.0
+        for key in keys[department.pk]:
+            score = max(score, SequenceMatcher(None, query_key, key, autojunk=False).ratio())
+            if query_words and all(len(word) >= 3 and any(part.startswith(word) for part in key.split()) for word in query_words):
+                score = max(score, 0.65)
+        if query_key and score >= 0.45:
+            ranked.append((score, department))
+    ranked.sort(key=lambda entry: (-entry[0], str(entry[1]).casefold(), entry[1].code))
+    raise DepartmentResolutionError(query, candidates=[candidate(department) for score, department in ranked[:5]])
 
 
 def remember_article(user: AbstractBaseUser, name: str, department: Department | str | None = None) -> Article | None:
@@ -688,6 +764,7 @@ def add_recipe_to_owned_list(
     return add_recipe_ingredients_to_list(recipe, shopping_list)
 
 
+@transaction.atomic
 def add_item_to_owned_list(
     user: AbstractBaseUser,
     *,

@@ -12,6 +12,42 @@ servers:
 security:
   - EasyKitchenToken: []
 paths:
+  /departments/:
+    get:
+      operationId: listDepartments
+      summary: List the authenticated user's departments
+      description: Read the user's IDs, stable codes, names and translated labels. Prefer codes for item assignments.
+      responses:
+        '200':
+          description: Owned departments, sorted by their displayed labels.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Department'
+  /departments/resolve/:
+    get:
+      operationId: resolveDepartment
+      summary: Resolve an owned department without changing data
+      description: Codes, saved names and translations are accepted. On an ambiguous or unknown input, ask the user to select a candidate code; never choose an approximate match automatically.
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 255
+      responses:
+        '200':
+          description: An unambiguous department.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Department'
+        '400':
+          $ref: '#/components/responses/ValidationError'
   /shopping-lists/:
     get:
       operationId: listShoppingLists
@@ -76,6 +112,20 @@ components:
         type: integer
         minimum: 1
   schemas:
+    Department:
+      type: object
+      required: [id, code, name, label]
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+          description: Stable key for assignments; it remains unchanged when a department is renamed.
+        name:
+          type: string
+        label:
+          type: string
+          description: Translated display name.
     ShoppingItemInput:
       type: object
       additionalProperties: false
@@ -89,6 +139,10 @@ components:
           type: string
           default: ''
           description: Optional amount, for example `400 g` or `2 packs`.
+        department:
+          type: string
+          maxLength: 255
+          description: Owned department code or unambiguous name/translation. Omit to use the article default; an empty string explicitly clears it. Unknown or ambiguous names return candidate codes with no writes. Ask the user to choose rather than guessing.
         checked:
           type: boolean
           default: false
@@ -143,7 +197,7 @@ components:
               readOnly: true
   responses:
     ValidationError:
-      description: The submitted data is invalid.
+      description: The submitted data is invalid. Department errors contain code (department_not_found or department_ambiguous), query, message and owned candidates (code, name, label), under department or items[index].department.
       content:
         application/json:
           schema:

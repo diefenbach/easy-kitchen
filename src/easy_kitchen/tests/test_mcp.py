@@ -292,6 +292,8 @@ def test_mcp_does_not_add_an_item_to_another_users_list(user, other_user):
 def test_mcp_read_and_update_tools_do_not_accept_a_user_argument():
     names = {
         "list_shopping_lists": set(),
+        "list_departments": set(),
+        "resolve_department": {"name"},
         "list_recipes": set(),
         "set_item_checked": {"name", "checked", "list_id"},
         "add_recipe_to_list": {"recipe_id", "recipe_title", "list_id", "list_title"},
