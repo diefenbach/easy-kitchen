@@ -1,5 +1,6 @@
 # EasyKitchen development conventions
 
+- Let the user test changes locally first. Create a pull request only when the user explicitly asks for it; do not automatically push changes or create a PR after implementation.
 - Keep the application Django-first. Use Django forms, templates, and class-based views where practical.
 - The application is English-first. Write user-facing strings in English and mark them for translation. Add the German translation in `src/locale/de/LC_MESSAGES/django.po`.
 - Keep browser JavaScript small. HTMX is preferred for partial page updates; SortableJS is reserved for item ordering.
