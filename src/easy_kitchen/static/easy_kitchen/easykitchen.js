@@ -39,34 +39,69 @@ export function bindSortable(
   { draggable, datasetKey, field, url = element?.dataset.reorderUrl },
 ) {
   let previousOrder = [];
+  let pending = false;
+  const cards = () => [...element.querySelectorAll(draggable)];
+  function syncControls() {
+    const nodes = cards();
+    nodes.forEach((node, index) => {
+      const up = node.querySelector("[data-card-up]");
+      const down = node.querySelector("[data-card-down]");
+      if (up) up.disabled = pending || index === 0;
+      if (down) down.disabled = pending || index === nodes.length - 1;
+    });
+  }
+  async function saveOrder(focusButton) {
+    pending = true;
+    sortable.option("disabled", true);
+    element.setAttribute("aria-busy", "true");
+    syncControls();
+    try {
+      await postJson(url, { [field]: cards().map((node) => Number(node.dataset[datasetKey])) });
+    } catch {
+      previousOrder
+        .filter((node) => node.parentElement === element)
+        .forEach((node) => element.append(node));
+      showSaveError();
+    } finally {
+      pending = false;
+      sortable.option("disabled", false);
+      element.removeAttribute("aria-busy");
+      syncControls();
+      if (focusButton) {
+        const card = focusButton.closest(draggable);
+        (focusButton.disabled
+          ? (card.querySelector("[data-card-up]:enabled, [data-card-down]:enabled") ??
+            card.querySelector(".drag-handle"))
+          : focusButton
+        )?.focus();
+      }
+    }
+  }
   const sortable = createSortable(element, {
     handle: ".drag-handle",
     draggable,
     onStart() {
       previousOrder = [...element.children];
     },
-    async onEnd(event) {
-      if (event.oldDraggableIndex === event.newDraggableIndex) return;
-      const ids = [...element.querySelectorAll(draggable)].map((node) =>
-        Number(node.dataset[datasetKey]),
-      );
-      sortable.option("disabled", true);
-      element.setAttribute("aria-busy", "true");
-      try {
-        await postJson(url, { [field]: ids });
-      } catch {
-        previousOrder
-          .filter((node) => node.parentElement === element)
-          .forEach((node, index) => {
-            element.insertBefore(node, element.children[index] ?? null);
-          });
-        showSaveError();
-      } finally {
-        sortable.option("disabled", false);
-        element.removeAttribute("aria-busy");
-      }
+    onEnd(event) {
+      if (event.oldDraggableIndex !== event.newDraggableIndex) saveOrder();
     },
   });
+  element.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-card-up], [data-card-down]");
+    if (!button || pending) return;
+    const card = button.closest(draggable);
+    const nodes = cards();
+    const index = nodes.indexOf(card);
+    const up = button.hasAttribute("data-card-up");
+    const neighbor = nodes[index + (up ? -1 : 1)];
+    if (!neighbor) return;
+    previousOrder = [...element.children];
+    if (up) element.insertBefore(card, neighbor);
+    else element.insertBefore(neighbor, card);
+    saveOrder(button);
+  });
+  syncControls();
   return sortable;
 }
 

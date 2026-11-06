@@ -79,6 +79,10 @@ function bindCollectionEditor() {
         container.insertBefore(visible[index + 1], row);
       } else return;
       reorder();
+      if (row.hidden) {
+        const next = rows()[index] ?? rows().at(-1);
+        (next?.querySelector('input:not([type="hidden"]), textarea') ?? add).focus();
+      }
       state.dirty = true;
     });
     const sortable = createSortable(container, {
