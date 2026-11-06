@@ -4,10 +4,10 @@
   {{ line.non_field_errors }}
   <div class="d-flex align-items-center gap-2 mb-3">
     <span class="text-secondary" data-editor-number></span>
-    <button type="button" class="btn btn-sm btn-outline-secondary editor-drag" aria-label="{% translate 'Move' %}"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button>
-    <button type="button" class="btn btn-sm btn-outline-secondary" data-editor-up aria-label="{% translate 'Move up' %}"><i class="bi bi-arrow-up" aria-hidden="true"></i></button>
-    <button type="button" class="btn btn-sm btn-outline-secondary" data-editor-down aria-label="{% translate 'Move down' %}"><i class="bi bi-arrow-down" aria-hidden="true"></i></button>
-    <button type="button" class="btn btn-sm btn-outline-danger ms-auto" data-editor-remove aria-label="{% translate 'Remove item' %}"><i class="bi bi-trash" aria-hidden="true"></i></button>
+    <button type="button" class="btn btn-sm btn-outline-secondary editor-drag" disabled aria-label="{% translate 'Move' %}"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-editor-up disabled aria-label="{% translate 'Move up' %}"><i class="bi bi-arrow-up" aria-hidden="true"></i></button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-editor-down disabled aria-label="{% translate 'Move down' %}"><i class="bi bi-arrow-down" aria-hidden="true"></i></button>
+    <button type="button" class="btn btn-sm btn-outline-danger ms-auto" data-editor-remove disabled aria-label="{% translate 'Remove item' %}"><i class="bi bi-trash" aria-hidden="true"></i></button>
   </div>
   <div class="row g-3">
     {% for field in line.visible_fields %}

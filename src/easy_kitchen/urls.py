@@ -73,6 +73,7 @@ urlpatterns = [
         recipe_views.StepDeleteView.as_view(),
         name="recipe-step-delete",
     ),
+    path("departments/", views.DepartmentListView.as_view(), name="departments"),
     path("articles/", views.ArticleListView.as_view(), name="articles"),
     path("articles/<int:pk>/", views.ArticleUpdateView.as_view(), name="article-update"),
     path("articles/<int:pk>/delete/", views.ArticleDeleteView.as_view(), name="article-delete"),

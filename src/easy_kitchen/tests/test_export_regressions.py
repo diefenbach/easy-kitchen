@@ -27,7 +27,7 @@ def test_export_invalid_ids_return_validation_response(client, user):
 
 @pytest.mark.django_db
 def test_selected_export_query_count_is_constant(user, other_user, django_assert_num_queries):
-    lists = [create_shopping_list(user, title=f"List {i}", date=date.today(), items=[{"name": "Milk"}]) for i in range(4)]
+    lists = [create_shopping_list(user, title=f"List {i}", date=date.today(), items=[{"name": "Milk", "department": "dairy"}]) for i in range(4)]
     recipes = [create_recipe(user, title=f"Recipe {i}", ingredients=[{"name": "Milk"}], steps=["Mix"]) for i in range(4)]
     foreign = create_shopping_list(other_user, title="Private", date=date.today())
     form = ExportForm({"lists": [x.pk for x in lists] + [foreign.pk], "recipes": [x.pk for x in recipes]}, user=user)

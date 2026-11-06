@@ -1,7 +1,21 @@
 from rest_framework import serializers
 from django.db import transaction
-from easy_kitchen.models import Recipe, RecipeIngredient, RecipeStep, ShoppingItem, ShoppingList
-from easy_kitchen.services import create_item, create_recipe, create_shopping_list
+from django.utils.translation import gettext_lazy as _
+from easy_kitchen.models import Department, Recipe, RecipeIngredient, RecipeStep, ShoppingItem, ShoppingList
+from easy_kitchen.services import DepartmentResolutionError, create_item, create_recipe, create_shopping_list, resolve_department
+
+
+class DepartmentSerializer(serializers.ModelSerializer):
+    label = serializers.CharField(source="__str__", read_only=True)
+
+    class Meta:
+        model = Department
+        fields = ("id", "code", "name", "label")
+        read_only_fields = fields
+
+
+class DepartmentQuerySerializer(serializers.Serializer):
+    query = serializers.CharField(max_length=255)
 
 
 class ReorderItemsSerializer(serializers.Serializer):
@@ -44,10 +58,30 @@ class ShoppingItemSerializer(CompleteChildSerializer):
     """One shopping-list line for the API."""
 
     required_replacement_field = "name"
+    department = serializers.CharField(source="department_code", required=False, allow_blank=True, max_length=255)
+
+    def validate_department(self, value):
+        request = self.context.get("request")
+        user = request.user if request else self.context.get("user")
+        if not value:
+            return ""
+        if user is None:
+            raise serializers.ValidationError(_("Invalid department."))
+        try:
+            department = resolve_department(user, value)
+        except DepartmentResolutionError as error:
+            raise serializers.ValidationError(error.as_dict()) from None
+        return department.code if department else ""
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        if "department_code" in attrs:
+            attrs["department"] = attrs.pop("department_code")
+        return attrs
 
     class Meta:
         model = ShoppingItem
-        fields = ("id", "name", "quantity", "checked", "position")
+        fields = ("id", "name", "quantity", "department", "checked", "position")
         read_only_fields = ("id",)
 
 

@@ -1,6 +1,6 @@
 {% load i18n %}
 {% if oob %}<div id="item-form" hx-swap-oob="innerHTML">{% endif %}
-<form hx-post="{% url 'easy_kitchen:item-create' shopping_list.pk %}" hx-target="#items" hx-swap="beforeend" hx-sync="this:drop" class="row g-2 align-items-end">
+<form hx-post="{% url 'easy_kitchen:item-create' shopping_list.pk %}" hx-target="#items" hx-swap="innerHTML" hx-sync="this:drop" class="row g-2 align-items-end">
   {% csrf_token %}
   {{ form.non_field_errors }}
   <div class="col-12 col-sm">
@@ -12,12 +12,16 @@
     </div>
     {% include "easy_kitchen/lists/partials/article_options.html" with oob=False %}
   </div>
-  <div class="col-7 col-sm-3">
+  <div class="col-5 col-sm-2">
     <label class="form-label" for="{{ form.quantity.id_for_label }}">{{ form.quantity.label }}</label>
     {{ form.quantity }}
     {{ form.quantity.errors }}
   </div>
-  <div class="col-5 col-sm-auto">
+  <div class="col-7 col-sm-3">
+    <label class="form-label" for="{{ form.department.id_for_label }}">{{ form.department.label }}</label>
+    {{ form.department }}{{ form.department.errors }}
+  </div>
+  <div class="col-12 col-sm-auto">
     <button class="btn btn-primary w-100" aria-label="{% translate 'Add' %}">
       <i class="bi bi-plus-lg" aria-hidden="true"></i>
       <span class="d-none d-md-inline">{% translate "Add" %}</span>

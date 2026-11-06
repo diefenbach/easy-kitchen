@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 
+
 def _place_new_record_first(instance):
     """Shift this user's existing records down so a new one without a position is stored first."""
     if not instance._state.adding or instance.position:
@@ -85,11 +86,40 @@ class ShoppingList(models.Model):
             return super().save(*args, **kwargs)
 
 
-class ShoppingItem(models.Model):
+class Department(models.Model):
+    """A user-owned supermarket department referenced by their articles and list entries."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="departments")
+    code = models.SlugField(_("code"), max_length=20)
+    name = models.CharField(_("name"), max_length=100)
+    position = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ("position", "id")
+        verbose_name = _("Department")
+        verbose_name_plural = _("Departments")
+        constraints = [models.UniqueConstraint(fields=("user", "code"), name="shopping_department_unique_code_per_user")]
+
+    def __str__(self):
+        return str(_(self.name))
+
+
+class DepartmentReference:
+    @property
+    def department_code(self):
+        """Stable code used by forms, JSON and MCP; an empty string means unassigned."""
+        return self.department.code if self.department_id else ""
+
+
+class ShoppingItem(DepartmentReference, models.Model):
     """One line on a shopping list."""
 
     shopping_list = models.ForeignKey(ShoppingList, on_delete=models.CASCADE, related_name="items")
     name = models.CharField(_("item"), max_length=255)
+    department = models.ForeignKey(
+        Department, verbose_name=_("Department"), on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="items",
+    )
     quantity = models.CharField(_("quantity"), max_length=100, blank=True)
     checked = models.BooleanField(_("completed"), default=False)
     position = models.PositiveIntegerField(default=0)
@@ -105,13 +135,17 @@ class ShoppingItem(models.Model):
         return self.name
 
 
-class Article(models.Model):
+class Article(DepartmentReference, models.Model):
     """A saved item name suggested while filling a shopping list."""
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="articles"
     )
     name = models.CharField(_("article"), max_length=255)
+    department = models.ForeignKey(
+        Department, verbose_name=_("Department"), on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="articles",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

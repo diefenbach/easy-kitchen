@@ -1,85 +1,44 @@
 {% extends "easy_kitchen/base.html" %}
-{% load i18n %}
+{% load i18n static %}
 {% block title %}{% translate "Articles" %} · EasyKitchen{% endblock %}
 {% block content %}
-<a class="btn btn-outline-secondary btn-sm list-back-button mb-3" href="{% if return_list %}{% url 'easy_kitchen:detail' return_list.pk %}{% else %}{% url 'easy_kitchen:list' %}{% endif %}" aria-label="{% if return_list %}{{ return_list.title }}{% else %}{% translate 'Shopping lists' %}{% endif %}">
-  <i class="bi bi-arrow-left" aria-hidden="true"></i>
-  <span class="d-none d-md-inline">{% if return_list %}{{ return_list.title }}{% else %}{% translate "Shopping lists" %}{% endif %}</span>
-</a>
-<div class="mb-4">
-  <h1 class="h2 mb-2">{% translate "Articles" %}</h1>
-  <p class="text-secondary mb-0">{% translate "These articles are offered in the dropdown when you add an item to a shopping list." %}</p>
-</div>
-<form method="post" class="card shadow-sm mb-4">
-  <div class="card-body">
-    {% csrf_token %}
-    {% if return_list %}<input type="hidden" name="return_list" value="{{ return_list.pk }}">{% endif %}
-    <label class="form-label" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
-    {{ form.name }}
-    {{ form.name.errors }}
-  </div>
-  <div class="card-footer bg-white">
-    <button class="btn btn-primary" aria-label="{% translate 'Add' %}">
-      <i class="bi bi-plus-lg" aria-hidden="true"></i>
-      <span class="d-none d-md-inline">{% translate "Add" %}</span>
-    </button>
-  </div>
-</form>
-{% if articles %}
-  <div class="list-group shadow-sm">
-    {% for article in articles %}
-      <div class="list-group-item bg-white">
-        <div class="article-row d-flex align-items-center gap-2">
-          <form method="post" action="{% url 'easy_kitchen:article-update' article.pk %}" class="article-name-form d-flex flex-grow-1 align-items-center gap-2">
-            {% csrf_token %}
-            {% if return_list %}<input type="hidden" name="return_list" value="{{ return_list.pk }}">{% endif %}
-            <label class="visually-hidden" for="article-{{ article.pk }}">{% blocktranslate with name=article.name %}Edit {{ name }}{% endblocktranslate %}</label>
-            {% if edit_form and edit_form.instance.pk == article.pk %}
-              <input id="article-{{ article.pk }}" name="name" value="{{ edit_form.name.value|default:'' }}" maxlength="255" required>
-              {{ edit_form.name.errors }}
-            {% else %}
-              <input id="article-{{ article.pk }}" name="name" value="{{ article.name }}" maxlength="255" required>
-            {% endif %}
-            <button class="btn btn-outline-secondary flex-shrink-0" aria-label="{% translate 'Save' %}">
-              <i class="bi bi-check-lg" aria-hidden="true"></i>
-            </button>
-          </form>
-          <button type="button" class="btn btn-outline-danger flex-shrink-0" data-bs-toggle="modal" data-bs-target="#delete-article-modal-{{ article.pk }}" aria-label="{% translate 'Delete' %}">
-            <i class="bi bi-trash" aria-hidden="true"></i>
-          </button>
-        </div>
+<div class="row justify-content-center">
+  <div class="col-12 col-xl-9">
+    <a class="btn btn-outline-secondary btn-sm list-back-button mb-3" data-editor-cancel href="{{ cancel_url }}" hx-get="{{ cancel_url }}" hx-target="main" hx-select="main" hx-swap="outerHTML show:none focus-scroll:false" hx-push-url="true" aria-label="{% if return_list %}{{ return_list.title }}{% else %}{% translate 'Shopping lists' %}{% endif %}">
+      <i class="bi bi-arrow-left" aria-hidden="true"></i>
+      <span class="d-none d-md-inline">{% if return_list %}{{ return_list.title }}{% else %}{% translate "Shopping lists" %}{% endif %}</span>
+    </a>
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+      <h1 class="h2 mb-0">{% translate "Articles" %}</h1>
+      <div class="d-flex gap-2">
+        <a href="{{ cancel_url }}" class="btn btn-outline-secondary" data-editor-cancel hx-get="{{ cancel_url }}" hx-target="main" hx-select="main" hx-swap="outerHTML show:none focus-scroll:false" hx-push-url="true">{% translate "Cancel" %}</a>
+        <button type="submit" form="article-editor-form" class="btn btn-primary">{% translate "Save" %}</button>
       </div>
-      <div class="modal fade" id="delete-article-modal-{{ article.pk }}" tabindex="-1" aria-labelledby="delete-article-title-{{ article.pk }}" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h2 class="modal-title fs-5" id="delete-article-title-{{ article.pk }}">{% translate "Delete article?" %}</h2>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate 'Close' %}"></button>
-            </div>
-            <div class="modal-body">{% blocktranslate with name=article.name %}"{{ name }}" will be removed from suggestions. Items already on a list stay unchanged.{% endblocktranslate %}</div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" aria-label="{% translate 'Cancel' %}">
-                <i class="bi bi-x-lg" aria-hidden="true"></i>
-                <span class="d-none d-md-inline">{% translate "Cancel" %}</span>
-              </button>
-              <form method="post" action="{% url 'easy_kitchen:article-delete' article.pk %}">
-                {% csrf_token %}
-                {% if return_list %}<input type="hidden" name="return_list" value="{{ return_list.pk }}">{% endif %}
-                <button class="btn btn-danger" aria-label="{% translate 'Delete permanently' %}">
-                  <i class="bi bi-trash" aria-hidden="true"></i>
-                  <span class="d-none d-md-inline">{% translate "Delete permanently" %}</span>
-                </button>
-              </form>
-            </div>
+    </div>
+    <p class="text-secondary">{% translate "These articles are offered in the dropdown when you add an item to a shopping list." %}</p>
+    <form id="article-editor-form" method="post" action="{{ request.get_full_path }}" hx-post="{{ request.get_full_path }}" hx-target="main" hx-select="main" hx-swap="outerHTML show:none focus-scroll:false" hx-sync="this:drop" hx-history="false" data-bound="{{ article_formset.is_bound|yesno:'true,false' }}" data-discard-message="{% translate 'Discard your unsaved article changes?' %}">
+      {% csrf_token %}
+      {% if return_list %}<input type="hidden" name="return_list" value="{{ return_list.pk }}">{% endif %}
+      {% if article_formset.errors or article_formset.non_form_errors or legacy_error %}
+        <div class="alert alert-danger" role="alert">{% translate "Please check the highlighted fields. Your changes have not been saved." %}</div>
+      {% endif %}
+      {% if legacy_error %}{{ legacy_error.errors }}{% endif %}
+      <section class="card shadow-sm mb-4" data-editor-lines="articles" data-editor-unordered>
+        <div class="card-body">
+          {{ article_formset.management_form }}{{ article_formset.non_form_errors }}
+          <div data-editor-rows>
+            {% for line in article_formset %}{% include "easy_kitchen/lists/partials/editor_article.html" %}{% endfor %}
           </div>
+          <template data-editor-empty>{% include "easy_kitchen/lists/partials/editor_article.html" with line=article_formset.empty_form %}</template>
+          <button type="button" class="btn btn-outline-secondary" data-editor-add disabled><i class="bi bi-plus-lg" aria-hidden="true"></i> {% translate "Add article" %}</button>
         </div>
+      </section>
+      <div class="article-editor-footer d-flex justify-content-end gap-2 rounded border shadow-sm p-3">
+        <a href="{{ cancel_url }}" class="btn btn-outline-secondary" data-editor-cancel hx-get="{{ cancel_url }}" hx-target="main" hx-select="main" hx-swap="outerHTML show:none focus-scroll:false" hx-push-url="true">{% translate "Cancel" %}</a>
+        <button type="submit" class="btn btn-primary">{% translate "Save" %}</button>
       </div>
-    {% endfor %}
+    </form>
   </div>
-{% else %}
-  <div class="text-center py-5 bg-white rounded shadow-sm">
-    <h2 class="h4">{% translate "No articles yet" %}</h2>
-    <p class="text-secondary">{% translate "Articles you add to a list are saved here." %}</p>
-  </div>
-{% endif %}
+</div>
 {% endblock %}
+{% block scripts %}<script type="module" src="{% static 'easy_kitchen/article-editor.js' %}"></script>{% endblock %}

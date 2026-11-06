@@ -40,11 +40,12 @@ def test_saved_articles_are_suggested_and_can_be_renamed(authenticated_page):
     open_account_menu(page)
     page.get_by_role("link", name="Edit articles", exact=True).click()
     expect(page.get_by_role("heading", name="Articles")).to_be_visible()
-    name = page.get_by_role("textbox", name="Edit Naturtofu")
+    name = page.get_by_label("Article", exact=True)
     expect(name).to_have_value("Naturtofu")
     name.fill("Räuchertofu")
-    name.locator("xpath=ancestor::form[1]").get_by_role("button", name="Save").click()
-    expect(page.get_by_role("textbox", name="Edit Räuchertofu")).to_have_value("Räuchertofu")
+    page.locator(".article-editor-footer").get_by_role("button", name="Save", exact=True).click()
+    expect(page.get_by_role("alert").filter(has_text="Articles updated.")).to_be_visible()
+    expect(page.get_by_label("Article", exact=True)).to_have_value("Räuchertofu")
 
     page.get_by_role("link", name="Easy Kitchen").click()
     page.get_by_role("link", name="Vorrat").click()
@@ -104,27 +105,20 @@ def test_articles_return_to_the_page_they_were_opened_from(authenticated_page):
 
 @pytest.mark.e2e
 @pytest.mark.django_db(transaction=True)
-def test_article_actions_stay_beside_the_name_on_a_phone(authenticated_page):
+def test_article_editor_save_stays_at_the_bottom_on_a_phone(authenticated_page):
     page = authenticated_page
     page.set_viewport_size({"width": 390, "height": 844})
     open_account_menu(page)
     page.get_by_role("link", name="Edit articles", exact=True).click()
+    page.get_by_role("button", name="Add article", exact=True).click()
     page.get_by_label("Article", exact=True).fill("Apfel")
-    page.get_by_role("button", name="Add").click()
-
-    row = page.locator(".article-row")
-    name = row.get_by_role("textbox", name="Edit Apfel")
-    save = row.get_by_role("button", name="Save")
-    delete = row.get_by_role("button", name="Delete")
-    expect(name).to_be_visible()
-    name_box = name.bounding_box()
-    save_box = save.bounding_box()
-    delete_box = delete.bounding_box()
-    assert abs(name_box["y"] - save_box["y"]) < 8
-    assert abs(name_box["y"] - delete_box["y"]) < 8
-    assert name_box["x"] + name_box["width"] <= save_box["x"]
-    assert save_box["x"] + save_box["width"] <= delete_box["x"]
-    assert delete_box["x"] + delete_box["width"] <= 390
+    footer = page.locator(".article-editor-footer")
+    expect(footer).to_have_css("position", "sticky")
+    expect(footer.get_by_role("button", name="Save", exact=True)).to_be_visible()
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    footer.get_by_role("button", name="Save", exact=True).click()
+    expect(page.get_by_role("alert").filter(has_text="Articles updated.")).to_be_visible()
+    expect(page.get_by_label("Article", exact=True)).to_have_value("Apfel")
 
 
 @pytest.mark.e2e
@@ -470,7 +464,7 @@ def test_user_can_export_selected_lists_and_recipes(authenticated_page, user):
     payload = json.loads(download_info.value.path().read_text())
 
     assert payload["lists"][0]["title"] == "Weekend shop"
-    assert payload["lists"][0]["items"] == [{"name": "Apples", "quantity": "1 kg", "checked": False}]
+    assert payload["lists"][0]["items"] == [{"name": "Apples", "quantity": "1 kg", "checked": False, "department": ""}]
     assert payload["recipes"][0]["title"] == "Pancakes"
 
 

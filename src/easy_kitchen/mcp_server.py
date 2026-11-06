@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import json
 from datetime import date as Date
 from typing import TYPE_CHECKING, Annotated
 
@@ -19,10 +20,15 @@ from mcp.server.mcpserver.exceptions import ToolError
 from mcp.server.transport_security import TransportSecuritySettings
 from mcp.types import ToolAnnotations
 from pydantic import BaseModel, Field
+from django.utils.translation import gettext as _
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 from easy_kitchen.models import Recipe, ShoppingList
 from easy_kitchen.services import (
+    DepartmentResolutionError,
+    department_data,
+    list_department_data,
+    resolve_department as resolve_owned_department,
     add_item_to_owned_list,
     add_meal_plan_to_owned_list,
     add_recipe_to_owned_list,
@@ -46,6 +52,11 @@ mcp = MCPServer(
         "When adding an item, use the named list or today's list; create today's list if none exists. "
         "When adding a recipe to a list, use the named list or today's list; create today's list if none exists. "
         "The meal planner uses one recipe per date; setting a recipe replaces that day's plan. "
+        "List departments before assigning one and prefer their stable codes. "
+        "Department names and English/German translations accept normalized spacing and conjunctions. "
+        "If department_not_found or department_ambiguous is returned, ask the user which department they mean, then retry with the selected candidate code. "
+        "Never choose an approximate match or create a department automatically. "
+        "Omitting a department keeps the article default; an empty string explicitly clears it. "
         "Use ISO dates. When copying a planned week, provide exactly one existing list_id or "
         "a title for a new list. Copying the week again adds the ingredients again."
     ),
@@ -57,6 +68,7 @@ class ShoppingItemInput(BaseModel):
 
     name: Annotated[str, Field(min_length=1, max_length=255)]
     quantity: Annotated[str, Field(max_length=100)] = ""
+    department: Annotated[str, Field(max_length=255)] | None = None
 
 
 class IngredientInput(BaseModel):
@@ -120,6 +132,7 @@ def _shopping_list_payload(shopping_list: ShoppingList) -> dict:
                 "id": item.id,
                 "name": item.name,
                 "quantity": item.quantity,
+                "department": item.department_code,
                 "checked": item.checked,
             }
             for item in shopping_list.items.all()
@@ -185,6 +198,8 @@ def create_shopping_list(
             icon=icon,
             items=[item.model_dump() for item in normalized_items],
         )
+    except DepartmentResolutionError as error:
+        raise ToolError(json.dumps(error.as_dict(), ensure_ascii=False)) from None
     except ValueError as error:
         raise ToolError(str(error)) from None
     return _shopping_list_payload(shopping_list)
@@ -243,7 +258,27 @@ def create_recipe(
 def list_shopping_lists(ctx: Context) -> list[dict]:
     """List the authenticated user's shopping lists and their items."""
     user = user_from_authorization(_authorization(ctx))
-    return [_shopping_list_payload(shopping_list) for shopping_list in user.shopping_lists.prefetch_related("items")]
+    return [_shopping_list_payload(shopping_list) for shopping_list in user.shopping_lists.prefetch_related("items__department")]
+
+
+@mcp.tool(annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False, idempotent_hint=True, open_world_hint=False))
+def list_departments(ctx: Context) -> list[dict]:
+    """List your departments with IDs, stable codes, stored names and translated labels. Use codes for writes."""
+    user = user_from_authorization(_authorization(ctx))
+    return list_department_data(user)
+
+
+@mcp.tool(annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False, idempotent_hint=True, open_world_hint=False))
+def resolve_department(name: Annotated[str, Field(min_length=1, max_length=255)], ctx: Context) -> dict:
+    """Resolve an owned department code/name/translation without writing. Ask the user to choose when candidates are returned."""
+    user = user_from_authorization(_authorization(ctx))
+    if not name.strip():
+        raise ToolError(_("Enter a department name."))
+    try:
+        department = resolve_owned_department(user, name)
+    except DepartmentResolutionError as error:
+        raise ToolError(json.dumps(error.as_dict(), ensure_ascii=False)) from None
+    return department_data(department)
 
 
 @mcp.tool(
@@ -284,6 +319,7 @@ def set_item_checked(
         "id": item.id,
         "name": item.name,
         "quantity": item.quantity,
+        "department": item.department_code,
         "checked": item.checked,
         "list_id": item.shopping_list_id,
     }
@@ -303,6 +339,7 @@ def add_item_to_list(
     quantity: Annotated[str, Field(max_length=100)] = "",
     list_id: int | None = None,
     list_title: Annotated[str, Field(max_length=255)] = "",
+    department: Annotated[str, Field(max_length=255)] | None = None,
 ) -> dict:
     """Add an item to a list. Omit the list to use or create today's list."""
     user = user_from_authorization(_authorization(ctx))
@@ -313,13 +350,17 @@ def add_item_to_list(
             quantity=quantity,
             list_id=list_id,
             list_title=list_title,
+            department=department,
         )
+    except DepartmentResolutionError as error:
+        raise ToolError(json.dumps(error.as_dict(), ensure_ascii=False)) from None
     except ValueError as error:
         raise ToolError(str(error)) from None
     return {
         "id": item.id,
         "name": item.name,
         "quantity": item.quantity,
+        "department": item.department_code,
         "checked": item.checked,
         "list_id": item.shopping_list_id,
     }

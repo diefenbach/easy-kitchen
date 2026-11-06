@@ -92,3 +92,33 @@ def test_simultaneous_first_article_creation_recovers_unique_conflict(monkeypatc
         ids = [future.result(timeout=20) for future in futures]
     assert ids[0] == ids[1]
     assert Article.objects.filter(user=user).count() == 1
+
+
+def test_persistent_connection_recovers_after_backend_termination():
+    from project.settings.base import postgres_database_from_environment
+
+    postgres_only()
+    recovered = connection.copy(alias="recovery_test")
+    terminator = connection.copy(alias="termination_test")
+    recovered.settings_dict.update({
+        "CONN_MAX_AGE": 600,
+        "CONN_HEALTH_CHECKS": postgres_database_from_environment()["CONN_HEALTH_CHECKS"],
+    })
+    try:
+        with recovered.cursor() as cursor:
+            cursor.execute("SELECT pg_backend_pid()")
+            original_pid = cursor.fetchone()[0]
+        # Terminate only the connection created by this test, not application connections.
+        with terminator.cursor() as cursor:
+            cursor.execute("SELECT pg_terminate_backend(%s)", [original_pid])
+            assert cursor.fetchone()[0] is True
+        # Django runs this at request boundaries before reusing a persistent connection.
+        recovered.close_if_unusable_or_obsolete()
+        with recovered.cursor() as cursor:
+            cursor.execute("SELECT pg_backend_pid(), 1")
+            new_pid, result = cursor.fetchone()
+        assert new_pid != original_pid
+        assert result == 1
+    finally:
+        recovered.close()
+        terminator.close()

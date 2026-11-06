@@ -2,13 +2,15 @@ import json
 from typing import Any, Literal
 
 from django import forms
-from django.forms import BaseInlineFormSet, inlineformset_factory
+from django.db.models import Prefetch
+from django.forms import BaseInlineFormSet, BaseModelFormSet, inlineformset_factory, modelformset_factory
 from django.core.validators import URLValidator
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError as DRFValidationError
 
+from .departments import department_choices
 from .api.serializers import RecipeSerializer, ShoppingListSerializer
-from .models import Recipe, RecipeIngredient, RecipeStep, ShoppingItem, ShoppingList
+from .models import Department, Article, Recipe, RecipeIngredient, RecipeStep, ShoppingItem, ShoppingList
 from .services import _normalized_name, save_article
 
 
@@ -42,7 +44,7 @@ class ShoppingItemForm(forms.ModelForm):
 
     class Meta:
         model = ShoppingItem
-        fields = ("name", "quantity")
+        fields = ("name", "quantity", "department")
         widgets = {
             "name": forms.TextInput(
                 attrs={
@@ -54,16 +56,29 @@ class ShoppingItemForm(forms.ModelForm):
             )
         }
 
+    def __init__(self, *args, user, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["department"].queryset = user.departments.all()
+        self.fields["department"].to_field_name = "code"
+        self.fields["department"].choices = department_choices(user)
+        self.initial["department"] = self.instance.department_code
+
 
 class ArticleForm(forms.Form):
     """Create or rename a saved article, rejecting a duplicate name for this user."""
 
     name = forms.CharField(label=_("Article"), max_length=255)
+    department = forms.ChoiceField(
+        label=_("Department"),
+        choices=(),
+        required=False,
+    )
 
     def __init__(self, *args, user, instance=None, **kwargs):
         self.user = user
         self.instance = instance
         super().__init__(*args, **kwargs)
+        self.fields["department"].choices = department_choices(user)
 
     def clean_name(self):
         """Normalize the name and reject a blank or duplicate article."""
@@ -79,7 +94,151 @@ class ArticleForm(forms.Form):
 
     def save(self):
         """Create the article, or rename the instance this form was given."""
-        return save_article(self.user, self.cleaned_data["name"], article=self.instance)
+        return save_article(
+            self.user, self.cleaned_data["name"], article=self.instance,
+            department=self.cleaned_data["department"] if "department" in self.data else None,
+        )
+
+
+class ArticleEditorForm(forms.ModelForm):
+    class Meta:
+        model = Article
+        fields = ("name", "department")
+        labels = {"name": _("Article")}
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "form-control"}),
+            "department": forms.Select(attrs={"class": "form-select"}),
+        }
+
+    def __init__(self, *args, user, department_options=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["department"].queryset = user.departments.all()
+        self.fields["department"].to_field_name = "code"
+        self.fields["department"].choices = department_options if department_options is not None else department_choices(user)
+        self.initial["department"] = self.instance.department_code
+
+    def clean_name(self):
+        name = _normalized_name(self.cleaned_data["name"])
+        if not name:
+            raise forms.ValidationError(_("Enter an article name."))
+        return name
+
+
+class BaseArticleEditorFormSet(BaseModelFormSet):
+    """Validate the user's complete article draft, including deleted row IDs."""
+
+    deletion_widget = forms.HiddenInput
+
+    def __init__(self, *args, user, **kwargs):
+        self.user = user
+        self.department_options = department_choices(self.user)
+        super().__init__(*args, queryset=user.articles.select_related("department"), **kwargs)
+
+    def get_form_kwargs(self, index):
+        return {**super().get_form_kwargs(index), "department_options": self.department_options, "user": self.user}
+
+    def add_fields(self, form, index):
+        super().add_fields(form, index)
+        form.fields["id"].queryset = self.get_queryset()
+
+    def clean(self):
+        super().clean()
+        if any(form.errors.get("id") for form in self.forms):
+            raise forms.ValidationError(_("Invalid article selection."))
+        ids = [form.cleaned_data["id"].pk for form in self.forms if form.cleaned_data.get("id")]
+        if len(ids) != len(set(ids)):
+            raise forms.ValidationError(_("Invalid article selection."))
+        if any(self.errors):
+            return
+        names = {name.casefold() for name in self.user.articles.exclude(pk__in=ids).values_list("name", flat=True)}
+        draft_names = {}
+        for form in self.forms:
+            if self.can_delete and self._should_delete_form(form):
+                continue
+            name = form.cleaned_data.get("name")
+            if not name:
+                continue
+            key = name.casefold()
+            if key in names:
+                form.add_error("name", _("An article with this name already exists."))
+            elif key in draft_names:
+                message = _("An article with this name already exists.")
+                form.add_error("name", message)
+                draft_names[key].add_error("name", message)
+            else:
+                draft_names[key] = form
+
+
+ArticleEditorFormSet = modelformset_factory(
+    Article, form=ArticleEditorForm, formset=BaseArticleEditorFormSet,
+    extra=0, can_delete=True,
+)
+
+
+class DepartmentEditorForm(forms.ModelForm):
+    class Meta:
+        model = Department
+        fields = ("name",)
+        labels = {"name": _("Department")}
+        widgets = {"name": forms.TextInput(attrs={"class": "form-control"})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.initial["name"] = str(self.instance)
+
+    def clean_name(self):
+        name = _normalized_name(self.cleaned_data["name"])
+        if not name:
+            raise forms.ValidationError(_("Enter a department name."))
+        if self.instance.pk and name == _normalized_name(str(self.instance)):
+            return self.instance.name
+        return name
+
+
+class BaseDepartmentEditorFormSet(BaseModelFormSet):
+    deletion_widget = forms.HiddenInput
+
+    def __init__(self, *args, user, **kwargs):
+        self.user = user
+        super().__init__(*args, queryset=user.departments.order_by("name", "id"), **kwargs)
+
+    def add_fields(self, form, index):
+        super().add_fields(form, index)
+        form.fields["id"].queryset = self.get_queryset()
+
+    def clean(self):
+        super().clean()
+        if any(form.errors.get("id") for form in self.forms):
+            raise forms.ValidationError(_("Invalid department selection."))
+        ids = [form.cleaned_data["id"].pk for form in self.forms if form.cleaned_data.get("id")]
+        if len(ids) != len(set(ids)):
+            raise forms.ValidationError(_("Invalid department selection."))
+        if any(self.errors):
+            return
+        names = {str(department).casefold() for department in self.user.departments.exclude(pk__in=ids)}
+        draft_names = {}
+        for form in self.forms:
+            if self._should_delete_form(form):
+                continue
+            name = form.cleaned_data.get("name")
+            if not name:
+                continue
+            key = str(_(name)).casefold()
+            message = _("A department with this name already exists.")
+            if key in names:
+                form.add_error("name", message)
+            elif key in draft_names:
+                form.add_error("name", message)
+                draft_names[key].add_error("name", message)
+            else:
+                draft_names[key] = form
+
+
+DepartmentEditorFormSet = modelformset_factory(
+    Department, form=DepartmentEditorForm, formset=BaseDepartmentEditorFormSet,
+    extra=0, can_delete=True,
+)
 
 
 _RECIPE_KEYS = {
@@ -145,6 +304,10 @@ class ImportForm(forms.Form):
         widget=forms.Textarea(attrs={"class": "form-control font-monospace", "rows": 16}),
     )
 
+    def __init__(self, *args, user, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
     def clean_json_data(self) -> dict[str, Any]:
         """Parse the JSON and validate each side with the API serializers."""
         try:
@@ -167,7 +330,7 @@ class ImportForm(forms.Form):
         """Return validated records, or None when that side of the import was omitted."""
         if records is None:
             return None
-        serializer = serializer_class(data=records, many=True)
+        serializer = serializer_class(data=records, many=True, context={"user": self.user})
         try:
             serializer.is_valid(raise_exception=True)
         except DRFValidationError as error:
@@ -278,7 +441,7 @@ class ExportForm(forms.Form):
 
     def __init__(self, *args, user, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["lists"].queryset = user.shopping_lists.prefetch_related("items")
+        self.fields["lists"].queryset = user.shopping_lists.prefetch_related(Prefetch("items", queryset=ShoppingItem.objects.select_related("department")))
         self.fields["recipes"].queryset = user.recipes.prefetch_related("ingredients", "steps")
 
     def clean(self):
@@ -356,6 +519,13 @@ class OrderedEditorLineFormSet(BaseInlineFormSet):
     def add_fields(self, form, index):
         super().add_fields(form, index)
         form.fields["id"].queryset = self.get_queryset()
+        if "department" in form.fields:
+            form.fields["department"].queryset = self.instance.user.departments.all()
+            form.fields["department"].to_field_name = "code"
+            if not hasattr(self, "department_options"):
+                self.department_options = department_choices(self.instance.user)
+            form.fields["department"].choices = self.department_options
+            form.initial["department"] = form.instance.department_code
 
     def save_ordered(self):
         for form in self.deleted_forms:
@@ -385,10 +555,11 @@ RecipeStepEditorFormSet = inlineformset_factory(
 
 ShoppingItemEditorFormSet = inlineformset_factory(
     ShoppingList, ShoppingItem, formset=OrderedEditorLineFormSet,
-    fields=("name", "quantity", "checked"), extra=0, can_delete=True, can_order=True,
+    fields=("name", "quantity", "department", "checked"), extra=0, can_delete=True, can_order=True,
     widgets={
         "name": forms.TextInput(attrs={"class": "form-control"}),
         "quantity": forms.TextInput(attrs={"class": "form-control"}),
+        "department": forms.Select(attrs={"class": "form-select"}),
         "checked": forms.CheckboxInput(attrs={"class": "form-check-input"}),
     },
 )

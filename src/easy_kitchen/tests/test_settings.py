@@ -25,3 +25,14 @@ def test_development_settings_strip_port_from_allowed_hosts(monkeypatch):
     development = importlib.reload(development)
 
     assert development.ALLOWED_HOSTS == ["localhost", "127.0.0.1"]
+
+
+def test_persistent_postgres_connections_are_health_checked(monkeypatch):
+    from project.settings.base import postgres_database_from_environment
+
+    monkeypatch.setenv("POSTGRES_DB", "easykitchen")
+    monkeypatch.setenv("POSTGRES_USER", "easykitchen")
+    monkeypatch.setenv("POSTGRES_PASSWORD", "test-password")
+    config = postgres_database_from_environment()
+    assert config["CONN_MAX_AGE"] == 600
+    assert config["CONN_HEALTH_CHECKS"] is True

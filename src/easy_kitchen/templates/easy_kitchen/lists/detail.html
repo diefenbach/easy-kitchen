@@ -37,11 +37,7 @@
   </button>
 </div>
 <div id="items" class="{% if object.hide_completed_items %}hide-completed{% endif %}" data-hide-completed-url="{% url 'easy_kitchen:list-hide-completed' object.pk %}" data-reorder-url="{% url 'easy_kitchen:item-reorder' object.pk %}">
-  {% for item in object.items.all %}
-    {% include "easy_kitchen/lists/partials/item.html" %}
-  {% empty %}
-    <p id="empty-message" class="text-center text-secondary py-4 mb-0">{% translate "No items yet." %}</p>
-  {% endfor %}
+  {% include "easy_kitchen/lists/partials/grouped_items.html" %}
 </div>
 <div class="modal fade" id="delete-completed-modal" tabindex="-1" aria-labelledby="delete-completed-title" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">

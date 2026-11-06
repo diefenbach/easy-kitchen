@@ -5,6 +5,27 @@ import { findSuggestions } from "./suggestions.js";
 
 let suggestionSequence = 0;
 
+function fillDepartment(input) {
+  const row = input.closest(".editor-line, form");
+  const select = row?.querySelector('select[name="department"], select[name$="-department"]');
+  if (!select) return;
+  const name = input.value.trim().replace(/\s+/g, " ").toLocaleLowerCase();
+  const article = [...document.querySelectorAll("#articles option")].find(
+    (option) => option.value.toLocaleLowerCase() === name,
+  );
+  select.value = article?.dataset.department ?? "";
+  select.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+document.addEventListener("input", (event) => {
+  if (
+    event.target.matches?.(
+      '.article-field input[name=name], #list-editor-form input[name$="-name"]',
+    )
+  )
+    fillDepartment(event.target);
+});
+
 function hideArticleSuggestions(field) {
   const list = field?.querySelector(".article-suggestions");
   const input = field?.querySelector("input[name=name]");
@@ -79,6 +100,7 @@ document.addEventListener("click", (event) => {
   const field = button.closest(".article-field");
   const input = field.querySelector("input[name=name]");
   input.value = button.textContent;
+  fillDepartment(input);
   input.focus();
   hideArticleSuggestions(field);
 });
@@ -122,6 +144,17 @@ document.addEventListener("htmx:oobAfterSwap", (event) => {
   }
 });
 
+function syncDepartmentVisibility() {
+  const container = document.getElementById("items");
+  if (!container) return;
+  const hiding = container.classList.contains("hide-completed");
+  container.querySelectorAll(".department-group").forEach((group) => {
+    group.hidden = hiding && !group.querySelector(".shopping-item:not(.checked)");
+  });
+}
+
+document.addEventListener("htmx:afterSwap", syncDepartmentVisibility);
+
 const boundLists = new WeakSet();
 
 function bindShoppingList() {
@@ -137,6 +170,7 @@ function bindShoppingList() {
     itemsContainer.querySelectorAll(".shopping-item.checked").forEach((item) => {
       item.hidden = hidden;
     });
+    syncDepartmentVisibility();
     const text = hidden
       ? checkedItemsToggle.dataset.labelShow
       : checkedItemsToggle.dataset.labelHide;
