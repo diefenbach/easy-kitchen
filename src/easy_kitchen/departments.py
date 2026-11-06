@@ -1,3 +1,5 @@
+import unicodedata
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -26,3 +28,12 @@ class Department(models.TextChoices):
     PETS = "pets", _("Pet supplies")
     STATIONERY = "stationery", _("Stationery")
     DRINKS = "drinks", _("Drinks")
+
+
+def department_choices():
+    """Sort translated labels alphabetically, treating umlauts like their base letters."""
+    def sort_key(choice):
+        label = unicodedata.normalize("NFKD", str(choice[1]).casefold())
+        return "".join(character for character in label if not unicodedata.combining(character))
+
+    return [("", _("Without department")), *sorted(Department.choices, key=sort_key)]

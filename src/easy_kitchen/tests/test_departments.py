@@ -140,3 +140,28 @@ def test_mcp_item_department_is_saved_and_returned(user, shopping_list):
     with pytest.raises(ToolError, match="Invalid department"):
         add_item_to_list(name="Milk", department="invalid", list_id=shopping_list.pk, ctx=ctx)
     assert shopping_list.items.get().department == "dairy"
+
+
+@pytest.mark.parametrize("language, expected", [
+    ("en", ["Baby", "Baking ingredients", "Bread", "Breakfast", "Canned food", "Cleaning products",
+            "Cosmetics & personal care", "Dairy products", "Drinks", "Fish", "Fresh food", "Frozen food",
+            "Fruit & vegetables", "Household goods", "Meat & sausages", "Oil & sauces", "Pasta & rice",
+            "Pet supplies", "Spices", "Stationery", "Sweets & snacks"]),
+    ("de", ["Baby", "Backzutaten", "Brot", "Fisch", "Fleisch & Wurst", "Frischwaren", "Frühstück",
+            "Getränke", "Gewürze", "Haushaltswaren", "Konserven", "Kosmetik & Körperpflege",
+            "Milchprodukte", "Nudeln & Reis", "Obst & Gemüse", "Öl & Soßen", "Reinigungsmittel",
+            "Schreibwaren", "Süßigkeiten & Snacks", "Tiefkühlwaren", "Tierbedarf"]),
+])
+def test_department_selects_sort_by_the_active_language(user, shopping_list, language, expected):
+    from django.utils.translation import override
+    from easy_kitchen.forms import ArticleEditorForm, ArticleForm, ShoppingItemEditorFormSet, ShoppingItemForm
+    from easy_kitchen.templatetags.departments import department_choices
+
+    with override(language):
+        fields = [ShoppingItemForm().fields["department"], ArticleEditorForm().fields["department"],
+                  ArticleForm(user=user).fields["department"],
+                  ShoppingItemEditorFormSet(instance=shopping_list).empty_form.fields["department"]]
+        for choices in [*[field.choices for field in fields], department_choices()]:
+            options = [(value, str(label)) for value, label in choices]
+            assert options[0][0] == ""
+            assert [label for value, label in options[1:]] == expected

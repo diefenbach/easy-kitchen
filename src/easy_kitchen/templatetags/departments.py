@@ -1,7 +1,7 @@
 from django import template
 from django.utils.translation import gettext as _
 
-from easy_kitchen.departments import Department
+from easy_kitchen.departments import Department, department_choices as sorted_department_choices
 
 register = template.Library()
 
@@ -20,4 +20,4 @@ def department_groups(shopping_list):
 
 @register.simple_tag
 def department_choices():
-    return [("", _("Without department")), *Department.choices]
+    return sorted_department_choices()

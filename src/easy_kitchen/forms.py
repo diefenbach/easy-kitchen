@@ -7,7 +7,7 @@ from django.core.validators import URLValidator
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError as DRFValidationError
 
-from .departments import Department
+from .departments import department_choices
 from .api.serializers import RecipeSerializer, ShoppingListSerializer
 from .models import Article, Recipe, RecipeIngredient, RecipeStep, ShoppingItem, ShoppingList
 from .services import _normalized_name, save_article
@@ -57,7 +57,7 @@ class ShoppingItemForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["department"].choices = [("", _("Without department")), *Department.choices]
+        self.fields["department"].choices = department_choices()
 
 
 class ArticleForm(forms.Form):
@@ -66,7 +66,7 @@ class ArticleForm(forms.Form):
     name = forms.CharField(label=_("Article"), max_length=255)
     department = forms.ChoiceField(
         label=_("Department"),
-        choices=[("", _("Without department")), *Department.choices],
+        choices=department_choices,
         required=False,
     )
 
@@ -107,7 +107,7 @@ class ArticleEditorForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["department"].choices = [("", _("Without department")), *Department.choices]
+        self.fields["department"].choices = department_choices()
 
     def clean_name(self):
         name = _normalized_name(self.cleaned_data["name"])
@@ -438,7 +438,7 @@ class OrderedEditorLineFormSet(BaseInlineFormSet):
         super().add_fields(form, index)
         form.fields["id"].queryset = self.get_queryset()
         if "department" in form.fields:
-            form.fields["department"].choices = [("", _("Without department")), *Department.choices]
+            form.fields["department"].choices = department_choices()
 
     def save_ordered(self):
         for form in self.deleted_forms:
