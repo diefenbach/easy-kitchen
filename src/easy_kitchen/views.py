@@ -1,4 +1,5 @@
 import json
+from datetime import timedelta
 
 from django import forms
 from django.contrib import messages
@@ -46,7 +47,7 @@ class UserListMixin(LoginRequiredMixin):
 
 
 class HomeView(LoginRequiredMixin, TemplateView):
-    """Show the current meal plan and the three newest lists and recipes."""
+    """Show two weeks of meals and the three newest lists and recipes."""
 
     template_name = "easy_kitchen/home.html"
 
@@ -57,6 +58,13 @@ class HomeView(LoginRequiredMixin, TemplateView):
         context["planned_meals"] = [entry for entry in plan.values() if entry and entry.recipe]
         context["week_start"] = week_start
         context["week_end"] = next(reversed(plan))
+        next_week_start = week_start + timedelta(days=7)
+        next_week_plan = meal_plan_for_week(self.request.user, next_week_start)
+        context["next_week_start"] = next_week_start
+        context["next_week_end"] = next(reversed(next_week_plan))
+        context["next_week_planned_meals"] = [
+            entry for entry in next_week_plan.values() if entry and entry.recipe
+        ]
         context["shopping_lists"] = self.request.user.shopping_lists.order_by(
             "-created_at", "-id"
         ).prefetch_related("items__department")[:3]

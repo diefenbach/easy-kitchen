@@ -1359,3 +1359,9 @@ msgstr "Ungültige Abteilung. Mehrere Abteilungen passen; wähle einen gespeiche
 
 msgid "Invalid department. No exact match was found; choose a saved code."
 msgstr "Ungültige Abteilung. Kein eindeutiger Treffer gefunden; wähle einen gespeicherten Schlüssel."
+
+msgid "Planned meals next week"
+msgstr "Geplante Gerichte nächster Woche"
+
+msgid "No meals planned for next week yet."
+msgstr "Für nächste Woche sind noch keine Gerichte geplant."
