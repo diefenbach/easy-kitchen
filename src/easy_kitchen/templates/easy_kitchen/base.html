@@ -15,7 +15,7 @@
   <script src="{% static 'easy_kitchen/vendor/sortablejs/Sortable.min.js' %}"></script>
   <link href="{% static 'easy_kitchen/easykitchen.css' %}" rel="stylesheet">
 </head>
-<body>
+<body{% if user.is_authenticated %} hx-history="false"{% endif %}>
   <nav class="navbar navbar-expand mb-4">
     <div class="container">
       <a class="navbar-brand" href="{% url 'easy_kitchen:home' %}" aria-label="Easy Kitchen">
@@ -66,7 +66,7 @@
                 </a>
               </li>
               <li>
-                <form method="post" action="{% url 'logout' %}">
+                <form method="post" action="{% url 'logout' %}" data-logout>
                   {% csrf_token %}
                   <button class="dropdown-item" type="submit" aria-label="{% translate 'Log out' %}">
                     <i class="bi bi-box-arrow-right" aria-hidden="true"></i>

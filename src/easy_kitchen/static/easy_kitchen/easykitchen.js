@@ -189,3 +189,15 @@ for (const name of ["htmx:responseError", "htmx:sendError", "htmx:timeout"]) {
     if (event.detail.requestConfig?.verb !== "get") showSaveError();
   });
 }
+function clearPrivateHistory() {
+  try {
+    localStorage.removeItem("htmx-history-cache");
+  } catch {
+    // Storage may be unavailable in restricted browser profiles.
+  }
+}
+// Remove legacy snapshots on entry as well as when ending the session.
+clearPrivateHistory();
+document.addEventListener("submit", (event) => {
+  if (event.target.matches("[data-logout]")) clearPrivateHistory();
+});
