@@ -1,0 +1,16 @@
+{% load i18n %}
+<div class="editor-line border rounded p-3 mb-3"{% if line.cleaned_data.DELETE %} hidden{% endif %}>
+  {% for hidden in line.hidden_fields %}{{ hidden }}{{ hidden.errors }}{% endfor %}
+  {{ line.non_field_errors }}
+  <div class="row g-3 align-items-end">
+    {% for field in line.visible_fields %}
+      <div class="col-12 col-sm">
+        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}{{ field.errors }}
+      </div>
+    {% endfor %}
+    <div class="col-12 col-sm-auto">
+      <button type="button" class="btn btn-outline-danger" data-editor-remove aria-label="{% translate 'Remove department' %}"><i class="bi bi-trash" aria-hidden="true"></i></button>
+    </div>
+  </div>
+</div>

@@ -4,7 +4,7 @@ const boundEditors = new WeakMap();
 let activeEditor = null;
 
 function bindCollectionEditor() {
-  const editor = document.querySelector("#recipe-editor-form, #list-editor-form, #article-editor-form");
+  const editor = document.querySelector("#recipe-editor-form, #list-editor-form, #article-editor-form, #department-editor-form");
   if (!editor) {
     activeEditor = null;
     return;
@@ -147,7 +147,7 @@ window.addEventListener(
 
 document.addEventListener("htmx:beforeRequest", (event) => {
   if (!hasUnsavedChanges() || !event.detail.target?.contains(activeEditor.editor)) return;
-  if (event.detail.elt.matches("#recipe-editor-form, #list-editor-form, #article-editor-form, [data-editor-cancel]"))
+  if (event.detail.elt.matches("#recipe-editor-form, #list-editor-form, #article-editor-form, #department-editor-form, [data-editor-cancel]"))
     return;
   if (!window.confirm(activeEditor.editor.dataset.discardMessage)) event.preventDefault();
 });
@@ -163,7 +163,8 @@ document.addEventListener("htmx:beforeSwap", (event) => {
     event.detail.xhr.status === 422 &&
     (event.detail.xhr.getResponseHeader("X-Recipe-Editor") === "true" ||
       event.detail.xhr.getResponseHeader("X-List-Editor") === "true" ||
-      event.detail.xhr.getResponseHeader("X-Article-Editor") === "true")
+      event.detail.xhr.getResponseHeader("X-Article-Editor") === "true" ||
+      event.detail.xhr.getResponseHeader("X-Department-Editor") === "true")
   ) {
     const files = [...(activeEditor?.editor.querySelectorAll('input[type="file"]') ?? [])].map(
       (input) => ({ name: input.name, files: [...input.files] }),
@@ -194,7 +195,7 @@ const editorRequests = new WeakMap();
 document.addEventListener("htmx:beforeRequest", (event) => {
   if (
     event.detail.elt.matches(
-      "[data-editor-open], [data-editor-cancel], #recipe-editor-form, #list-editor-form, #article-editor-form",
+      "[data-editor-open], [data-editor-cancel], #recipe-editor-form, #list-editor-form, #article-editor-form, #department-editor-form",
     )
   ) {
     editorRequests.set(event.detail.xhr, {});

@@ -1,0 +1,43 @@
+{% extends "easy_kitchen/base.html" %}
+{% load i18n static %}
+{% block title %}{% translate "Departments" %} · EasyKitchen{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-xl-9">
+    <a class="btn btn-outline-secondary btn-sm list-back-button mb-3" data-editor-cancel href="{{ cancel_url }}" hx-get="{{ cancel_url }}" hx-target="main" hx-select="main" hx-swap="outerHTML show:none focus-scroll:false" hx-push-url="true" aria-label="{% if return_list %}{{ return_list.title }}{% else %}{% translate 'Shopping lists' %}{% endif %}">
+      <i class="bi bi-arrow-left" aria-hidden="true"></i>
+      <span class="d-none d-md-inline">{% if return_list %}{{ return_list.title }}{% else %}{% translate "Shopping lists" %}{% endif %}</span>
+    </a>
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+      <h1 class="h2 mb-0">{% translate "Departments" %}</h1>
+      <div class="d-flex gap-2">
+        <a href="{{ cancel_url }}" class="btn btn-outline-secondary" data-editor-cancel hx-get="{{ cancel_url }}" hx-target="main" hx-select="main" hx-swap="outerHTML show:none focus-scroll:false" hx-push-url="true">{% translate "Cancel" %}</a>
+        <button type="submit" form="department-editor-form" class="btn btn-primary">{% translate "Save" %}</button>
+      </div>
+    </div>
+    <p class="text-secondary">{% translate "Removing a department leaves its articles and shopping items without a department." %}</p>
+    <form id="department-editor-form" method="post" action="{{ request.get_full_path }}" hx-post="{{ request.get_full_path }}" hx-target="main" hx-select="main" hx-swap="outerHTML show:none focus-scroll:false" hx-sync="this:drop" hx-history="false" data-bound="{{ department_formset.is_bound|yesno:'true,false' }}" data-discard-message="{% translate 'Discard your unsaved department changes?' %}">
+      {% csrf_token %}
+      {% if return_list %}<input type="hidden" name="return_list" value="{{ return_list.pk }}">{% endif %}
+      {% if department_formset.errors or department_formset.non_form_errors %}
+        <div class="alert alert-danger" role="alert">{% translate "Please check the highlighted fields. Your changes have not been saved." %}</div>
+      {% endif %}
+      <section class="card shadow-sm mb-4" data-editor-lines="departments" data-editor-unordered>
+        <div class="card-body">
+          {{ department_formset.management_form }}{{ department_formset.non_form_errors }}
+          <div data-editor-rows>
+            {% for line in department_formset %}{% include "easy_kitchen/lists/partials/editor_department.html" %}{% endfor %}
+          </div>
+          <template data-editor-empty>{% include "easy_kitchen/lists/partials/editor_department.html" with line=department_formset.empty_form %}</template>
+          <button type="button" class="btn btn-outline-secondary" data-editor-add><i class="bi bi-plus-lg" aria-hidden="true"></i> {% translate "Add department" %}</button>
+        </div>
+      </section>
+      <div class="department-editor-footer d-flex justify-content-end gap-2 rounded border shadow-sm p-3">
+        <a href="{{ cancel_url }}" class="btn btn-outline-secondary" data-editor-cancel hx-get="{{ cancel_url }}" hx-target="main" hx-select="main" hx-swap="outerHTML show:none focus-scroll:false" hx-push-url="true">{% translate "Cancel" %}</a>
+        <button type="submit" class="btn btn-primary">{% translate "Save" %}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script type="module" src="{% static 'easy_kitchen/department-editor.js' %}"></script>{% endblock %}

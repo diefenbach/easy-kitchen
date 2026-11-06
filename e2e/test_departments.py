@@ -1,7 +1,7 @@
 import pytest
 from playwright.sync_api import expect
 
-from easy_kitchen.models import Department, Article, ShoppingList
+from easy_kitchen.models import Article, ShoppingList
 from easy_kitchen.services import create_item
 
 pytestmark = [pytest.mark.e2e, pytest.mark.django_db(transaction=True)]
@@ -9,7 +9,7 @@ pytestmark = [pytest.mark.e2e, pytest.mark.django_db(transaction=True)]
 
 @pytest.mark.parametrize("selection", ["typing", "mouse", "keyboard"])
 def test_department_defaults_and_grouping(authenticated_page, user, live_server, selection):
-    Article.objects.create(user=user, name="Milk", department=Department.objects.get(code="dairy"))
+    Article.objects.create(user=user, name="Milk", department=user.departments.get(code="dairy"))
     shopping_list = ShoppingList.objects.create(user=user, title="Groceries")
     create_item(shopping_list, name="Mystery", department="")
     page = authenticated_page
@@ -47,7 +47,7 @@ def test_department_defaults_and_grouping(authenticated_page, user, live_server,
 
 
 def test_editor_prefills_and_saves_departments(authenticated_page, user, live_server):
-    Article.objects.create(user=user, name="Apple", department=Department.objects.get(code="produce"))
+    Article.objects.create(user=user, name="Apple", department=user.departments.get(code="produce"))
     shopping_list = ShoppingList.objects.create(user=user, title="Groceries")
     create_item(shopping_list, name="Milk", department="dairy")
     page = authenticated_page

@@ -19,11 +19,12 @@ from django.views.generic import (
     TemplateView,
 )
 
-from .forms import ArticleEditorFormSet, ArticleForm, ExportForm, ImportForm, ShoppingItemForm, ShoppingListForm, ShoppingItemEditorFormSet
+from .forms import DepartmentEditorFormSet, ArticleEditorFormSet, ArticleForm, ExportForm, ImportForm, ShoppingItemForm, ShoppingListForm, ShoppingItemEditorFormSet
 from .models import Article, ShoppingItem, ShoppingList
 from .services import (
     QuantityOverflowError,
     save_articles,
+    save_departments,
     create_item,
     delete_completed_items,
     export_records,
@@ -110,7 +111,7 @@ class ShoppingListDetailView(UserListMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["form"] = ShoppingItemForm()
+        context["form"] = ShoppingItemForm(user=self.request.user)
         context["shopping_list"] = self.object
         context["articles"] = self.request.user.articles.select_related("department")
         context["completed_item_count"] = self.object.items.filter(checked=True).count()
@@ -145,10 +146,10 @@ class ImportView(LoginRequiredMixin, View):
     template_name = "easy_kitchen/import.html"
 
     def get(self, request):
-        return render(request, self.template_name, {"form": ImportForm()})
+        return render(request, self.template_name, {"form": ImportForm(user=request.user)})
 
     def post(self, request):
-        form = ImportForm(request.POST)
+        form = ImportForm(request.POST, user=request.user)
         if not form.is_valid():
             return render(request, self.template_name, {"form": form})
 
@@ -280,7 +281,7 @@ class ItemCreateView(LoginRequiredMixin, View):
 
     def post(self, request, list_pk):
         shopping_list = get_object_or_404(ShoppingList, pk=list_pk, user=request.user)
-        form = ShoppingItemForm(request.POST)
+        form = ShoppingItemForm(request.POST, user=request.user)
         if form.is_valid():
             try:
                 create_item(
@@ -301,7 +302,7 @@ class ItemCreateView(LoginRequiredMixin, View):
                     response.content += render_to_string(
                         "easy_kitchen/lists/partials/item_form.html",
                         {
-                            "form": ShoppingItemForm(), "shopping_list": shopping_list,
+                            "form": ShoppingItemForm(user=request.user), "shopping_list": shopping_list,
                             "articles": request.user.articles.select_related("department"), "oob": True,
                         },
                         request=request,
@@ -343,12 +344,12 @@ class ItemUpdateView(LoginRequiredMixin, View):
         return render(
             request,
             "easy_kitchen/lists/partials/item_edit_form.html",
-            {"item": item, "form": ShoppingItemForm(instance=item, auto_id=f"item-{item.pk}-%s")},
+            {"item": item, "form": ShoppingItemForm(instance=item, user=request.user, auto_id=f"item-{item.pk}-%s")},
         )
 
     def post(self, request, list_pk, pk):
         item = self.get_item(request, list_pk, pk)
-        form = ShoppingItemForm(request.POST, instance=item, auto_id=f"item-{item.pk}-%s")
+        form = ShoppingItemForm(request.POST, instance=item, user=request.user, auto_id=f"item-{item.pk}-%s")
         if form.is_valid():
             with transaction.atomic():
                 form.save()
@@ -485,6 +486,48 @@ class ArticleListView(LoginRequiredMixin, View):
             "return_list": shopping_list,
             "cancel_url": cancel_url,
         }
+
+
+class DepartmentListView(LoginRequiredMixin, View):
+    """Edit the current user's departments as a single draft."""
+
+    def get(self, request):
+        return self.render_editor(request)
+
+    def post(self, request):
+        formset = DepartmentEditorFormSet(request.POST, user=request.user, prefix="departments")
+        if formset.is_valid():
+            records, deleted_ids = [], []
+            for form in formset.forms:
+                data = form.cleaned_data
+                if not data:
+                    continue
+                department = data.get("id")
+                if data.get("DELETE"):
+                    if department:
+                        deleted_ids.append(department.pk)
+                elif data.get("name"):
+                    records.append({"id": department.pk if department else None, "name": data["name"]})
+            try:
+                save_departments(request.user, records, deleted_ids)
+            except (ValueError, IntegrityError):
+                formset.non_form_errors().append(_("The departments could not be saved. Check for duplicate names and try again."))
+            else:
+                messages.success(request, _("Departments updated."))
+                url = reverse("easy_kitchen:departments")
+                shopping_list = return_list_for(request)
+                return redirect(f"{url}?list={shopping_list.pk}" if shopping_list else url)
+        return self.render_editor(request, formset=formset, status=422)
+
+    def render_editor(self, request, *, formset=None, status=200):
+        shopping_list = return_list_for(request)
+        response = render(request, "easy_kitchen/lists/departments.html", {
+            "department_formset": formset if formset is not None else DepartmentEditorFormSet(user=request.user, prefix="departments"),
+            "return_list": shopping_list,
+            "cancel_url": reverse("easy_kitchen:detail", args=[shopping_list.pk]) if shopping_list else reverse("easy_kitchen:list"),
+        }, status=status)
+        response["X-Department-Editor"] = "true"
+        return response
 
 
 class ArticleUpdateView(LoginRequiredMixin, View):

@@ -1323,3 +1323,33 @@ msgstr "Schlüssel"
 
 msgid "name"
 msgstr "Name"
+
+msgid "Edit departments"
+msgstr "Abteilungen bearbeiten"
+
+msgid "Add department"
+msgstr "Abteilung hinzufügen"
+
+msgid "Remove department"
+msgstr "Abteilung entfernen"
+
+msgid "Discard your unsaved department changes?"
+msgstr "Nicht gespeicherte Abteilungsänderungen verwerfen?"
+
+msgid "Departments updated."
+msgstr "Abteilungen aktualisiert."
+
+msgid "Invalid department selection."
+msgstr "Ungültige Abteilungsauswahl."
+
+msgid "Enter a department name."
+msgstr "Gib einen Abteilungsnamen ein."
+
+msgid "A department with this name already exists."
+msgstr "Eine Abteilung mit diesem Namen ist bereits vorhanden."
+
+msgid "The departments could not be saved. Check for duplicate names and try again."
+msgstr "Die Abteilungen konnten nicht gespeichert werden. Prüfe auf doppelte Namen und versuche es erneut."
+
+msgid "Removing a department leaves its articles and shopping items without a department."
+msgstr "Beim Entfernen einer Abteilung bleiben ihre Artikel und Einkaufseinträge ohne Abteilung erhalten."

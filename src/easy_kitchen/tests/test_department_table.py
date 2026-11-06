@@ -6,10 +6,10 @@ from easy_kitchen.models import Article, ShoppingItem
 pytestmark = pytest.mark.django_db
 
 
-def test_articles_and_items_reference_a_department_table():
+def test_articles_and_items_reference_a_department_table(user):
     from easy_kitchen.models import Department
 
-    assert Department.objects.count() == 21
+    assert user.departments.count() == 21
     assert isinstance(Department._meta.pk, models.BigAutoField)
     for model in (Article, ShoppingItem):
         field = model._meta.get_field("department")
@@ -24,8 +24,8 @@ def test_database_departments_are_used_by_forms_services_and_grouping(user, shop
     from easy_kitchen.services import create_item
     from easy_kitchen.templatetags.departments import department_groups
 
-    department = Department.objects.create(code="garden", name="Garden", position=22)
-    form = ShoppingItemForm({"name": "Seeds", "department": "garden"})
+    department = Department.objects.create(user=user, code="garden", name="Garden", position=22)
+    form = ShoppingItemForm({"name": "Seeds", "department": "garden"}, user=user)
     assert form.is_valid(), form.errors
     assert form.cleaned_data["department"] == department
     item = create_item(shopping_list, name="Seeds", department="garden")
@@ -35,12 +35,11 @@ def test_database_departments_are_used_by_forms_services_and_grouping(user, shop
 
 
 def test_deleting_department_keeps_articles_and_items_unassigned(user, shopping_list):
-    from easy_kitchen.models import Department
     from easy_kitchen.services import create_item
 
     item = create_item(shopping_list, name="Milk", department="dairy")
     article = user.articles.get(name="Milk")
-    Department.objects.get(code="dairy").delete()
+    user.departments.get(code="dairy").delete()
     item.refresh_from_db()
     article.refresh_from_db()
     assert item.department_id is None

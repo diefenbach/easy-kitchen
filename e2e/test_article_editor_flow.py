@@ -1,7 +1,7 @@
 import pytest
 from playwright.sync_api import expect
 
-from easy_kitchen.models import Department, Article, ShoppingList
+from easy_kitchen.models import Article, ShoppingList
 from easy_kitchen.services import create_item
 
 pytestmark = [pytest.mark.e2e, pytest.mark.django_db(transaction=True)]
@@ -11,7 +11,7 @@ pytestmark = [pytest.mark.e2e, pytest.mark.django_db(transaction=True)]
 def test_article_editor_saves_and_discards_the_whole_draft(authenticated_page, user, live_server, width):
     shopping_list = ShoppingList.objects.create(user=user, title="Market")
     create_item(shopping_list, name="Apple", department="produce", checked=True)
-    Article.objects.create(user=user, name="Bread", department=Department.objects.get(code="bread"))
+    Article.objects.create(user=user, name="Bread", department=user.departments.get(code="bread"))
     page = authenticated_page
     page.set_viewport_size({"width": width, "height": 844})
     url = f"{live_server.url}/articles/?list={shopping_list.pk}"
@@ -52,8 +52,8 @@ def test_article_editor_saves_and_discards_the_whole_draft(authenticated_page, u
 
 
 def test_validation_retains_the_article_draft_for_retry(authenticated_page, user, live_server):
-    Article.objects.create(user=user, name="Apple", department=Department.objects.get(code="produce"))
-    Article.objects.create(user=user, name="Bread", department=Department.objects.get(code="bread"))
+    Article.objects.create(user=user, name="Apple", department=user.departments.get(code="produce"))
+    Article.objects.create(user=user, name="Bread", department=user.departments.get(code="bread"))
     page = authenticated_page
     page.goto(f"{live_server.url}/articles/")
     rows = page.locator(".editor-line:not([hidden])")

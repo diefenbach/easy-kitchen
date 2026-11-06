@@ -11,8 +11,10 @@ from django.core.validators import URLValidator
 from django.db import IntegrityError, transaction
 from django.db.models import F, Manager, Max, Model
 from django.utils import timezone
+from django.utils.text import slugify
 from django.utils.translation import gettext as _
 
+from .departments import DEFAULT_DEPARTMENTS
 from .models import (
     Article,
     Department,
@@ -98,21 +100,31 @@ def _merge_quantities(quantity_entries: Sequence[str]) -> str:
     return ", ".join(rendered)
 
 
-def resolve_department(value: Department | str | None) -> Department | None:
-    """Resolve a department from the shared table, accepting existing external codes."""
+def seed_default_departments(user: AbstractBaseUser, *, using: str = "default") -> None:
+    """Create the starter catalogue once when a new account is created."""
+    Department.objects.using(using).bulk_create([
+        Department(user_id=user.pk, code=code, name=name, position=position)
+        for position, (code, name) in enumerate(DEFAULT_DEPARTMENTS, start=1)
+    ])
+
+
+def resolve_department(user: AbstractBaseUser, value: Department | str | None) -> Department | None:
+    """Resolve a department from this user's catalogue, accepting existing external codes."""
     if value is None or value == "":
         return None
     if isinstance(value, Department):
+        if value.user_id != user.pk:
+            raise ValueError(_("Invalid department."))
         value = value.code
     try:
-        return Department.objects.get(code=value)
+        return user.departments.get(code=value)
     except Department.DoesNotExist:
         raise ValueError(_("Invalid department.")) from None
 
 
 def remember_article(user: AbstractBaseUser, name: str, department: Department | str | None = None) -> Article | None:
     """Store the item name for later suggestions, reusing a case-insensitive match."""
-    resolved_department = resolve_department(department)
+    resolved_department = resolve_department(user, department)
     name = _normalized_name(name)
     if not name:
         return None
@@ -137,10 +149,10 @@ def save_article(user: AbstractBaseUser, name: str, article: Article | None = No
     """Create an article, or rename the given one."""
     name = _normalized_name(name)
     if article is None:
-        return user.articles.create(name=name, department=resolve_department(department))
+        return user.articles.create(name=name, department=resolve_department(user, department))
     article.name = name
     if department is not None:
-        article.department = resolve_department(department)
+        article.department = resolve_department(user, department)
     article.save(update_fields=["name", "department", "updated_at"])
     return article
 
@@ -160,7 +172,7 @@ def save_articles(user: AbstractBaseUser, records: Sequence[Mapping[str, Any]], 
             raise ValueError(_("Enter an article name."))
         if name.casefold() in names:
             raise ValueError(_("An article with this name already exists."))
-        resolve_department(record["department"])
+        resolve_department(user, record["department"])
         names.add(name.casefold())
     user.articles.filter(pk__in=deleted_ids).delete()
     changed = [record for record in records if record["id"] is None or
@@ -172,6 +184,44 @@ def save_articles(user: AbstractBaseUser, records: Sequence[Mapping[str, Any]], 
             user.articles.filter(pk=record["id"]).update(name=f"__article_draft_{uuid4().hex}")
     for record in changed:
         save_article(user, record["name"], article=existing.get(record["id"]), department=record["department"] or "")
+
+
+@transaction.atomic
+def save_departments(user: AbstractBaseUser, records: Sequence[Mapping[str, Any]], deleted_ids: Sequence[int]) -> None:
+    """Save only this user's department draft, keeping existing codes and references stable."""
+    existing = {department.pk: department for department in user.departments.select_for_update()}
+    ids = [record["id"] for record in records if record["id"] is not None]
+    all_ids = [*ids, *deleted_ids]
+    if len(all_ids) != len(set(all_ids)) or not set(all_ids) <= existing.keys():
+        raise ValueError(_("Invalid department selection."))
+    names = {department.name.casefold() for pk, department in existing.items() if pk not in all_ids}
+    for record in records:
+        name = _normalized_name(record["name"])
+        if not name or len(name) > 100:
+            raise ValueError(_("Enter a department name."))
+        if name.casefold() in names:
+            raise ValueError(_("A department with this name already exists."))
+        names.add(name.casefold())
+    user.departments.filter(pk__in=deleted_ids).delete()
+    codes = {department.code for pk, department in existing.items() if pk not in deleted_ids}
+    position = max((department.position for department in existing.values()), default=0)
+    for record in records:
+        name = _normalized_name(record["name"])
+        if record["id"] is not None:
+            department = existing[record["id"]]
+            if department.name != name:
+                department.name = name
+                department.save(update_fields=["name"])
+        else:
+            base = slugify(name)[:20] or "department"
+            code, suffix = base, 2
+            while code in codes:
+                tail = f"-{suffix}"
+                code = base[:20-len(tail)] + tail
+                suffix += 1
+            codes.add(code)
+            position += 1
+            user.departments.create(code=code, name=name, position=position)
 
 
 class QuantityOverflowError(ValueError):
@@ -212,7 +262,7 @@ def create_item(
         existing.quantity = merged
         existing.checked = False
         if department is not None:
-            existing.department = resolve_department(department)
+            existing.department = resolve_department(shopping_list.user, department)
         existing.save(update_fields=["quantity", "checked", "department", "updated_at"])
         return existing
     if position is None:

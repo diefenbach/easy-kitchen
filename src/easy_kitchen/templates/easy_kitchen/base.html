@@ -66,6 +66,12 @@
                 </a>
               </li>
               <li>
+                <a class="dropdown-item" href="{% url 'easy_kitchen:departments' %}{% if request.resolver_match.namespace == 'easy_kitchen' and request.resolver_match.url_name == 'detail' or request.resolver_match.namespace == 'easy_kitchen' and request.resolver_match.url_name == 'update' %}?list={{ request.resolver_match.kwargs.pk }}{% elif return_list %}?list={{ return_list.pk }}{% endif %}" aria-label="{% translate 'Edit departments' %}">
+                  <i class="bi bi-grid" aria-hidden="true"></i>
+                  <span>{% translate "Edit departments" %}</span>
+                </a>
+              </li>
+              <li>
                 <form method="post" action="{% url 'logout' %}" data-logout>
                   {% csrf_token %}
                   <button class="dropdown-item" type="submit" aria-label="{% translate 'Log out' %}">

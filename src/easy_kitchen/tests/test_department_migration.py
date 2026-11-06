@@ -36,4 +36,4 @@ def test_department_migration_preserves_every_assignment_and_is_reversible():
         for model_name in ("Article", "ShoppingItem"):
             assert set(apps.get_model("shopping", model_name).objects.values_list("department", flat=True)) == set(codes)
     finally:
-        MigrationExecutor(connection).migrate(new)
+        MigrationExecutor(connection).migrate([("shopping", "0019_require_department_owner")])

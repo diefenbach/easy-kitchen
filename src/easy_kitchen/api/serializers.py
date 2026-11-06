@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
-from easy_kitchen.models import Department, Recipe, RecipeIngredient, RecipeStep, ShoppingItem, ShoppingList
+from easy_kitchen.models import Recipe, RecipeIngredient, RecipeStep, ShoppingItem, ShoppingList
 from easy_kitchen.services import create_item, create_recipe, create_shopping_list
 
 
@@ -48,7 +48,9 @@ class ShoppingItemSerializer(CompleteChildSerializer):
     department = serializers.CharField(source="department_code", required=False, allow_blank=True, max_length=20)
 
     def validate_department(self, value):
-        if value and not Department.objects.filter(code=value).exists():
+        request = self.context.get("request")
+        user = request.user if request else self.context.get("user")
+        if value and (user is None or not user.departments.filter(code=value).exists()):
             raise serializers.ValidationError(_("Invalid department."))
         return value
 

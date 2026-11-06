@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 from django.urls import reverse
 
-from easy_kitchen.models import Department, Article
+from easy_kitchen.models import Article
 from easy_kitchen.services import create_item
 
 pytestmark = pytest.mark.django_db
@@ -20,7 +20,7 @@ def editor_data(user, **overrides):
 
 def test_all_article_changes_are_saved_together(client, user, shopping_list):
     item = create_item(shopping_list, name="Apple", department="produce")
-    removed = Article.objects.create(user=user, name="Bread", department=Department.objects.get(code="bread"))
+    removed = Article.objects.create(user=user, name="Bread", department=user.departments.get(code="bread"))
     client.force_login(user)
     response = client.post(reverse("easy_kitchen:articles"), editor_data(user, **{
         "articles-TOTAL_FORMS": "3", "articles-0-name": "Green apple", "articles-0-department": "fresh",

@@ -2,7 +2,6 @@ from django import template
 from django.utils.translation import gettext as _
 
 from easy_kitchen.departments import department_choices as sorted_department_choices
-from easy_kitchen.models import Department
 
 register = template.Library()
 
@@ -10,7 +9,7 @@ register = template.Library()
 @register.simple_tag
 def department_groups(shopping_list):
     """Keep the saved item order within each nonempty department."""
-    departments = list(Department.objects.all())
+    departments = list(shopping_list.user.departments.all())
     groups = {department.pk: [] for department in departments}
     groups[None] = []
     for item in shopping_list.items.all():
@@ -24,5 +23,5 @@ def department_groups(shopping_list):
 
 
 @register.simple_tag
-def department_choices():
-    return sorted_department_choices()
+def department_choices(user):
+    return sorted_department_choices(user)

@@ -87,9 +87,10 @@ class ShoppingList(models.Model):
 
 
 class Department(models.Model):
-    """Shared supermarket department, referenced by articles and list entries."""
+    """A user-owned supermarket department referenced by their articles and list entries."""
 
-    code = models.SlugField(_("code"), max_length=20, unique=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="departments")
+    code = models.SlugField(_("code"), max_length=20)
     name = models.CharField(_("name"), max_length=100)
     position = models.PositiveIntegerField(default=0)
 
@@ -97,6 +98,7 @@ class Department(models.Model):
         ordering = ("position", "id")
         verbose_name = _("Department")
         verbose_name_plural = _("Departments")
+        constraints = [models.UniqueConstraint(fields=("user", "code"), name="shopping_department_unique_code_per_user")]
 
     def __str__(self):
         return str(_(self.name))

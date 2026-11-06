@@ -2,15 +2,15 @@ import pytest
 from django.urls import reverse
 
 from easy_kitchen.api.serializers import ShoppingListSerializer
-from easy_kitchen.models import Department, Article, ShoppingItem, ShoppingList
+from easy_kitchen.models import Article, ShoppingItem, ShoppingList
 from easy_kitchen.services import create_item, shopping_list_export_data
 
 pytestmark = pytest.mark.django_db
 
 
 def test_item_inherits_only_its_owners_article_department(shopping_list, other_user):
-    Article.objects.create(user=other_user, name="Milk", department=Department.objects.get(code="fish"))
-    own = Article.objects.create(user=shopping_list.user, name="Milk", department=Department.objects.get(code="dairy"))
+    Article.objects.create(user=other_user, name="Milk", department=other_user.departments.get(code="fish"))
+    own = Article.objects.create(user=shopping_list.user, name="Milk", department=shopping_list.user.departments.get(code="dairy"))
     item = create_item(shopping_list, name=" MILK ")
     assert item.department_code == "dairy"
     own.refresh_from_db()
@@ -72,7 +72,7 @@ def test_departments_survive_json_roundtrip(shopping_list):
     create_item(shopping_list, name="Milk", department="dairy")
     data = shopping_list_export_data(shopping_list)
     assert data["items"][0]["department"] == "dairy"
-    serializer = ShoppingListSerializer(data=data)
+    serializer = ShoppingListSerializer(data=data, context={"user": shopping_list.user})
     assert serializer.is_valid(), serializer.errors
     assert serializer.validated_data["items"][0]["department"] == "dairy"
 
@@ -89,7 +89,7 @@ def test_saving_old_list_does_not_reset_article_default(client, user, shopping_l
     from easy_kitchen.tests.test_list_editor import list_editor_data
 
     item = create_item(shopping_list, name="Milk", department="dairy")
-    user.articles.filter(name="Milk").update(department=Department.objects.get(code="fresh"))
+    user.articles.filter(name="Milk").update(department=user.departments.get(code="fresh"))
     client.force_login(user)
     data = list_editor_data(shopping_list, title="Updated title", **{"items-0-department": "dairy"})
     response = client.post(reverse("easy_kitchen:update", args=[shopping_list.pk]), data)
@@ -158,10 +158,10 @@ def test_department_selects_sort_by_the_active_language(user, shopping_list, lan
     from easy_kitchen.templatetags.departments import department_choices
 
     with override(language):
-        fields = [ShoppingItemForm().fields["department"], ArticleEditorForm().fields["department"],
+        fields = [ShoppingItemForm(user=user).fields["department"], ArticleEditorForm(user=user).fields["department"],
                   ArticleForm(user=user).fields["department"],
                   ShoppingItemEditorFormSet(instance=shopping_list).empty_form.fields["department"]]
-        for choices in [*[field.choices for field in fields], department_choices()]:
+        for choices in [*[field.choices for field in fields], department_choices(user)]:
             options = [(value, str(label)) for value, label in choices]
             assert options[0][0] == ""
             assert [label for value, label in options[1:]] == expected
