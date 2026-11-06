@@ -13,6 +13,9 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+msgid "The combined quantity exceeds %(limit)d characters. Use a shorter quantity."
+msgstr "Die zusammengefasste Menge überschreitet %(limit)d Zeichen. Verwende eine kürzere Mengenangabe."
+
 #: src/easy_kitchen/api/views.py:53 src/easy_kitchen/api/views.py:65
 #: src/easy_kitchen/api/views.py:117 src/easy_kitchen/api/views.py:127
 #: src/easy_kitchen/recipe_views.py:50 src/easy_kitchen/recipe_views.py:280

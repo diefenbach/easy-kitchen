@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.db import transaction
 from easy_kitchen.models import Recipe, RecipeIngredient, RecipeStep, ShoppingItem, ShoppingList
 from easy_kitchen.services import create_item, create_recipe, create_shopping_list
 
@@ -27,8 +28,22 @@ class ReorderRecipesSerializer(serializers.Serializer):
     recipe_ids = serializers.ListField(child=serializers.IntegerField())
 
 
-class ShoppingItemSerializer(serializers.ModelSerializer):
+class CompleteChildSerializer(serializers.ModelSerializer):
+    """Supplied nested collections replace children, even during a root PATCH."""
+
+    required_replacement_field = ""
+
+    def validate(self, attrs):
+        field = self.required_replacement_field
+        if field not in attrs:
+            raise serializers.ValidationError({field: self.fields[field].error_messages["required"]})
+        return attrs
+
+
+class ShoppingItemSerializer(CompleteChildSerializer):
     """One shopping-list line for the API."""
+
+    required_replacement_field = "name"
 
     class Meta:
         model = ShoppingItem
@@ -51,6 +66,7 @@ class ShoppingListSerializer(serializers.ModelSerializer):
         """Create the list and its items for the authenticated user."""
         return create_shopping_list(self.context["request"].user, **validated_data)
 
+    @transaction.atomic
     def update(self, instance, validated_data):
         """Update the list fields and replace its items when items were sent."""
         items = validated_data.pop("items", None)
@@ -64,8 +80,10 @@ class ShoppingListSerializer(serializers.ModelSerializer):
         return instance
 
 
-class RecipeIngredientSerializer(serializers.ModelSerializer):
+class RecipeIngredientSerializer(CompleteChildSerializer):
     """One ingredient line for the API."""
+
+    required_replacement_field = "name"
 
     class Meta:
         model = RecipeIngredient
@@ -77,8 +95,10 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
         }
 
 
-class RecipeStepSerializer(serializers.ModelSerializer):
+class RecipeStepSerializer(CompleteChildSerializer):
     """One preparation step for the API."""
+
+    required_replacement_field = "text"
 
     text = serializers.CharField(max_length=2000)
 

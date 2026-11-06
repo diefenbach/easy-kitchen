@@ -7,7 +7,7 @@ from typing import Any, Literal
 from django.contrib.auth.models import AbstractBaseUser
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import F, Manager, Max, Model
 from django.utils import timezone
 from django.utils.translation import gettext as _
@@ -22,7 +22,7 @@ from .models import (
     ShoppingList,
 )
 
-_QUANTITY_AMOUNT = re.compile(r"^(\d+(?:[.,]\d+)?)\s*(.*)$")
+_QUANTITY_AMOUNT = re.compile(r"^(\d+(?:[.,]\d+)?)\s*([^\d/–-]*)$")
 _INGREDIENT_AMOUNT = r"\d+(?:[.,]\d+)?(?:/\d+)?(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?"
 _LEADING_INGREDIENT = re.compile(
     rf"^(?P<amount>{_INGREDIENT_AMOUNT})(?:\s+(?P<second>\S+))?(?:\s+(?P<rest>.+))?$"
@@ -64,7 +64,9 @@ def _merge_quantities(quantity_entries: Sequence[str]) -> str:
         text_key = part.casefold()
         match = _QUANTITY_AMOUNT.match(part)
         if match is None:
-            if text_key in seen_text:
+            # Unsupported numeric expressions retain each contribution, including
+            # identical fractions/ranges from repeated recipe additions.
+            if not part[0].isdigit() and text_key in seen_text:
                 continue
             seen_text.add(text_key)
             entries.append(("text", part))
@@ -102,7 +104,14 @@ def remember_article(user: AbstractBaseUser, name: str) -> Article | None:
     existing = user.articles.filter(name__iexact=name).order_by("id").first()
     if existing is not None:
         return existing
-    return user.articles.create(name=name)
+    try:
+        with transaction.atomic():
+            return user.articles.create(name=name)
+    except IntegrityError:
+        existing = user.articles.filter(name__iexact=name).order_by("id").first()
+        if existing is None:
+            raise
+        return existing
 
 
 def save_article(user: AbstractBaseUser, name: str, article: Article | None = None) -> Article:
@@ -115,6 +124,11 @@ def save_article(user: AbstractBaseUser, name: str, article: Article | None = No
     return article
 
 
+class QuantityOverflowError(ValueError):
+    """The accumulated quantity cannot fit in the shopping item's storage field."""
+
+
+@transaction.atomic
 def create_item(
     shopping_list: ShoppingList,
     *,
@@ -126,6 +140,9 @@ def create_item(
     """Add an item, or merge the quantity into the existing line with the same name."""
     name = _normalized_name(name)
     quantity = (quantity or "").strip()
+    # Lock a row that exists even before the first item is added. All additions
+    # to this list then observe the preceding committed quantity and article.
+    ShoppingList.objects.select_for_update().get(pk=shopping_list.pk)
     remember_article(shopping_list.user, name)
     existing = next(
         (
@@ -139,12 +156,15 @@ def create_item(
         quantity_entries = _quantity_parts(existing.quantity)
         if quantity:
             quantity_entries.append(quantity)
-        existing.quantity = _merge_quantities(quantity_entries)
+        merged = _merge_quantities(quantity_entries)
+        _validate_item_quantity(merged)
+        existing.quantity = merged
         existing.checked = False
         existing.save(update_fields=["quantity", "checked", "updated_at"])
         return existing
     if position is None:
         position = (shopping_list.items.aggregate(last=Max("position"))["last"] or 0) + 1
+    _validate_item_quantity(quantity)
     return ShoppingItem.objects.create(
         shopping_list=shopping_list,
         name=name,
@@ -152,6 +172,15 @@ def create_item(
         checked=checked,
         position=position,
     )
+
+
+def _validate_item_quantity(quantity: str) -> None:
+    limit = ShoppingItem._meta.get_field("quantity").max_length
+    if len(quantity) > limit:
+        raise QuantityOverflowError(
+            _("The combined quantity exceeds %(limit)d characters. Use a shorter quantity.")
+            % {"limit": limit}
+        )
 
 
 def _clean_list_icon(icon: str | None) -> str | None:
@@ -163,6 +192,7 @@ def _clean_list_icon(icon: str | None) -> str | None:
     return icon
 
 
+@transaction.atomic
 def create_shopping_list(
     user: AbstractBaseUser,
     *,
@@ -210,7 +240,8 @@ def reorder_shopping_lists(user: AbstractBaseUser, list_ids: Sequence[int]) -> N
 def reorder_items(shopping_list: ShoppingList, item_ids: Sequence[int]) -> None:
     """Set item positions. The ids must be exactly the items of this list."""
     existing = set(shopping_list.items.filter(id__in=item_ids).values_list("id", flat=True))
-    if existing != set(item_ids) or len(item_ids) != len(existing):
+    if (existing != set(item_ids) or len(item_ids) != len(existing)
+            or shopping_list.items.count() != len(item_ids)):
         raise ValueError(_("Invalid item order."))
     for position, item_id in enumerate(item_ids, start=1):
         ShoppingItem.objects.filter(pk=item_id, shopping_list=shopping_list).update(
@@ -275,6 +306,7 @@ def _optional_count(value: int | str | None) -> int | None:
     return amount
 
 
+@transaction.atomic
 def create_recipe(
     user: AbstractBaseUser,
     *,
@@ -421,6 +453,7 @@ def _ingredient_name_and_quantity(text: str) -> tuple[str, str]:
     return text, ""
 
 
+@transaction.atomic
 def add_recipe_ingredients_to_list(recipe: Recipe, shopping_list: ShoppingList) -> ShoppingList:
     """Copy the recipe's ingredients onto a list owned by the same user."""
     if shopping_list.user_id != recipe.user_id:
@@ -428,6 +461,18 @@ def add_recipe_ingredients_to_list(recipe: Recipe, shopping_list: ShoppingList) 
     for ingredient in recipe.ingredients.all():
         create_item(shopping_list, name=ingredient.name, quantity=ingredient.quantity)
     return shopping_list
+
+
+@transaction.atomic
+def copy_recipe_to_list(
+    recipe: Recipe, *, shopping_list: ShoppingList | None = None, title: str = ""
+) -> ShoppingList:
+    """Create the web UI's new target and copy ingredients as one operation."""
+    if title:
+        shopping_list = create_shopping_list(recipe.user, title=title, date=timezone.localdate())
+    if shopping_list is None:
+        raise ValueError(_("Invalid shopping list."))
+    return add_recipe_ingredients_to_list(recipe, shopping_list)
 
 
 def owned_recipe(
@@ -524,6 +569,7 @@ def delete_completed_items(shopping_list: ShoppingList) -> int:
     return count
 
 
+@transaction.atomic
 def add_recipe_to_owned_list(
     user: AbstractBaseUser,
     *,
@@ -585,7 +631,8 @@ def _reorder(
 ) -> None:
     """Require the ids to be these lines, then write positions on that parent."""
     existing = set(manager.filter(id__in=ordered_ids).values_list("id", flat=True))
-    if existing != set(ordered_ids) or len(ordered_ids) != len(existing):
+    if (existing != set(ordered_ids) or len(ordered_ids) != len(existing)
+            or manager.count() != len(ordered_ids)):
         raise ValueError(_("Invalid order."))
     for position, line_id in enumerate(ordered_ids, start=1):
         model.objects.filter(pk=line_id, **{parent_field: parent}).update(position=position)

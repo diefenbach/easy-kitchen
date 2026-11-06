@@ -9,7 +9,6 @@ from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import gettext as _, ngettext
 from django.views import View
@@ -23,9 +22,9 @@ from .models import Recipe
 from .recipe_pdf import build_recipe_pdf
 from .services import (
     _normalized_name,
-    add_recipe_ingredients_to_list,
+    copy_recipe_to_list,
+    QuantityOverflowError,
     add_recipe_line,
-    create_shopping_list,
     reorder_recipe_lines,
     reorder_recipes,
     set_meal_plan_recipe,
@@ -459,13 +458,16 @@ class RecipeAddToListView(LoginRequiredMixin, View):
                 status=422,
             )
         title = form.cleaned_data["title"]
-        if title:
-            shopping_list = create_shopping_list(
-                request.user, title=title, date=timezone.localdate()
+        try:
+            shopping_list = copy_recipe_to_list(
+                recipe, title=title, shopping_list=form.cleaned_data["shopping_list"]
             )
-        else:
-            shopping_list = form.cleaned_data["shopping_list"]
-        add_recipe_ingredients_to_list(recipe, shopping_list)
+        except QuantityOverflowError as error:
+            form.add_error(None, str(error))
+            return render(
+                request, "easy_kitchen/recipes/detail.html",
+                RecipeDetailView()._context(request, recipe, add_to_list_form=form), status=422,
+            )
         count = recipe.ingredients.count()
         messages.success(
             request,
