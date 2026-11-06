@@ -166,7 +166,8 @@ bindPageElements();
 // Request data has already been collected at beforeRequest. Lock controls only
 // now, so disabled fields are still included in this request's submitted values.
 const pendingForms = new WeakMap();
-const draftForms = "#recipe-editor-form, #list-editor-form, #article-editor-form, #department-editor-form, #item-form form";
+const draftForms =
+  "#recipe-editor-form, #list-editor-form, #article-editor-form, #department-editor-form, #item-form form";
 document.addEventListener("htmx:beforeRequest", (event) => {
   if (
     document.querySelector(

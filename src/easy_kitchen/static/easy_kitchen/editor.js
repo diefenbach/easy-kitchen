@@ -4,7 +4,9 @@ const boundEditors = new WeakMap();
 let activeEditor = null;
 
 function bindCollectionEditor() {
-  const editor = document.querySelector("#recipe-editor-form, #list-editor-form, #article-editor-form, #department-editor-form");
+  const editor = document.querySelector(
+    "#recipe-editor-form, #list-editor-form, #article-editor-form, #department-editor-form",
+  );
   if (!editor) {
     activeEditor = null;
     return;
@@ -43,12 +45,13 @@ function bindCollectionEditor() {
     const rows = () => [...container.querySelectorAll(".editor-line:not([hidden])")];
     function reorder() {
       const visible = rows();
-      if (ordered) visible.forEach((row, index) => {
-        row.querySelector('[name$="-ORDER"]').value = index + 1;
-        row.querySelector("[data-editor-number]").textContent = `${index + 1}.`;
-        row.querySelector("[data-editor-up]").disabled = index === 0;
-        row.querySelector("[data-editor-down]").disabled = index === visible.length - 1;
-      });
+      if (ordered)
+        visible.forEach((row, index) => {
+          row.querySelector('[name$="-ORDER"]').value = index + 1;
+          row.querySelector("[data-editor-number]").textContent = `${index + 1}.`;
+          row.querySelector("[data-editor-up]").disabled = index === 0;
+          row.querySelector("[data-editor-down]").disabled = index === visible.length - 1;
+        });
       add.disabled = Number(total.value) >= max;
     }
     add.addEventListener("click", () => {
@@ -86,14 +89,16 @@ function bindCollectionEditor() {
       }
       state.dirty = true;
     });
-    const sortable = ordered ? createSortable(container, {
-      handle: ".editor-drag",
-      draggable: ".editor-line:not([hidden])",
-      onEnd() {
-        reorder();
-        state.dirty = true;
-      },
-    }) : null;
+    const sortable = ordered
+      ? createSortable(container, {
+          handle: ".editor-drag",
+          draggable: ".editor-line:not([hidden])",
+          onEnd() {
+            reorder();
+            state.dirty = true;
+          },
+        })
+      : null;
     editor.addEventListener("easykitchen:pending", (event) => {
       sortable?.option("disabled", event.detail);
     });
@@ -147,7 +152,11 @@ window.addEventListener(
 
 document.addEventListener("htmx:beforeRequest", (event) => {
   if (!hasUnsavedChanges() || !event.detail.target?.contains(activeEditor.editor)) return;
-  if (event.detail.elt.matches("#recipe-editor-form, #list-editor-form, #article-editor-form, #department-editor-form, [data-editor-cancel]"))
+  if (
+    event.detail.elt.matches(
+      "#recipe-editor-form, #list-editor-form, #article-editor-form, #department-editor-form, [data-editor-cancel]",
+    )
+  )
     return;
   if (!window.confirm(activeEditor.editor.dataset.discardMessage)) event.preventDefault();
 });

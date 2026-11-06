@@ -18,7 +18,11 @@ function fillDepartment(input) {
 }
 
 document.addEventListener("input", (event) => {
-  if (event.target.matches?.('.article-field input[name=name], #list-editor-form input[name$="-name"]'))
+  if (
+    event.target.matches?.(
+      '.article-field input[name=name], #list-editor-form input[name$="-name"]',
+    )
+  )
     fillDepartment(event.target);
 });
 
