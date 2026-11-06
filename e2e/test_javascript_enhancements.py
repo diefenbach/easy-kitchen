@@ -42,6 +42,8 @@ def test_article_suggestions_limit_results_and_search_the_full_catalog(authentic
     page.goto(f"{live_server.url}/lists/{shopping_list.pk}/")
     search = page.get_by_role("combobox", name="Item", exact=True)
     search.focus()
+    expect(page.get_by_role("option")).to_have_count(0)
+    search.fill("A")
     expect(page.get_by_role("option")).to_have_count(20)
     search.fill("Article 059")
     expect(page.get_by_role("option")).to_have_count(1)

@@ -24,14 +24,14 @@ function showArticleSuggestions(input) {
   const field = input.closest(".article-field");
   const list = field?.querySelector(".article-suggestions");
   if (!list) return;
-  if (document.activeElement !== input) {
+  const query = input.value.trim().toLocaleLowerCase();
+  if (document.activeElement !== input || !query) {
     hideArticleSuggestions(field);
     return;
   }
   if (!list.id) list.id = `article-suggestions-${++suggestionSequence}`;
   input.setAttribute("aria-controls", list.id);
   input.removeAttribute("aria-activedescendant");
-  const query = input.value.trim().toLocaleLowerCase();
   const names = findSuggestions(
     document.querySelectorAll("#articles option"),
     (option) => option.value && option.value.toLocaleLowerCase().includes(query),
@@ -99,6 +99,7 @@ document.addEventListener("keydown", (event) => {
   if (!["ArrowDown", "ArrowUp"].includes(event.key)) return;
   event.preventDefault();
   if (list.hidden) showArticleSuggestions(input);
+  if (list.hidden) return;
   const options = [...list.querySelectorAll("button")];
   if (!options.length) return;
   const current = options.findIndex(

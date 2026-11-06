@@ -68,6 +68,8 @@ def test_article_suggestions_open_at_the_start_of_the_input(authenticated_page):
     expect(name).to_be_focused()
 
     name.click()
+    expect(name).to_have_attribute("aria-expanded", "false")
+    name.press("A")
     suggestions = page.get_by_role("listbox", name="Articles")
     expect(suggestions.get_by_role("option", name="Avocado")).to_be_visible()
     input_box = name.bounding_box()

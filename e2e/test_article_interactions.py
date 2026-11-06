@@ -14,6 +14,55 @@ def open_list(page, user, live_server):
     return shopping_list
 
 
+def test_first_item_replaces_the_empty_message(authenticated_page, user, live_server):
+    shopping_list = ShoppingList.objects.create(user=user, title="Groceries")
+    page = authenticated_page
+    page.goto(f"{live_server.url}/lists/{shopping_list.pk}/")
+    expect(page.get_by_text("No items yet.", exact=True)).to_be_visible()
+
+    name = page.get_by_role("combobox", name="Item")
+    for article in ["Apple", "Bread"]:
+        name.fill(article)
+        page.get_by_role("button", name="Add", exact=True).click()
+        expect(page.locator(".shopping-item", has_text=article)).to_be_visible()
+        expect(page.locator("#empty-message")).to_have_count(0)
+    expect(page.locator(".shopping-item")).to_have_count(2)
+    page.reload()
+    expect(page.locator(".shopping-item")).to_have_count(2)
+    expect(page.get_by_text("No items yet.", exact=True)).to_have_count(0)
+
+
+def test_article_suggestions_require_input(authenticated_page, user, live_server):
+    Article.objects.create(user=user, name="Apple")
+    page = authenticated_page
+    open_list(page, user, live_server)
+    name = page.get_by_role("combobox", name="Item")
+    suggestions = page.locator(".article-suggestions")
+
+    name.click()
+    expect(suggestions).to_be_hidden()
+    expect(name).to_have_attribute("aria-expanded", "false")
+    for key in ["ArrowDown", "ArrowUp"]:
+        name.press(key)
+        expect(suggestions).to_be_hidden()
+        expect(name).not_to_have_attribute("aria-activedescendant")
+    name.fill("   ")
+    expect(suggestions).to_be_hidden()
+
+    name.fill("")
+    name.press("A")
+    expect(page.get_by_role("option", name="Apple", exact=True)).to_be_visible()
+    expect(name).to_have_attribute("aria-expanded", "true")
+    name.press("ArrowDown")
+    name.press("Backspace")
+    expect(suggestions).to_be_hidden()
+    expect(name).to_have_attribute("aria-expanded", "false")
+    expect(name).not_to_have_attribute("aria-activedescendant")
+    name.press("ArrowDown")
+    expect(suggestions).to_be_hidden()
+    expect(name).not_to_have_attribute("aria-activedescendant")
+
+
 def test_article_suggestions_support_keyboard_selection(authenticated_page, user, live_server):
     Article.objects.create(user=user, name="Avocado")
     Article.objects.create(user=user, name="Apple")

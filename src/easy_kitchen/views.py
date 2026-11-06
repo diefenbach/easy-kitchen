@@ -309,6 +309,8 @@ class ItemCreateView(LoginRequiredMixin, View):
                     if item.id in existing_ids:
                         response["HX-Retarget"] = f'.shopping-item[data-item-id="{item.id}"]'
                         response["HX-Reswap"] = "outerHTML"
+                    elif not existing_ids:
+                        response["HX-Reswap"] = "innerHTML"
                     return response
                 return redirect("easy_kitchen:detail", pk=shopping_list.pk)
         if request.headers.get("HX-Request"):
