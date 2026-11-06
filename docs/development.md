@@ -24,6 +24,28 @@ uv run python -m pytest e2e
 
 This documentation is built in the same suite. Sphinx treats warnings as errors.
 
+### PostgreSQL write regressions
+
+The normal suite uses SQLite. To verify row locking, concurrent article creation
+and merged quantity limits, run against a dedicated local PostgreSQL instance:
+
+```sh
+POSTGRES_DB=easykitchen_test POSTGRES_USER=easykitchen_test \
+POSTGRES_PASSWORD=test-only-password POSTGRES_HOST=127.0.0.1 POSTGRES_PORT=5432 \
+uv run python -m pytest --ds=project.settings.postgresql_test -n 0 \
+  src/easy_kitchen/tests/test_postgresql_writes.py \
+  src/easy_kitchen/tests/test_write_integrity.py \
+  src/easy_kitchen/tests/test_quantity_and_order_integrity.py \
+  src/easy_kitchen/tests/test_export_regressions.py \
+  src/easy_kitchen/tests/test_pdf_image_regressions.py \
+  src/easy_kitchen/tests/test_planner_boundaries.py
+```
+
+Use a test role with permission to create databases. pytest creates and removes
+its own `test_<POSTGRES_DB>` database; do not point this at production. The
+`postgres` CI job runs the same tests against PostgreSQL 17 and is required by
+the production image build. PostgreSQL-only tests skip during SQLite runs.
+
 ## JavaScript checks
 
 Node.js 24 or newer is needed for the development checks and vendor updates.

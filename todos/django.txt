@@ -1,0 +1,370 @@
+Implementation status (2026-11-06, branch codex/django-todos)
+All ten findings are addressed in this branch:
+1. Complete replacement children are validated before nested PATCH writes.
+2. Shared creates, replacements and recipe copies are atomic, including new targets.
+3. Unsupported fractions/mixed numbers/ranges retain each contribution as text.
+4. Final merged quantity length is validated; web/API/MCP return validation errors.
+5. Recipe PDF images fit both frame width and height.
+6. Parent-list locks serialize additions; article unique conflicts recover safely.
+7. Selected export querysets prefetch items, ingredients and steps.
+8. Item and recipe-line ordering requires complete child membership.
+9. Export IDs receive type/hashability/range validation; foreign IDs remain ignored.
+10. Web planning validates complete weeks and hides impossible navigation links.
+
+Verification: 333 passed / 6 PostgreSQL-only skips in the full local suite;
+38 passed in the isolated PostgreSQL 17 regression run. CI monitoring follows PR creation.
+The original review below is preserved as historical evidence.
+
+Python/Django review of /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/
+Reviewed on 2026-11-05; local branch main, commit 74cb3e5.
+
+Overall assessment: The application has a sensible Django-first structure, small
+models, shared services, user-scoped access paths, and useful behavioral tests.
+The existing suite passes. The main weaknesses are destructive nested API updates,
+incomplete transaction boundaries, and quantity handling. These deserve attention
+before style or architectural refactoring. This review identifies 2 high-priority,
+5 medium-priority, and 3 low-priority findings. No critical issue was established
+within the reviewed scope.
+
+The local environment is Python 3.13.3, Django 5.2.18, Django REST framework 3.16.1,
+MCP 2.3.0, pytest 8.4.2, and Ruff 0.14.14. The project declares Python >=3.10 and
+Django >=5.2,<5.3; Docker and CI use Python 3.13. Development tooling includes uv,
+pytest-django, pytest-xdist, pytest-playwright, Ruff, and Sphinx. Production and
+development use PostgreSQL; the test settings use SQLite.
+
+Scope: Read the main models, services, forms, shopping-list views, recipe views,
+planner views, API serializers/viewsets, MCP tools, PDF generator, startup guard,
+admin registration, settings, and URL configuration. Inspected relevant templates,
+selected API/model/view/editor/planner/MCP tests, browser fixtures, JSON format
+documentation, and CI configuration. Executed all 298 existing tests, including
+browser tests. Additional reproductions used synthetic data in an in-memory
+SQLite database and temporary local image storage. Application code was not changed.
+
+1. HIGH — Nested PATCH requests can delete existing children without valid replacements
+   Classification: Confirmed bug, reproduced through the API.
+
+   Locations:
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/api/serializers.py:56
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/api/serializers.py:152
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/services.py:228
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/services.py:239
+
+   Problem: DRF's root partial-update flag allows required fields on nested
+   children to be omitted. The write paths nevertheless treat supplied child
+   collections as complete replacements. ShoppingListSerializer deletes all
+   existing items before calling create_item; a child without name then raises
+   TypeError. The recipe writers delete existing lines and silently skip children
+   without a name or text.
+
+   Reproductions with an existing populated record:
+   PATCH /api/v1/shopping-lists/<owned-id>/
+   {"items": [{"quantity": "2 l"}]}
+   Result: HTTP 500; all previous items are gone.
+
+   PATCH /api/v1/recipes/<owned-id>/
+   {"ingredients": [{"quantity": "2 l"}], "steps": [{}]}
+   Result: HTTP 200; both ingredients and steps are now empty.
+
+   Impact: An incomplete client payload can permanently erase the user's data,
+   including while reporting success. This affects authenticated users' own data;
+   it did not demonstrate cross-user access.
+
+   Smallest improvement: Keep omission of a whole collection as "unchanged", but
+   explicitly validate every supplied replacement child as a complete child
+   record before mutation. Return field-specific HTTP 400 errors for missing name
+   or text. Retain explicit [] as the intentional clearing operation. Add tests
+   that verify both the error response and unchanged existing children. The
+   transaction safeguard in finding 2 is also required; a transaction alone will
+   not fix the recipe path, which currently returns success.
+
+   Framework context: [DRF serializer documentation](https://www.django-rest-framework.org/api-guide/serializers/#partial-updates).
+   The installed DRF fields.py:506-510 additionally confirms that missing-field
+   validation consults self.root.partial, including for nested fields.
+
+2. HIGH — Multi-record write failures leave partial changes committed
+   Classification: Confirmed rollback defect, reproduced with an injected failure.
+
+   Locations:
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/api/serializers.py:54
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/services.py:166
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/services.py:278
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/services.py:424
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/recipe_views.py:461
+
+   Problem: Nested list replacement saves metadata, deletes children, and inserts
+   replacements without one encompassing transaction. Direct list/recipe creation
+   and copying a recipe to a list likewise span independently committed writes.
+   The transaction in model.save() protects only that model save and its position
+   shift. It does not encompass the subsequent child writes. ATOMIC_REQUESTS is
+   not enabled.
+
+   Reproduction: Sent a fully valid list PUT changing its title and replacing its
+   items. Injected RuntimeError at the replacement create_item call. The response
+   was HTTP 500, but the new title remained committed and the original items had
+   been deleted. This reproduction deliberately injected the failure; it does
+   not assert that the same exception occurs on every ordinary request. A real
+   child-write failure can arise from finding 4 or a concurrent article insert.
+
+   Impact: Failed operations can leave incomplete lists, recipes, or copied
+   ingredient sets. Retrying may duplicate or merge already committed work.
+   Existing atomic import services and draft editor views already provide better
+   behavior; their guarantees do not extend to these separate entry points.
+
+   Smallest improvement: Put transaction.atomic boundaries around the complete
+   shared business operations, including creation of a new target list and all
+   its copied items, and around nested API replacement. Test rollback after a
+   child write fails on create and replacement paths. Keep this separate from
+   validation: valid requests also need all-or-nothing persistence.
+
+   Framework context: [Django 5.2 transactions](https://docs.djangoproject.com/en/5.2/topics/db/transactions/).
+
+3. MEDIUM — Quantity merging corrupts fractions, mixed numbers, and ranges
+   Classification: Confirmed bug, reproduced with the quantity merger.
+
+   Locations:
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/services.py:25
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/services.py:65
+
+   Problem: _QUANTITY_AMOUNT parses only an initial decimal number and treats
+   everything following it as a unit. The same-unit addition then adds these
+   numeric prefixes even when the suffix belongs to the amount itself.
+
+   Reproduced outputs:
+   ["1/2 l", "1/2 l"]             -> "2 /2 l"
+   ["1 1/2 cups", "1 1/2 cups"]   -> "2 1/2 cups" (the total should be 3 cups)
+   ["1-2 pieces", "1-2 pieces"]   -> "2 -2 pieces"
+
+   Impact: Adding the same recipe or ingredient repeatedly produces incorrect
+   shopping quantities. The item and ingredient interfaces accept these ordinary
+   free-text quantities; no input validation excludes them.
+
+   Smallest improvement: Restrict automatic addition to an unambiguously parsed
+   amount-plus-unit representation. Handle supported fractions/mixed numbers
+   explicitly, or preserve unsupported quantity expressions as separate entries
+   rather than performing prefix arithmetic. Test through create_item as well as
+   the parser, including repeated merges of its previously stored output.
+
+4. MEDIUM — Valid individual quantities can merge beyond the database column limit
+   Classification: Confirmed invariant violation; PostgreSQL failure is inferred
+   from its documented column behavior and was not executed against PostgreSQL.
+
+   Locations:
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/services.py:142
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/models.py:93
+
+   Problem: Each submitted quantity may have up to 100 characters, but the merged
+   result is saved without checking the combined length. Distinct unit entries
+   accumulate in the same CharField(max_length=100).
+
+   Reproduction: Added the same item with quantity "1 " + "a" * 98, then with
+   "1 " + "b" * 98. Each input is 100 characters. The resulting stored quantity
+   has 202 characters in SQLite; item.full_clean() then raises the model's
+   max-length ValidationError.
+
+   Impact: SQLite tests permit state that the production varchar(100) column
+   rejects. In PostgreSQL the ordinary save is expected to raise a database error,
+   yielding an unhandled failure. In a multi-step operation this also exposes
+   finding 2. Repeated shorter quantities with different units can reach the same
+   boundary.
+
+   Smallest improvement: Validate the final merged value before persistence and
+   turn an overflow into a useful form/API/MCP error. If arbitrary accumulated
+   text is intended, use an appropriately migrated storage field and align input
+   constraints. Do not silently truncate quantities. Add a PostgreSQL regression
+   check for the selected behavior.
+
+   Backend reference: [PostgreSQL character types](https://www.postgresql.org/docs/current/datatype-character.html).
+
+5. MEDIUM — A tall uploaded image breaks recipe PDF downloads
+   Classification: Confirmed bug, reproduced using temporary filesystem storage.
+
+   Location:
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/recipe_pdf.py:99
+
+   Problem: Uploaded images are scaled only when their width exceeds max_width.
+   Their height is not constrained to the available page frame. ReportLab cannot
+   split an Image flowable that is taller than a whole frame.
+
+   Reproduction: Saved a valid 100 x 1500 PNG to an owned recipe and requested
+   /recipes/<owned-id>/pdf/. The endpoint returned HTTP 500. Calling the generator
+   directly raised reportlab.platypus.doctemplate.LayoutError: the image was too
+   large for the page frame. No external image fetch was involved.
+
+   Impact: A supported recipe upload can make its PDF export unusable until the
+   picture is removed or replaced.
+
+   Smallest improvement: Scale proportionally against both maximum width and
+   available page-frame height, accounting for frame padding. Test a tall narrow
+   image as well as a large landscape image with actual filesystem storage or
+   a suitable file-like abstraction.
+
+6. MEDIUM — Concurrent item additions can lose quantities or fail on article creation
+   Classification: Substantiated concurrency risk from the read/write sequence;
+   no real concurrent PostgreSQL run was performed.
+
+   Locations:
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/services.py:102
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/services.py:130
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/services.py:142
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/models.py:123
+
+   Problem: create_item reads an existing item's quantity, merges in Python, and
+   saves without locking or an optimistic concurrency check. Two additions can
+   both read 1 l and each write 2 l, losing one addition. For an absent item both
+   requests can create a line; there is no corresponding item-name uniqueness
+   constraint. Separately, remember_article performs check-then-create despite
+   the case-insensitive database uniqueness constraint, so simultaneous first
+   use of an article name can raise IntegrityError.
+
+   Impact: Concurrent browser/MCP/API actions for the same user can undercount
+   purchases, create duplicate lines, or return an unhandled error. Wrapping the
+   current sequence in atomic() alone does not serialize the initial reads.
+
+   Smallest improvement: Serialize additions by locking the parent shopping-list
+   row inside the operation's transaction before checking/merging items. Also make
+   article creation race-safe against its existing uniqueness constraint, including
+   across different lists. Verify with transaction tests using independent
+   PostgreSQL connections and simultaneous requests.
+
+   Framework reference: [Django select_for_update](https://docs.djangoproject.com/en/5.2/ref/models/querysets/#select-for-update).
+   SQLite cannot validate the row-locking behavior needed here.
+
+7. MEDIUM — Selected-record JSON export performs queries per parent
+   Classification: Confirmed N+1 pattern, measured with CaptureQueriesContext.
+
+   Locations:
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/forms.py:267
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/views.py:191
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/services.py:600
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/services.py:612
+
+   Problem: The selected parent querysets have no related-object prefetches.
+   Export then loads items for each list and ingredients and steps for each recipe.
+
+   Measurement: After normal ExportForm validation, export_records executed
+   4 queries for one list plus one recipe, and 10 queries for three lists plus
+   three recipes. This measurement excludes form validation and session work.
+   In that execution path the count grows as 1 + L + 2R, where L and R are the
+   selected lists and recipes.
+
+   Impact: Large account exports incur database round trips per selected record.
+   Query growth was measured; no production latency or throughput was measured.
+
+   Smallest improvement: Apply prefetch_related("items") and
+   prefetch_related("ingredients", "steps") to the selected querysets before
+   export iteration. Add a query-count regression test with several parents.
+
+   Framework reference: [Django prefetch_related](https://docs.djangoproject.com/en/5.2/ref/models/querysets/#prefetch-related).
+
+8. LOW — Incomplete item and recipe-line orders are accepted and create position collisions
+   Classification: Confirmed for shopping items; the recipe helper has the same check.
+
+   Locations:
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/services.py:212
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/services.py:587
+
+   Problem: These validators compare the submitted IDs only to matching records,
+   not to the complete parent collection. Unlike _reorder_owned, they omit the
+   parent-count check. An incomplete order is accepted and overwrites positions
+   starting at 1 while omitted records keep their old positions.
+
+   Reproduction: Created three items at positions 1, 2, 3, then called
+   reorder_items(list, [third_item_id]). It succeeded and left positions 1, 1, 2.
+   The corresponding API action exposes this helper.
+
+   Impact: Incomplete or stale API requests can produce an order different from
+   the requested result. No current browser script posting these legacy item/line
+   reorder payloads was found; the API remains reachable.
+
+   Smallest improvement: Enforce complete membership as the service contract
+   states, matching _reorder_owned. If partial reordering is intended, define it
+   explicitly and renumber omitted records consistently. Test missing IDs as well
+   as duplicate and foreign IDs.
+
+9. LOW — Malformed export IDs raise an uncaught exception instead of a form error
+   Classification: Confirmed validation bug.
+
+   Location:
+   /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/forms.py:245
+
+   Problem: OwnedMultipleChoiceField overrides Django's _check_values and directly
+   filters pk__in=value. It bypasses the normal conversion/error handling for
+   malformed primary-key values.
+
+   Reproduction: ExportForm({"lists": ["not-an-integer"]}, user=user).is_valid()
+   raises ValueError: Field 'id' expected a number but got 'not-an-integer'. The
+   export view does not catch that exception.
+
+   Impact: A malformed authenticated POST returns HTTP 500 instead of a useful
+   validation response. The ownership filter remains present; this reproduction
+   did not disclose another user's records.
+
+   Smallest improvement: Preserve the existing policy of ignoring valid-but-foreign
+   IDs while restoring type/hashability validation and Django ValidationError
+   conversion. Test malformed IDs through the form and export endpoint.
+
+10. LOW — Calendar-boundary dates crash the web meal planner
+    Classification: Confirmed bug at an extreme input boundary.
+
+    Locations:
+    /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/planner_views.py:30
+    /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/planner_views.py:50
+    /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/planner_views.py:71
+    /Users/kai/Development/iqpp/iqpp_dev/easy_kitchen/src/easy_kitchen/services.py:728
+
+    Problem: The web date parser accepts valid ISO dates whose complete week or
+    previous/next navigation falls outside Python's representable date range.
+    OverflowError is not handled. The API/MCP service already guards complete
+    weeks, but the web planner does not reuse that validation.
+
+    Reproduction: An authenticated GET /planner/?week=9999-12-31 returned HTTP 500.
+
+    Impact: Crafted or extreme saved URLs break the planner page. This has low
+    practical severity because ordinary near-term meal planning is unaffected.
+
+    Smallest improvement: Reuse one validated week-normalization function and
+    disable navigation beyond the minimum/maximum supported week. Return a
+    controlled validation response or documented fallback for unsupported dates.
+    Test complete-week generation and navigation at both calendar boundaries.
+
+Validation performed:
+- The requested uv run pytest invocation could not locate the pytest executable
+  in this environment. Used the installed project interpreter instead, without
+  installing or changing dependencies:
+  PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m pytest -p no:cacheprovider
+  --basetemp=/Users/kai/Documents/Codex/2026-11-05/du-x20/work/pytest-review
+  Result: 298 passed in 38.61 seconds, with 10 xdist workers, including browser tests.
+- .venv/bin/python -m ruff check --no-cache src/easy_kitchen
+  Result: All checks passed.
+- Django check and makemigrations --check --dry-run, invoked through call_command
+  in the isolated in-memory environment: no system-check issues; no changes detected.
+- Ad hoc API/service/form/PDF checks reproduced findings 1, 2, 3, 5, 7, 8, 9, and 10.
+  Finding 4 reproduced an oversized persisted value and model validation failure
+  in SQLite. Finding 6 was assessed from code and remains a concurrency risk.
+
+Existing tests meaningfully cover ownership, authentication, CSRF on several
+state-changing web flows, happy-path API writes, editor rollback, and browser
+journeys. The passing tests do not cover destructive nested PATCH payloads or
+API replacement rollback. The editor rollback tests exercise different entry
+points. Quantity tests cover decimal amounts and ordinary unit combinations,
+but do not protect the fraction and combined-length cases above.
+
+Security scope: Inspected user filters in web/API lookups, default DRF permissions,
+MCP token resolution, CSRF middleware, and production HTTPS/cookie settings.
+The review found no cross-user data exposure in those traced paths. It did not
+audit the live reverse proxy, media-serving access policy, deployed credentials,
+all Django-admin permission configurations, or dependencies for known advisories.
+No live production requests or writes were made. Browser JavaScript received only
+the limited inspection needed to trace Django interactions, not a separate review.
+Historical migration correctness, PostgreSQL concurrency/constraint execution,
+production load, and exhaustive image/PDF format coverage remain unverified.
+
+The three most important next steps are:
+1. Add failing API regressions for incomplete nested PATCH payloads, then validate
+   replacement children before any deletion. Require HTTP 400 and unchanged data.
+2. Add transaction boundaries and rollback tests for complete shared write
+   operations and nested API replacement. Verify concurrent item/article writes
+   with independent PostgreSQL connections and the appropriate locking/retry logic.
+3. Correct quantity parsing and final-length handling, then add PostgreSQL-backed
+   regression coverage for those cases. Address PDF image sizing and export query
+   growth after the data-integrity fixes.
