@@ -243,6 +243,20 @@ class OwnedMultipleChoiceField(forms.ModelMultipleChoiceField):
     """Keep ids that belong to the queryset and ignore the rest."""
 
     def _check_values(self, value):
+        try:
+            value = frozenset(value)
+        except TypeError:
+            raise forms.ValidationError(self.error_messages["invalid_list"], code="invalid_list")
+        for pk in value:
+            try:
+                number = self.queryset.model._meta.pk.to_python(pk)
+                if not -(2**63) <= number < 2**63:
+                    raise ValueError
+            except (ValueError, TypeError, forms.ValidationError):
+                raise forms.ValidationError(
+                    self.error_messages["invalid_pk_value"],
+                    code="invalid_pk_value", params={"pk": pk},
+                ) from None
         return self.queryset.filter(pk__in=value)
 
 
@@ -264,8 +278,8 @@ class ExportForm(forms.Form):
 
     def __init__(self, *args, user, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["lists"].queryset = user.shopping_lists.all()
-        self.fields["recipes"].queryset = user.recipes.all()
+        self.fields["lists"].queryset = user.shopping_lists.prefetch_related("items")
+        self.fields["recipes"].queryset = user.recipes.prefetch_related("ingredients", "steps")
 
     def clean(self):
         """Require at least one list or recipe."""
