@@ -30,7 +30,7 @@
             {% for line in article_formset %}{% include "easy_kitchen/lists/partials/editor_article.html" %}{% endfor %}
           </div>
           <template data-editor-empty>{% include "easy_kitchen/lists/partials/editor_article.html" with line=article_formset.empty_form %}</template>
-          <button type="button" class="btn btn-outline-secondary" data-editor-add><i class="bi bi-plus-lg" aria-hidden="true"></i> {% translate "Add article" %}</button>
+          <button type="button" class="btn btn-outline-secondary" data-editor-add disabled><i class="bi bi-plus-lg" aria-hidden="true"></i> {% translate "Add article" %}</button>
         </div>
       </section>
       <div class="article-editor-footer d-flex justify-content-end gap-2 rounded border shadow-sm p-3">

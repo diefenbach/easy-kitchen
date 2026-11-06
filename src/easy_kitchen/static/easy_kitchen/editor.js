@@ -52,6 +52,9 @@ function bindCollectionEditor() {
           row.querySelector("[data-editor-up]").disabled = index === 0;
           row.querySelector("[data-editor-down]").disabled = index === visible.length - 1;
         });
+      container.querySelectorAll("[data-editor-remove], .editor-drag").forEach((button) => {
+        button.disabled = false;
+      });
       add.disabled = Number(total.value) >= max;
     }
     add.addEventListener("click", () => {
