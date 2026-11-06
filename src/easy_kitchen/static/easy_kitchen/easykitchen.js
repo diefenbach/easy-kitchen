@@ -39,34 +39,69 @@ export function bindSortable(
   { draggable, datasetKey, field, url = element?.dataset.reorderUrl },
 ) {
   let previousOrder = [];
+  let pending = false;
+  const cards = () => [...element.querySelectorAll(draggable)];
+  function syncControls() {
+    const nodes = cards();
+    nodes.forEach((node, index) => {
+      const up = node.querySelector("[data-card-up]");
+      const down = node.querySelector("[data-card-down]");
+      if (up) up.disabled = pending || index === 0;
+      if (down) down.disabled = pending || index === nodes.length - 1;
+    });
+  }
+  async function saveOrder(focusButton) {
+    pending = true;
+    sortable.option("disabled", true);
+    element.setAttribute("aria-busy", "true");
+    syncControls();
+    try {
+      await postJson(url, { [field]: cards().map((node) => Number(node.dataset[datasetKey])) });
+    } catch {
+      previousOrder
+        .filter((node) => node.parentElement === element)
+        .forEach((node) => element.append(node));
+      showSaveError();
+    } finally {
+      pending = false;
+      sortable.option("disabled", false);
+      element.removeAttribute("aria-busy");
+      syncControls();
+      if (focusButton) {
+        const card = focusButton.closest(draggable);
+        (focusButton.disabled
+          ? (card.querySelector("[data-card-up]:enabled, [data-card-down]:enabled") ??
+            card.querySelector(".drag-handle"))
+          : focusButton
+        )?.focus();
+      }
+    }
+  }
   const sortable = createSortable(element, {
     handle: ".drag-handle",
     draggable,
     onStart() {
       previousOrder = [...element.children];
     },
-    async onEnd(event) {
-      if (event.oldDraggableIndex === event.newDraggableIndex) return;
-      const ids = [...element.querySelectorAll(draggable)].map((node) =>
-        Number(node.dataset[datasetKey]),
-      );
-      sortable.option("disabled", true);
-      element.setAttribute("aria-busy", "true");
-      try {
-        await postJson(url, { [field]: ids });
-      } catch {
-        previousOrder
-          .filter((node) => node.parentElement === element)
-          .forEach((node, index) => {
-            element.insertBefore(node, element.children[index] ?? null);
-          });
-        showSaveError();
-      } finally {
-        sortable.option("disabled", false);
-        element.removeAttribute("aria-busy");
-      }
+    onEnd(event) {
+      if (event.oldDraggableIndex !== event.newDraggableIndex) saveOrder();
     },
   });
+  element.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-card-up], [data-card-down]");
+    if (!button || pending) return;
+    const card = button.closest(draggable);
+    const nodes = cards();
+    const index = nodes.indexOf(card);
+    const up = button.hasAttribute("data-card-up");
+    const neighbor = nodes[index + (up ? -1 : 1)];
+    if (!neighbor) return;
+    previousOrder = [...element.children];
+    if (up) element.insertBefore(card, neighbor);
+    else element.insertBefore(neighbor, card);
+    saveOrder(button);
+  });
+  syncControls();
   return sortable;
 }
 
@@ -127,3 +162,77 @@ function bindPageElements() {
 document.addEventListener("htmx:load", bindPageElements);
 document.addEventListener("htmx:historyRestore", bindPageElements);
 bindPageElements();
+
+// Request data has already been collected at beforeRequest. Lock controls only
+// now, so disabled fields are still included in this request's submitted values.
+const pendingForms = new WeakMap();
+const draftForms = "#recipe-editor-form, #list-editor-form, #item-form form";
+document.addEventListener("htmx:beforeRequest", (event) => {
+  if (
+    document.querySelector(
+      '#recipe-editor-form[aria-busy="true"], #list-editor-form[aria-busy="true"]',
+    ) &&
+    event.detail.target?.matches("main")
+  ) {
+    event.preventDefault();
+    return;
+  }
+  const form = event.detail.elt;
+  if (!form.matches(draftForms)) return;
+  const editor = !form.closest("#item-form");
+  const controls = [
+    ...(editor
+      ? document.querySelectorAll("main input, main textarea, main select, main button")
+      : form.querySelectorAll("input, textarea, select, button")),
+  ];
+  const disabled = controls.map((control) => control.disabled);
+  const links = editor ? [...document.querySelectorAll("[data-editor-cancel]")] : [];
+  pendingForms.set(event.detail.xhr, { form, controls, disabled, links });
+  controls.forEach((control) => {
+    control.disabled = true;
+  });
+  links.forEach((link) => link.setAttribute("aria-disabled", "true"));
+  form.setAttribute("aria-busy", "true");
+  form.dispatchEvent(new CustomEvent("easykitchen:pending", { detail: true }));
+});
+document.addEventListener("htmx:afterRequest", (event) => {
+  if (event.detail.successful) {
+    const alert = document.getElementById("save-error");
+    if (alert) alert.hidden = true;
+  }
+  const state = pendingForms.get(event.detail.xhr);
+  if (!state) return;
+  state.controls.forEach((control, index) => {
+    control.disabled = state.disabled[index];
+  });
+  state.links.forEach((link) => link.removeAttribute("aria-disabled"));
+  state.form.removeAttribute("aria-busy");
+  state.form.dispatchEvent(new CustomEvent("easykitchen:pending", { detail: false }));
+  pendingForms.delete(event.detail.xhr);
+});
+document.addEventListener(
+  "click",
+  (event) => {
+    if (!event.target.closest('[data-editor-cancel][aria-disabled="true"]')) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  },
+  true,
+);
+for (const name of ["htmx:responseError", "htmx:sendError", "htmx:timeout"]) {
+  document.addEventListener(name, (event) => {
+    if (event.detail.requestConfig?.verb !== "get") showSaveError();
+  });
+}
+function clearPrivateHistory() {
+  try {
+    localStorage.removeItem("htmx-history-cache");
+  } catch {
+    // Storage may be unavailable in restricted browser profiles.
+  }
+}
+// Remove legacy snapshots on entry as well as when ending the session.
+clearPrivateHistory();
+document.addEventListener("submit", (event) => {
+  if (event.target.matches("[data-logout]")) clearPrivateHistory();
+});

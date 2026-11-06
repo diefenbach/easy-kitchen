@@ -96,6 +96,7 @@ document.querySelectorAll(".recipe-field").forEach((field) => {
     show();
   });
   input.addEventListener("keydown", (event) => {
+    if (event.isComposing) return;
     if (event.key === "Escape") {
       close();
       return;

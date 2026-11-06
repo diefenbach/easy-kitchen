@@ -270,7 +270,7 @@ def test_edit_mode_starts_off_and_resets_when_the_page_reloads(authenticated_pag
 
     page.get_by_role("link", name="Wocheneinkauf").click()
     item = page.locator(".shopping-item", has_text="Tofu")
-    expect(item.get_by_role("button", name="Move")).to_have_count(0)
+    expect(item.get_by_role("button", name="Move", exact=True)).to_have_count(0)
     expect(item.get_by_role("button", name="Edit item")).to_have_count(0)
     expect(item.get_by_role("button", name="Toggle completed")).to_be_visible()
     expect(page.get_by_role("button", name="Add")).to_be_visible()
@@ -361,8 +361,8 @@ def test_user_can_reorder_lists_and_recipes_on_the_overview(authenticated_page, 
     page.reload()
     open_shopping_lists(page)
 
-    newer_handle = page.locator(f'[data-list-id="{newer.pk}"]').get_by_role("button", name="Move", include_hidden=True)
-    older_handle = page.locator(f'[data-list-id="{older.pk}"]').get_by_role("button", name="Move", include_hidden=True)
+    newer_handle = page.locator(f'[data-list-id="{newer.pk}"]').get_by_role("button", name="Move", exact=True, include_hidden=True)
+    older_handle = page.locator(f'[data-list-id="{older.pk}"]').get_by_role("button", name="Move", exact=True, include_hidden=True)
     expect(newer_handle).to_be_hidden()
     show_edit_actions(page)
     with page.expect_response(lambda response: response.url.endswith("/lists/reorder/") and response.request.method == "POST"):
@@ -372,8 +372,8 @@ def test_user_can_reorder_lists_and_recipes_on_the_overview(authenticated_page, 
 
     page.get_by_role("link", name="Recipes", exact=True).click()
     show_edit_actions(page)
-    second_handle = page.locator(f'[data-list-id="{second_recipe.pk}"]').get_by_role("button", name="Move")
-    first_handle = page.locator(f'[data-list-id="{first_recipe.pk}"]').get_by_role("button", name="Move")
+    second_handle = page.locator(f'[data-list-id="{second_recipe.pk}"]').get_by_role("button", name="Move", exact=True)
+    first_handle = page.locator(f'[data-list-id="{first_recipe.pk}"]').get_by_role("button", name="Move", exact=True)
     with page.expect_response(lambda response: response.url.endswith("/recipes/reorder/") and response.request.method == "POST"):
         second_handle.drag_to(first_handle)
     page.reload()

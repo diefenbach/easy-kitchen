@@ -1,6 +1,6 @@
 {% load i18n %}
 {% if oob %}<div id="item-form" hx-swap-oob="innerHTML">{% endif %}
-<form hx-post="{% url 'easy_kitchen:item-create' shopping_list.pk %}" hx-target="#items" hx-swap="beforeend" class="row g-2 align-items-end">
+<form hx-post="{% url 'easy_kitchen:item-create' shopping_list.pk %}" hx-target="#items" hx-swap="beforeend" hx-sync="this:drop" class="row g-2 align-items-end">
   {% csrf_token %}
   {{ form.non_field_errors }}
   <div class="col-12 col-sm">
