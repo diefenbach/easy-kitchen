@@ -88,4 +88,4 @@ The body is either an object with a `recipes` array or the array itself. Every r
 | `steps[].text` | yes | One step |
 | `steps[].position` | no | Order, starting at `1`. Steps keep the array order when this is omitted. |
 
-`id`, `image`, `picture_url`, `created_at`, and `updated_at` are returned by the API. `image` is the uploaded file address. `picture_url` is the file when one exists, otherwise `image_url`. Import ignores those read-only fields.
+Recipe responses expose only `picture_url` for images: the uploaded file address when one exists, otherwise the saved external URL, or an empty string. `image_url` is a write-only input for creation, editing and imports. `id`, `picture_url`, `created_at`, and `updated_at` are read-only response metadata and must be omitted from imports.

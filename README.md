@@ -67,10 +67,15 @@ The recipe overview also offers cart and calendar buttons in the top-right corne
 - A second process of the same image serves streamable HTTP at `/mcp` on port `8001`.
 - It authenticates the same DRF token. The tools have no user argument; records belong to the token owner.
 - `list_shopping_lists` and `list_recipes` read the token owner's lists and recipes.
+- MCP exposes the same business actions as REST, with 37 tools. Detail reads (`get_*`), recipe/list deletion, all five reorder actions, batch imports and complete list-item replacement are covered by automatic route-to-tool parity tests. See the [complete MCP tool reference](docs/mcp.md#tools).
+- Collection reads in both interfaces support search, filters and `limit`/`offset` paging (50 records by default, at most 200 per page). Recipe/list queries offer compact `summary=true` results, with full details available through `get_*` or REST detail GET. See [collection queries](docs/api.md#collection-search-and-paging).
+- `update_recipe` edits an owned recipe by `recipe_id` or unique `recipe_title`. Supply only fields to change in `changes`; omitted fields are preserved. Numeric `null` clears a value; supplied ingredient/step arrays replace the collection (`[]` clears it).
+- `update_shopping_item`, `update_shopping_list`, `update_article` and `update_department` edit owned objects by ID with only the supplied `changes`. `list_articles` provides article IDs and defaults. `set_recipe_favorite` sets an explicit `is_favorite` boolean. See [MCP editing and REST equivalents](docs/mcp.md#updating-lists-items-and-defaults).
 - `get_meal_plan_week`, `set_meal_plan_recipe`, `clear_meal_plan_day`, and `add_meal_plan_week_to_list` expose the same weekly planner through MCP. Week copying requires exactly one existing `list_id` or a new list `title`; repeated calls add quantities again.
 - `set_item_checked` marks an item completed. Pass `list_id` when the name is on more than one list. `checked` defaults to `true`.
 - `add_item_to_list` adds an item. Pass `list_id` or `list_title` to choose the list. Omit the list to use today's list, or create one titled Today.
 - `add_recipe_to_list` copies a recipe's ingredients onto a list. Omit the list to use today's list, or create one titled Today.
+- `delete_shopping_item` removes an owned entry by ID; `delete_completed_items` removes checked entries from an owned list and returns the deleted count. REST equivalents and the item-addition/recipe-copy endpoints are documented under [Shopping actions](docs/api.md#shopping-actions-and-article-defaults).
 - Confirm `title`, an ISO `date`, and `items` before creating a list.
 - Confirm `title`, `ingredients`, and `steps` before creating a recipe. `image_url`, `calories`, `protein`, `carbohydrates`, `fat`, and `preparation_minutes` are optional.
 - Host and origin checks use `DJANGO_ALLOWED_HOSTS` and `DJANGO_CSRF_TRUSTED_ORIGINS`. Override them with `MCP_ALLOWED_HOSTS` and `MCP_ALLOWED_ORIGINS`.
@@ -164,7 +169,7 @@ The body is either an object with a `recipes` array or the array itself. Every r
 | `steps[].text` | yes | One step |
 | `steps[].position` | no | Order, starting at `1`. Steps keep the array order when this is omitted. |
 
-`id`, `image`, `picture_url`, `created_at`, and `updated_at` are returned by the API. `image` is the uploaded file address. `picture_url` is the file when one exists, otherwise `image_url`. Import ignores those read-only fields.
+Recipe responses expose only `picture_url` for images: the uploaded file address when one exists, otherwise the saved external URL, or an empty string. `image_url` is a write-only input for creation, editing and imports. `id`, `picture_url`, `created_at`, and `updated_at` are read-only response metadata and must be omitted from imports.
 
 ## Local development
 

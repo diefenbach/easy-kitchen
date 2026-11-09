@@ -130,7 +130,7 @@ def test_mcp_creates_a_recipe_for_the_token_owner(user, other_user):
 
     recipe = Recipe.objects.get(pk=result["id"])
     assert recipe.user == user
-    assert result["image_url"] == "https://example.com/pancakes.jpg"
+    assert result["picture_url"] == "https://example.com/pancakes.jpg"
     assert result["calories"] == 450
     assert result["protein"] == 12
     assert result["carbohydrates"] == 55
@@ -174,10 +174,10 @@ def test_mcp_lists_only_the_token_owners_lists_and_recipes(user, other_user):
     assert [entry["title"] for entry in lists] == ["Week"]
     assert lists[0]["id"] == own_list.id
     assert lists[0]["items"] == [
-        {"id": own_list.items.get().id, "name": "Milk", "quantity": "1 l", "department": "", "checked": False}
+        {"id": own_list.items.get().id, "name": "Milk", "quantity": "1 l", "department": "", "checked": False, "position": 1, "list_id": own_list.pk}
     ]
     assert [entry["title"] for entry in recipes] == ["Pasta"]
-    assert recipes[0]["ingredients"] == [{"name": "Nudeln", "quantity": "500 g"}]
+    assert [(line["name"], line["quantity"]) for line in recipes[0]["ingredients"]] == [("Nudeln", "500 g")]
 
 
 @pytest.mark.django_db
@@ -291,11 +291,11 @@ def test_mcp_does_not_add_an_item_to_another_users_list(user, other_user):
 
 def test_mcp_read_and_update_tools_do_not_accept_a_user_argument():
     names = {
-        "list_shopping_lists": set(),
-        "list_departments": set(),
+        "list_shopping_lists": {"q", "date_from", "date_to", "limit", "offset", "summary"},
+        "list_departments": {"q", "limit", "offset"},
         "resolve_department": {"name"},
-        "list_recipes": set(),
-        "set_item_checked": {"name", "checked", "list_id"},
+        "list_recipes": {"q", "is_favorite", "limit", "offset", "summary"},
+        "set_item_checked": {"name", "checked", "list_id", "item_id"},
         "add_recipe_to_list": {"recipe_id", "recipe_title", "list_id", "list_title"},
         "add_item_to_list": {"name", "quantity", "department", "list_id", "list_title"},
     }

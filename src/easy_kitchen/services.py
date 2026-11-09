@@ -10,14 +10,18 @@ from uuid import uuid4
 from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser
 from django.core.exceptions import ValidationError
-from django.core.validators import URLValidator
 from django.db import IntegrityError, transaction
-from django.db.models import F, Manager, Max, Model
+from django.db.models import Exists, F, Manager, Max, Model, OuterRef, Q
 from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import gettext as _, override
 
 from .departments import DEFAULT_DEPARTMENTS
+from .errors import ObjectNotFoundError, QuantityOverflowError, SelectionMismatchError, ServiceError
+from .validation import (
+    NAME_LIMIT, QUANTITY_LIMIT, RECIPE_FIELDS, COUNT_LIMIT, DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT,
+    clean_recipe_changes, clean_text,
+)
 from .models import (
     Article,
     Department,
@@ -111,7 +115,7 @@ def seed_default_departments(user: AbstractBaseUser, *, using: str = "default") 
     ])
 
 
-class DepartmentResolutionError(ValueError):
+class DepartmentResolutionError(ServiceError):
     """A department needs an explicit choice; approximate matches never authorize a write."""
 
     def __init__(self, query: str, *, ambiguous: bool = False, candidates: list[dict] | None = None):
@@ -131,13 +135,123 @@ def department_data(department: Department) -> dict:
     return {"id": department.pk, "code": department.code, "name": department.name, "label": str(department)}
 
 
-def list_department_data(user: AbstractBaseUser) -> list[dict]:
+def _owned_record(queryset, pk: int, message):
+    record = queryset.filter(pk=pk).first()
+    if record is None:
+        raise ObjectNotFoundError(message)
+    return record
+
+
+def get_owned_recipe(user: AbstractBaseUser, *, recipe_id: int) -> Recipe:
+    return _owned_record(user.recipes.prefetch_related("ingredients", "steps"), recipe_id, _("Recipe not found."))
+
+
+def get_owned_shopping_list(user: AbstractBaseUser, *, list_id: int) -> ShoppingList:
+    return _owned_record(user.shopping_lists.prefetch_related("items__department"), list_id, _("Shopping list not found."))
+
+
+def get_owned_shopping_item(user: AbstractBaseUser, *, item_id: int) -> ShoppingItem:
+    return _owned_record(ShoppingItem.objects.filter(shopping_list__user=user).select_related("department"), item_id, _("Item not found."))
+
+
+def get_owned_article(user: AbstractBaseUser, *, article_id: int) -> Article:
+    return _owned_record(user.articles.select_related("department"), article_id, _("Article not found."))
+
+
+def get_owned_department(user: AbstractBaseUser, *, department_id: int) -> Department:
+    return _owned_record(user.departments.all(), department_id, _("Department not found."))
+
+
+def delete_owned_recipe(user: AbstractBaseUser, *, recipe_id: int) -> None:
+    """Delete the owned recipe with its children and existing planner references."""
+    count, _details = user.recipes.filter(pk=recipe_id).delete()
+    if not count:
+        raise ObjectNotFoundError(_("Recipe not found."))
+
+
+def delete_owned_shopping_list(user: AbstractBaseUser, *, list_id: int) -> None:
+    """Delete the owned list and entries, retaining saved articles and recipes."""
+    count, _details = user.shopping_lists.filter(pk=list_id).delete()
+    if not count:
+        raise ObjectNotFoundError(_("Shopping list not found."))
+
+
+def _collection_window(q, limit, offset):
+    q = clean_text(q, field="q", limit=NAME_LIMIT, normalize=True)
+    if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= MAX_LIST_LIMIT:
+        raise ServiceError(_("Choose a limit between 1 and %(maximum)d.") % {"maximum": MAX_LIST_LIMIT}, field="limit")
+    if isinstance(offset, bool) or not isinstance(offset, int) or not 0 <= offset <= COUNT_LIMIT:
+        raise ServiceError(_("Choose an offset between 0 and %(maximum)d.") % {"maximum": COUNT_LIMIT}, field="offset")
+    return q, slice(offset, offset + limit)
+
+
+def query_owned_recipes(user, *, q="", is_favorite=None, limit=DEFAULT_LIST_LIMIT, offset=0, summary=False):
+    q, window = _collection_window(q, limit, offset)
+    recipes = user.recipes.all()
+    if is_favorite is not None:
+        recipes = recipes.filter(is_favorite=is_favorite)
+    for term in q.split():
+        ingredients = RecipeIngredient.objects.filter(recipe_id=OuterRef("pk"), name__icontains=term)
+        recipes = recipes.filter(Q(title__icontains=term) | Q(description__icontains=term) | Q(Exists(ingredients)))
+    if not summary:
+        recipes = recipes.prefetch_related("ingredients", "steps")
+    return recipes[window]
+
+
+def query_owned_shopping_lists(user, *, q="", date_from=None, date_to=None, limit=DEFAULT_LIST_LIMIT, offset=0, summary=False):
+    q, window = _collection_window(q, limit, offset)
+    if date_from is not None and date_to is not None and date_from > date_to:
+        raise ServiceError(_("Start date must not be after end date."), field="date_from")
+    lists = user.shopping_lists.all()
+    for term in q.split():
+        lists = lists.filter(title__icontains=term)
+    if date_from is not None:
+        lists = lists.filter(date__gte=date_from)
+    if date_to is not None:
+        lists = lists.filter(date__lte=date_to)
+    if not summary:
+        lists = lists.prefetch_related("items__department")
+    return lists[window]
+
+
+def query_owned_shopping_items(user, *, q="", checked=None, list_id=None, limit=DEFAULT_LIST_LIMIT, offset=0):
+    q, window = _collection_window(q, limit, offset)
+    items = ShoppingItem.objects.filter(shopping_list__user=user).select_related("department")
+    if list_id is not None:
+        if not user.shopping_lists.filter(pk=list_id).exists():
+            raise ObjectNotFoundError(_("Shopping list not found."))
+        items = items.filter(shopping_list_id=list_id)
+    if checked is not None:
+        items = items.filter(checked=checked)
+    for term in q.split():
+        items = items.filter(name__icontains=term)
+    return items[window]
+
+
+def query_owned_articles(user, *, q="", department=None, limit=DEFAULT_LIST_LIMIT, offset=0):
+    q, window = _collection_window(q, limit, offset)
+    articles = user.articles.select_related("department")
+    if department is not None:
+        articles = articles.filter(department=resolve_department(user, department))
+    for term in q.split():
+        articles = articles.filter(name__icontains=term)
+    return articles[window]
+
+
+def list_department_data(user: AbstractBaseUser, *, q="", limit=DEFAULT_LIST_LIMIT, offset=0) -> list[dict]:
     """List only this user's departments, sorted by the displayed label."""
+    q, window = _collection_window(q, limit, offset)
+
     def sort_key(department):
         label = unicodedata.normalize("NFKD", str(department).casefold())
         return "".join(character for character in label if not unicodedata.combining(character))
 
-    return [department_data(department) for department in sorted(user.departments.all(), key=sort_key)]
+    records = [department_data(department) for department in sorted(user.departments.all(), key=sort_key)]
+    terms = _department_match_key(q).split()
+    if terms:
+        records = [record for record in records if all(term in _department_match_key(
+            " ".join((record["code"], record["name"], record["label"]))) for term in terms)]
+    return records[window]
 
 
 def _department_match_key(value: str) -> str:
@@ -240,14 +354,14 @@ def save_articles(user: AbstractBaseUser, records: Sequence[Mapping[str, Any]], 
     ids = [record["id"] for record in records if record["id"] is not None]
     all_ids = [*ids, *deleted_ids]
     if len(all_ids) != len(set(all_ids)) or not set(all_ids) <= existing.keys():
-        raise ValueError(_("Invalid article selection."))
+        raise ServiceError(_("Invalid article selection."))
     names = {article.name.casefold() for pk, article in existing.items() if pk not in all_ids}
     for record in records:
         name = _normalized_name(record["name"])
         if not name:
-            raise ValueError(_("Enter an article name."))
+            raise ServiceError(_("Enter an article name."))
         if name.casefold() in names:
-            raise ValueError(_("An article with this name already exists."))
+            raise ServiceError(_("An article with this name already exists."))
         resolve_department(user, record["department"])
         names.add(name.casefold())
     user.articles.filter(pk__in=deleted_ids).delete()
@@ -269,14 +383,14 @@ def save_departments(user: AbstractBaseUser, records: Sequence[Mapping[str, Any]
     ids = [record["id"] for record in records if record["id"] is not None]
     all_ids = [*ids, *deleted_ids]
     if len(all_ids) != len(set(all_ids)) or not set(all_ids) <= existing.keys():
-        raise ValueError(_("Invalid department selection."))
+        raise ServiceError(_("Invalid department selection."))
     names = {department.name.casefold() for pk, department in existing.items() if pk not in all_ids}
     for record in records:
         name = _normalized_name(record["name"])
         if not name or len(name) > 100:
-            raise ValueError(_("Enter a department name."))
+            raise ServiceError(_("Enter a department name."))
         if name.casefold() in names:
-            raise ValueError(_("A department with this name already exists."))
+            raise ServiceError(_("A department with this name already exists."))
         names.add(name.casefold())
     user.departments.filter(pk__in=deleted_ids).delete()
     codes = {department.code for pk, department in existing.items() if pk not in deleted_ids}
@@ -300,8 +414,104 @@ def save_departments(user: AbstractBaseUser, records: Sequence[Mapping[str, Any]
             user.departments.create(code=code, name=name, position=position)
 
 
-class QuantityOverflowError(ValueError):
-    """The accumulated quantity cannot fit in the shopping item's storage field."""
+def _checked_changes(changes: Mapping[str, Any], allowed: set[str]) -> dict[str, Any]:
+    if set(changes) - allowed:
+        raise ServiceError(_("Unsupported update field."))
+    return dict(changes)
+
+
+def _validate_update(instance: Model) -> None:
+    try:
+        instance.full_clean()
+    except ValidationError as error:
+        raise ServiceError(" ".join(error.messages)) from None
+
+
+@transaction.atomic
+def update_owned_shopping_item(user: AbstractBaseUser, *, item_id: int, changes: Mapping[str, Any]) -> ShoppingItem:
+    """Replace supplied item fields without merging quantities or resetting checked state."""
+    item = ShoppingItem.objects.select_for_update().filter(pk=item_id, shopping_list__user=user).first()
+    if item is None:
+        raise ObjectNotFoundError(_("Item not found."))
+    values = _checked_changes(changes, {"name", "quantity", "department", "checked"})
+    previous = (item.name, item.department_id)
+    for field, value in values.items():
+        if field == "department":
+            value = resolve_department(user, value)
+        if field == "name":
+            value = _normalized_name(value)
+        setattr(item, field, value)
+    _validate_update(item)
+    if values:
+        item.save(update_fields=[*values, "updated_at"])
+        changed = previous != (item.name, item.department_id)
+        if {"name", "quantity", "department"} & values.keys():
+            remember_article(user, item.name, (item.department or "") if changed else None)
+    return item
+
+
+@transaction.atomic
+def update_owned_shopping_list(user: AbstractBaseUser, *, list_id: int, changes: Mapping[str, Any]) -> ShoppingList:
+    """Update list metadata; replace items only when explicitly supplied."""
+    shopping_list = user.shopping_lists.select_for_update().filter(pk=list_id).first()
+    if shopping_list is None:
+        raise ObjectNotFoundError(_("Shopping list not found."))
+    values = _checked_changes(changes, {"title", "date", "icon", "items"})
+    items = values.pop("items", None)
+    for field, value in values.items():
+        if field == "title":
+            value = _normalized_name(value)
+        setattr(shopping_list, field, value)
+    _validate_update(shopping_list)
+    if values:
+        shopping_list.save(update_fields=[*values, "updated_at"])
+    if items is not None:
+        shopping_list.items.all().delete()
+        for position, record in enumerate(items, start=1):
+            record = dict(record)
+            create_item(shopping_list, position=record.pop("position", position), **record)
+    return shopping_list
+
+
+@transaction.atomic
+def update_owned_article(user: AbstractBaseUser, *, article_id: int, changes: Mapping[str, Any]) -> Article:
+    """Change an article default without rewriting existing shopping-list entries."""
+    article = user.articles.select_for_update().filter(pk=article_id).first()
+    if article is None:
+        raise ObjectNotFoundError(_("Article not found."))
+    values = _checked_changes(changes, {"name", "department"})
+    name = _normalized_name(values.get("name", article.name))
+    department = resolve_department(user, values["department"]) if "department" in values else article.department
+    article.name, article.department = name, department
+    _validate_update(article)
+    if values:
+        save_articles(user, [{"id": article.pk, "name": name, "department": department.code if department else ""}], [])
+    return article
+
+
+@transaction.atomic
+def update_owned_department(user: AbstractBaseUser, *, department_id: int, changes: Mapping[str, Any]) -> Department:
+    """Rename an owned department, preserving its stable code and all references."""
+    department = user.departments.select_for_update().filter(pk=department_id).first()
+    if department is None:
+        raise ObjectNotFoundError(_("Department not found."))
+    values = _checked_changes(changes, {"name"})
+    if values:
+        save_departments(user, [{"id": department.pk, "name": values["name"]}], [])
+        department.refresh_from_db()
+    return department
+
+
+def set_owned_recipe_favorite(
+    user: AbstractBaseUser, *, is_favorite: bool, recipe_id: int | None = None, recipe_title: str = "",
+) -> Recipe:
+    """Set an explicit favorite state, making retries safe."""
+    if not isinstance(is_favorite, bool):
+        raise ServiceError(_("Invalid request."))
+    recipe = owned_recipe(user, recipe_id=recipe_id, title=recipe_title)
+    recipe.is_favorite = is_favorite
+    recipe.save(update_fields=["is_favorite", "updated_at"])
+    return recipe
 
 
 @transaction.atomic
@@ -315,8 +525,8 @@ def create_item(
     department: Department | str | None = None,
 ) -> ShoppingItem:
     """Add an item, or merge the quantity into the existing line with the same name."""
-    name = _normalized_name(name)
-    quantity = (quantity or "").strip()
+    name = clean_text(name, field="name", limit=NAME_LIMIT, required=True, normalize=True)
+    quantity = clean_text(quantity, field="quantity", limit=QUANTITY_LIMIT)
     # Lock a row that exists even before the first item is added. All additions
     # to this list then observe the preceding committed quantity and article.
     ShoppingList.objects.select_for_update().get(pk=shopping_list.pk)
@@ -368,7 +578,7 @@ def _clean_list_icon(icon: str | None) -> str | None:
     if icon in (None, ""):
         return None
     if icon not in ShoppingList.Icon.values:
-        raise ValueError(_("Choose an icon."))
+        raise ServiceError(_("Choose an icon."))
     return icon
 
 
@@ -377,16 +587,17 @@ def create_shopping_list(
     user: AbstractBaseUser,
     *,
     title: str,
-    date: date,
+    date: date | None = None,
     items: Sequence[Mapping[str, Any]] | None = None,
     position: int = 0,
     icon: str | None = None,
 ) -> ShoppingList:
     """Create a list and its items. An omitted icon stays the basket default."""
+    title = clean_text(title, field="title", limit=NAME_LIMIT, required=True, normalize=True)
     icon = _clean_list_icon(icon)
     shopping_list = user.shopping_lists.create(
         title=title,
-        date=date,
+        date=date or timezone.localdate(),
         position=position,
         **({"icon": icon} if icon else {}),
     )
@@ -419,14 +630,8 @@ def reorder_shopping_lists(user: AbstractBaseUser, list_ids: Sequence[int]) -> N
 @transaction.atomic
 def reorder_items(shopping_list: ShoppingList, item_ids: Sequence[int]) -> None:
     """Set item positions. The ids must be exactly the items of this list."""
-    existing = set(shopping_list.items.filter(id__in=item_ids).values_list("id", flat=True))
-    if (existing != set(item_ids) or len(item_ids) != len(existing)
-            or shopping_list.items.count() != len(item_ids)):
-        raise ValueError(_("Invalid item order."))
-    for position, item_id in enumerate(item_ids, start=1):
-        ShoppingItem.objects.filter(pk=item_id, shopping_list=shopping_list).update(
-            position=position
-        )
+    ShoppingList.objects.select_for_update().get(pk=shopping_list.pk)
+    _reorder_owned(shopping_list.items, item_ids)
 
 
 def _line_text(line: str | Mapping[str, Any]) -> str:
@@ -459,33 +664,6 @@ def _write_ingredients(manager: Manager, ingredients: Sequence[Mapping[str, Any]
         manager.create(name=name, quantity=quantity, position=position)
 
 
-def _clean_image_url(image_url: str) -> str:
-    """Return a stripped http(s) URL, or an empty string when none was given."""
-    image_url = (image_url or "").strip()
-    if not image_url:
-        return ""
-    try:
-        URLValidator(schemes=["http", "https"])(image_url)
-    except ValidationError as error:
-        raise ValueError(_("Enter a valid image URL.")) from error
-    return image_url
-
-
-def _optional_count(value: int | str | None) -> int | None:
-    """Return None for an empty value, or a non-negative whole number."""
-    if value is None or value == "":
-        return None
-    if isinstance(value, bool):
-        raise ValueError(_("Enter zero or a positive whole number."))
-    try:
-        amount = int(value)
-    except (TypeError, ValueError) as error:
-        raise ValueError(_("Enter zero or a positive whole number.")) from error
-    if amount < 0:
-        raise ValueError(_("Enter zero or a positive whole number."))
-    return amount
-
-
 @transaction.atomic
 def create_recipe(
     user: AbstractBaseUser,
@@ -504,54 +682,36 @@ def create_recipe(
     position: int = 0,
 ) -> Recipe:
     """Create or update a recipe. Ingredients and steps are replaced only when passed."""
-    title = _normalized_name(title)
-    if not title:
-        raise ValueError(_("Enter a title."))
-    description = (description or "").strip()
-    image_url = _clean_image_url(image_url)
-    calories = _optional_count(calories)
-    protein = _optional_count(protein)
-    carbohydrates = _optional_count(carbohydrates)
-    fat = _optional_count(fat)
-    preparation_minutes = _optional_count(preparation_minutes)
+    changes = clean_recipe_changes({
+        "title": title, "description": description, "image_url": image_url,
+        "calories": calories, "protein": protein, "carbohydrates": carbohydrates,
+        "fat": fat, "preparation_minutes": preparation_minutes,
+        **({"ingredients": list(ingredients)} if ingredients is not None else {}),
+        **({"steps": list(steps)} if steps is not None else {}),
+    })
     if recipe is None:
-        recipe = user.recipes.create(
-            title=title,
-            description=description,
-            image_url=image_url,
-            calories=calories,
-            protein=protein,
-            carbohydrates=carbohydrates,
-            fat=fat,
-            preparation_minutes=preparation_minutes,
-            position=position,
-        )
+        values = {field: changes[field] for field in RECIPE_FIELDS}
+        recipe = user.recipes.create(position=position, **values)
+        # Scalars are already saved; only write supplied children below.
+        changes = {key: value for key, value in changes.items() if key not in RECIPE_FIELDS}
     else:
-        recipe.title = title
-        recipe.description = description
-        recipe.image_url = image_url
-        recipe.calories = calories
-        recipe.protein = protein
-        recipe.carbohydrates = carbohydrates
-        recipe.fat = fat
-        recipe.preparation_minutes = preparation_minutes
-        recipe.save(
-            update_fields=[
-                "title",
-                "description",
-                "image_url",
-                "calories",
-                "protein",
-                "carbohydrates",
-                "fat",
-                "preparation_minutes",
-                "updated_at",
-            ]
-        )
-    if ingredients is not None:
-        _write_ingredients(recipe.ingredients, ingredients)
-    if steps is not None:
-        _write_lines(recipe.steps, steps)
+        recipe = user.recipes.select_for_update().filter(pk=recipe.pk).first()
+        if recipe is None:
+            raise ObjectNotFoundError(_("Recipe not found."))
+    return _save_recipe_changes(recipe, changes)
+
+
+def _save_recipe_changes(recipe: Recipe, changes: Mapping[str, Any]) -> Recipe:
+    """Write only supplied scalars and replace only supplied child collections."""
+    fields = [field for field in RECIPE_FIELDS if field in changes]
+    for field in fields:
+        setattr(recipe, field, changes[field])
+    if changes:
+        recipe.save(update_fields=[*fields, "updated_at"])
+    if "ingredients" in changes:
+        _write_ingredients(recipe.ingredients, changes["ingredients"])
+    if "steps" in changes:
+        _write_lines(recipe.steps, changes["steps"])
     return recipe
 
 
@@ -592,13 +752,14 @@ def add_recipe_line(
     return manager.create(text=_normalized_name(text), position=position)
 
 
+@transaction.atomic
 def reorder_recipe_lines(
     recipe: Recipe, kind: Literal["ingredient", "step"], line_ids: Sequence[int]
 ) -> None:
     """Set positions for one kind of line. The ids must belong to that recipe."""
+    Recipe.objects.select_for_update().get(pk=recipe.pk)
     manager = _recipe_lines(recipe, kind)
-    model = manager.model
-    _reorder(manager, line_ids, model, "recipe", recipe)
+    _reorder_owned(manager, line_ids)
 
 
 def _ingredient_name_and_quantity(text: str) -> tuple[str, str]:
@@ -637,7 +798,7 @@ def _ingredient_name_and_quantity(text: str) -> tuple[str, str]:
 def add_recipe_ingredients_to_list(recipe: Recipe, shopping_list: ShoppingList) -> ShoppingList:
     """Copy the recipe's ingredients onto a list owned by the same user."""
     if shopping_list.user_id != recipe.user_id:
-        raise ValueError(_("Invalid shopping list."))
+        raise ServiceError(_("Invalid shopping list."))
     for ingredient in recipe.ingredients.all():
         create_item(shopping_list, name=ingredient.name, quantity=ingredient.quantity)
     return shopping_list
@@ -651,7 +812,7 @@ def copy_recipe_to_list(
     if title:
         shopping_list = create_shopping_list(recipe.user, title=title, date=timezone.localdate())
     if shopping_list is None:
-        raise ValueError(_("Invalid shopping list."))
+        raise ServiceError(_("Invalid shopping list."))
     return add_recipe_ingredients_to_list(recipe, shopping_list)
 
 
@@ -662,21 +823,37 @@ def owned_recipe(
     if recipe_id is not None:
         recipe = user.recipes.filter(pk=recipe_id).first()
         if recipe is None:
-            raise ValueError(_("Recipe not found."))
+            raise ObjectNotFoundError(_("Recipe not found."))
+        if title.strip() and _normalized_name(title).casefold() != _normalized_name(recipe.title).casefold():
+            raise SelectionMismatchError(_("The supplied ID and title do not match."), field="recipe_title")
         return recipe
     title = _normalized_name(title)
     if not title:
-        raise ValueError(_("Choose a recipe."))
+        raise ServiceError(_("Choose a recipe."))
     matches = [
         recipe
         for recipe in user.recipes.all()
         if _normalized_name(recipe.title).casefold() == title.casefold()
     ]
     if not matches:
-        raise ValueError(_("Recipe not found."))
+        raise ObjectNotFoundError(_("Recipe not found."))
     if len(matches) > 1:
-        raise ValueError(_("That title matches more than one recipe."))
+        raise ServiceError(_("That title matches more than one recipe."))
     return matches[0]
+
+
+@transaction.atomic
+def update_owned_recipe(
+    user: AbstractBaseUser,
+    *,
+    changes: Mapping[str, Any],
+    recipe_id: int | None = None,
+    recipe_title: str = "",
+) -> Recipe:
+    """Update only supplied fields of an owned recipe using the shared writer."""
+    recipe = owned_recipe(user, recipe_id=recipe_id, title=recipe_title)
+    recipe = user.recipes.select_for_update().get(pk=recipe.pk)
+    return _save_recipe_changes(recipe, clean_recipe_changes(changes))
 
 
 def owned_or_today_list(
@@ -686,7 +863,9 @@ def owned_or_today_list(
     if list_id is not None:
         shopping_list = user.shopping_lists.filter(pk=list_id).first()
         if shopping_list is None:
-            raise ValueError(_("Shopping list not found."))
+            raise ObjectNotFoundError(_("Shopping list not found."))
+        if title.strip() and _normalized_name(title).casefold() != _normalized_name(shopping_list.title).casefold():
+            raise SelectionMismatchError(_("The supplied ID and title do not match."), field="list_title")
         return shopping_list
     title = _normalized_name(title)
     if title:
@@ -696,14 +875,14 @@ def owned_or_today_list(
             if _normalized_name(shopping_list.title).casefold() == title.casefold()
         ]
         if len(matches) > 1:
-            raise ValueError(_("That title matches more than one shopping list."))
+            raise ServiceError(_("That title matches more than one shopping list."))
         if matches:
             return matches[0]
         return create_shopping_list(user, title=title, date=timezone.localdate())
     today = timezone.localdate()
     todays = list(user.shopping_lists.filter(date=today).order_by("position", "id"))
     if len(todays) > 1:
-        raise ValueError(_("There is more than one list for today. Say which list."))
+        raise ServiceError(_("There is more than one list for today. Say which list."))
     if todays:
         return todays[0]
     return create_shopping_list(user, title=_("Today"), date=today)
@@ -712,18 +891,31 @@ def owned_or_today_list(
 def set_item_checked(
     user: AbstractBaseUser,
     *,
-    name: str,
+    name: str = "",
     checked: bool = True,
     list_id: int | None = None,
+    item_id: int | None = None,
 ) -> ShoppingItem:
     """Mark one of this user's items completed or open."""
+    if not isinstance(checked, bool):
+        raise ServiceError(_("Invalid request."))
+    if item_id is not None:
+        item = ShoppingItem.objects.filter(pk=item_id, shopping_list__user=user)
+        if list_id is not None:
+            item = item.filter(shopping_list_id=list_id)
+        item = item.first()
+        if item is None:
+            raise ObjectNotFoundError(_("Item not found."))
+        if name.strip() and _normalized_name(name).casefold() != _normalized_name(item.name).casefold():
+            raise SelectionMismatchError(_("The supplied ID and name do not match."), field="name")
+        return update_owned_shopping_item(user, item_id=item.pk, changes={"checked": checked})
     name = _normalized_name(name)
     if not name:
-        raise ValueError(_("Enter an item name."))
+        raise ServiceError(_("Enter an item name."))
     items = ShoppingItem.objects.filter(shopping_list__user=user)
     if list_id is not None:
         if not user.shopping_lists.filter(pk=list_id).exists():
-            raise ValueError(_("Shopping list not found."))
+            raise ObjectNotFoundError(_("Shopping list not found."))
         items = items.filter(shopping_list_id=list_id)
     matches = [
         item
@@ -731,22 +923,34 @@ def set_item_checked(
         if _normalized_name(item.name).casefold() == name.casefold()
     ]
     if not matches:
-        raise ValueError(_("Item not found."))
-    if list_id is None and len(matches) > 1:
-        raise ValueError(_("That item is on more than one list. Say which list."))
+        raise ObjectNotFoundError(_("Item not found."))
+    if len(matches) > 1:
+        message = (_("That item is on more than one list. Say which list.") if list_id is None
+                   else _("That name matches more than one item. Choose an item ID."))
+        raise ServiceError(message)
     item = matches[0]
-    item.checked = checked
-    item.save(update_fields=["checked", "updated_at"])
-    return item
+    return update_owned_shopping_item(user, item_id=item.pk, changes={"checked": checked})
 
 
 def delete_completed_items(shopping_list: ShoppingList) -> int:
     """Remove every completed item from this list. Returns how many were deleted."""
-    queryset = shopping_list.items.filter(checked=True)
-    count = queryset.count()
-    if count:
-        queryset.delete()
+    count, _details = shopping_list.items.filter(checked=True).delete()
     return count
+
+
+def delete_owned_shopping_item(user: AbstractBaseUser, *, item_id: int) -> None:
+    """Delete only the owned list entry, retaining the saved article and list."""
+    count, _details = ShoppingItem.objects.filter(pk=item_id, shopping_list__user=user).delete()
+    if not count:
+        raise ObjectNotFoundError(_("Item not found."))
+
+
+def delete_completed_items_from_owned_list(user: AbstractBaseUser, *, list_id: int) -> int:
+    """Delete completed entries from an existing owned list, never creating one."""
+    shopping_list = user.shopping_lists.filter(pk=list_id).first()
+    if shopping_list is None:
+        raise ObjectNotFoundError(_("Shopping list not found."))
+    return delete_completed_items(shopping_list)
 
 
 @transaction.atomic
@@ -777,7 +981,7 @@ def add_item_to_owned_list(
     """Add an item to a list belonging to this user."""
     name = _normalized_name(name)
     if not name:
-        raise ValueError(_("Enter an item name."))
+        raise ServiceError(_("Enter an item name."))
     shopping_list = owned_or_today_list(user, list_id=list_id, title=list_title)
     return create_item(shopping_list, name=name, quantity=quantity, department=department)
 
@@ -788,36 +992,17 @@ def _recipe_lines(recipe: Recipe, kind: Literal["ingredient", "step"]) -> Manage
         return recipe.ingredients
     if kind == "step":
         return recipe.steps
-    raise ValueError(_("Invalid order."))
+    raise ServiceError(_("Invalid order."))
 
 
 def _reorder_owned(manager: Manager, ordered_ids: Sequence[int]) -> None:
     """Require the ids to be exactly these records, then write positions from 1."""
-    existing = set(manager.filter(id__in=ordered_ids).values_list("id", flat=True))
-    if (
-        existing != set(ordered_ids)
-        or len(ordered_ids) != len(existing)
-        or manager.count() != len(ordered_ids)
-    ):
-        raise ValueError(_("Invalid order."))
+    existing = set(manager.select_for_update().order_by("pk").values_list("pk", flat=True))
+    if existing != set(ordered_ids) or len(ordered_ids) != len(existing):
+        raise ServiceError(_("Invalid order."))
     for position, record_id in enumerate(ordered_ids, start=1):
         manager.filter(pk=record_id).update(position=position)
 
-
-def _reorder(
-    manager: Manager,
-    ordered_ids: Sequence[int],
-    model: type[Model],
-    parent_field: str,
-    parent: Model,
-) -> None:
-    """Require the ids to be these lines, then write positions on that parent."""
-    existing = set(manager.filter(id__in=ordered_ids).values_list("id", flat=True))
-    if (existing != set(ordered_ids) or len(ordered_ids) != len(existing)
-            or manager.count() != len(ordered_ids)):
-        raise ValueError(_("Invalid order."))
-    for position, line_id in enumerate(ordered_ids, start=1):
-        model.objects.filter(pk=line_id, **{parent_field: parent}).update(position=position)
 
 
 def shopping_list_export_data(shopping_list: ShoppingList) -> dict[str, Any]:
@@ -892,7 +1077,7 @@ def meal_plan_for_week(user: AbstractBaseUser, week_start: date) -> dict[date, M
 def set_meal_plan_recipe(user: AbstractBaseUser, day: date, recipe: Recipe) -> MealPlanEntry:
     """Assign one recipe to a day for this user."""
     if recipe.user_id != user.pk:
-        raise ValueError(_("Recipe not found."))
+        raise ObjectNotFoundError(_("Recipe not found."))
     entry, _created = MealPlanEntry.objects.update_or_create(
         user=user,
         date=day,
@@ -930,16 +1115,16 @@ def add_meal_plan_week_to_list(
     }
     planned = [entries[day].recipe for day in dates if day in entries and entries[day].recipe]
     if not planned:
-        raise ValueError(_("This week has no planned recipes yet."))
+        raise ServiceError(_("This week has no planned recipes yet."))
 
     if title:
         target = create_shopping_list(user, title=title, date=timezone.localdate())
     elif shopping_list is not None:
         if shopping_list.user_id != user.pk:
-            raise ValueError(_("Invalid shopping list."))
+            raise ServiceError(_("Invalid shopping list."))
         target = shopping_list
     else:
-        raise ValueError(_("Choose a list or enter a title for a new one."))
+        raise ServiceError(_("Choose a list or enter a title for a new one."))
 
     for recipe in planned:
         add_recipe_ingredients_to_list(recipe, target)
@@ -960,7 +1145,7 @@ def _complete_meal_plan_week(day: date) -> date:
     try:
         week_dates(start)
     except OverflowError:
-        raise ValueError(_("Choose a complete calendar week.")) from None
+        raise ServiceError(_("Choose a complete calendar week.")) from None
     return start
 
 
@@ -1002,12 +1187,12 @@ def add_meal_plan_to_owned_list(
     start = _complete_meal_plan_week(week)
     title = _normalized_name(title)
     if (list_id is not None) == bool(title):
-        raise ValueError(_("Choose exactly one shopping list or a title for a new one."))
+        raise ServiceError(_("Choose exactly one shopping list or a title for a new one."))
     target = None
     if list_id is not None:
         target = user.shopping_lists.filter(pk=list_id).first()
         if target is None:
-            raise ValueError(_("Shopping list not found."))
+            raise ObjectNotFoundError(_("Shopping list not found."))
     return add_meal_plan_week_to_list(user, start, shopping_list=target, title=title)
 
 

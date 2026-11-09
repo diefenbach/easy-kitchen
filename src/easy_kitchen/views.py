@@ -27,6 +27,7 @@ from .services import (
     save_departments,
     create_item,
     delete_completed_items,
+    delete_owned_shopping_item,
     export_records,
     import_recipes,
     import_shopping_lists,
@@ -35,6 +36,7 @@ from .services import (
     remember_article,
     reorder_items,
     reorder_shopping_lists,
+    update_owned_shopping_item,
 )
 
 
@@ -351,10 +353,7 @@ class ItemUpdateView(LoginRequiredMixin, View):
         item = self.get_item(request, list_pk, pk)
         form = ShoppingItemForm(request.POST, instance=item, user=request.user, auto_id=f"item-{item.pk}-%s")
         if form.is_valid():
-            with transaction.atomic():
-                form.save()
-                changed = {"name", "department"} & set(form.changed_data)
-                remember_article(request.user, item.name, (item.department or "") if changed else None)
+            item = update_owned_shopping_item(request.user, item_id=item.pk, changes=form.cleaned_data)
             response = render(
                 request, "easy_kitchen/lists/partials/grouped_items.html",
                 {"shopping_list": item.shopping_list},
@@ -397,7 +396,7 @@ class ItemDeleteView(LoginRequiredMixin, View):
         item = get_object_or_404(
             ShoppingItem, pk=pk, shopping_list__pk=list_pk, shopping_list__user=request.user
         )
-        item.delete()
+        delete_owned_shopping_item(request.user, item_id=item.pk)
         if request.headers.get("HX-Request"):
             return HttpResponseRedirect("")
         return redirect("easy_kitchen:detail", pk=list_pk)

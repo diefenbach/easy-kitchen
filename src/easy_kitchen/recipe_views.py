@@ -28,6 +28,7 @@ from .services import (
     reorder_recipe_lines,
     reorder_recipes,
     set_meal_plan_recipe,
+    set_owned_recipe_favorite,
     week_start_for,
 )
 
@@ -72,8 +73,7 @@ class RecipeFavoriteView(UserRecipeMixin, View):
         value = request.POST.get("is_favorite")
         if value not in {"0", "1"}:
             return HttpResponseBadRequest(_("Invalid request."))
-        recipe.is_favorite = value == "1"
-        recipe.save(update_fields=["is_favorite", "updated_at"])
+        set_owned_recipe_favorite(request.user, recipe_id=recipe.pk, is_favorite=value == "1")
         if request.POST.get("return_to") == "detail":
             return redirect("easy_kitchen:recipe-detail", pk=recipe.pk)
         parameters = {}

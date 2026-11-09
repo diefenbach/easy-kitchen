@@ -146,6 +146,12 @@ def test_openapi_schema_lists_every_operation(client, user):
     paths = schema["paths"]
     assert set(paths["/api/v1/departments/"]) == {"get"}
     assert set(paths["/api/v1/departments/resolve/"]) == {"get"}
+    for resource in ("departments", "articles"):
+        assert set(paths[f"/api/v1/{resource}/{{id}}/"]) == {"get", "put", "patch"}
+    assert set(paths["/api/v1/shopping-items/{id}/"]) == {"get", "put", "patch", "delete"}
+    for path in ("shopping-lists/{id}/add-item", "shopping-lists/{id}/delete-completed", "recipes/{id}/add-to-list"):
+        assert set(paths[f"/api/v1/{path}/"]) == {"post"}
+    assert set(paths["/api/v1/recipes/{id}/favorite/"]) == {"post"}
     assert set(paths["/api/v1/shopping-lists/"]) >= {"get", "post"}
     assert set(paths["/api/v1/recipes/"]) >= {"get", "post"}
     assert "import_json" in paths["/api/v1/recipes/import_json/"]["post"]["operationId"]

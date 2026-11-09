@@ -54,7 +54,7 @@ def test_list_replacement_rolls_back_metadata_and_items(client, user):
     shopping_list = create_shopping_list(user, title="Original", date=date.today(), items=[{"name": "Milk"}])
     original_ids = list(shopping_list.items.values_list("pk", flat=True))
     client.force_login(user)
-    with patch("easy_kitchen.api.serializers.create_item", side_effect=RuntimeError("write failed")):
+    with patch("easy_kitchen.services.create_item", side_effect=RuntimeError("write failed")):
         with pytest.raises(RuntimeError):
             client.patch(reverse("shopping-list-detail", args=[shopping_list.pk]),
                          {"title": "Changed", "items": [{"name": "Bread"}]}, content_type="application/json")
