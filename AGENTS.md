@@ -15,14 +15,14 @@
 - Documentation-only and housekeeping changes (`docs/`, `AGENTS.md`, `README.md` without matching `src/` changes, and CI tweaks such as skipping deploy for those paths) do not need a separate GitHub branch or pull request. Commit sensible chunks on `main`, push, and let CI on `main` run; production deploy is skipped when only non-runtime paths changed (see `.github/workflows/ci-cd.yml`).
 - Always split changes into sensible, logically focused commits (one concern per commit).
 - Keep commit messages short, concise, and descriptive; clearly state the concrete change.
-- Keep development, source-code changes, local tests, commits, pushes, and PR creation on the user's computer unless explicitly instructed otherwise.
+- Keep development, source-code changes, local tests, commits, pushes, PR creation, CI monitoring, and merges on the user's computer unless explicitly instructed otherwise.
 - Git and pull requests (agents, for application work):
   - Before every commit that touches `src/easy_kitchen/`, run `uv run ruff check src/easy_kitchen` (same as CI) and fix any findings first.
   - Create a feature branch from up-to-date `main`. Push with `git push -u origin HEAD:your-branch` so the remote branch name matches the feature branch.
   - Open the PR with `gh pr create --base main --head your-branch`.
-  - After creating a PR locally, delegate waiting for its required CI checks to a cloud agent in the saved `easy-kitchen` cloud environment. Return control to the user instead of waiting for CI in the local chat.
-  - Limit the cloud task to monitoring that PR and, only when the user has explicitly requested its merge, merging after all required checks pass for the current PR head. Report failures or completion; do not move development or source-code changes to the cloud.
-  - After the cloud merge is confirmed, synchronize the local `main` checkout at the next opportunity, preserving ongoing local work and uncommitted changes.
+  - For now, monitor PR checks and perform merges from the local chat. Do not delegate CI monitoring or merges to cloud agents unless the user explicitly requests it.
+  - Merge only when the user has explicitly requested it and all required CI checks pass for the current PR head. Verify the head before merging and bind the merge to that SHA when possible; never bypass checks or branch protection. Resolve conflicts and test changes locally before pushing the updated PR branch.
+  - After a merge is confirmed, synchronize the local `main` checkout at the next opportunity, preserving ongoing local work and uncommitted changes.
 - Every new feature and every bug fix requires appropriate automated tests written or updated in the same change. Start feature work with a failing test whenever practical, then implement the smallest change that makes it pass, then refactor.
 - Keep Django model, service, API, permission, and view tests under `src/easy_kitchen/tests/`. Put browser journeys in `e2e/`, using Playwright through pytest-playwright. Browser tests run with `uv run pytest`; install Chromium once with `uv run playwright install chromium`.
 - For HTMX state-changing requests outside a form, send Django's CSRF token explicitly. Cover the browser interaction with an E2E test when it is user-visible.
