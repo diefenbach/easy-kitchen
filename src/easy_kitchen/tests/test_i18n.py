@@ -192,13 +192,13 @@ def test_api_errors_are_english_and_can_be_german(client, user):
         )
     assert german_import.json()["detail"] == "Erwartet wird eine Liste oder {'lists': [...]}."
 
-    english_reorder = client.post(reorder_url, {}, content_type="application/json", **headers)
+    english_reorder = client.post(reorder_url, {"item_ids": [999999]}, content_type="application/json", **headers)
     assert english_reorder.json()["detail"] == "Invalid order."
 
     with translation.override("de"):
         german_reorder = client.post(
             reorder_url,
-            {},
+            {"item_ids": [999999]},
             content_type="application/json",
             **headers,
         )
