@@ -58,7 +58,7 @@ def test_assign_replace_and_clear_are_idempotent_and_private(api, user, other_us
         assert response.status_code == 200
         assert response.json()["recipe"] == {"id": recipe.pk, "title": recipe.title}
     assert MealPlanEntry.objects.filter(user=user).count() == 1
-    assert api.put(day_url(), {"recipe_id": private.pk}, format="json").status_code == 400
+    assert api.put(day_url(), {"recipe_id": private.pk}, format="json").status_code == 404
     assert MealPlanEntry.objects.get(user=user).recipe == salad
     for _ in range(2):
         assert api.delete(day_url()).status_code == 204
@@ -123,7 +123,8 @@ def test_copying_rejects_empty_weeks_foreign_lists_and_ambiguous_targets(api, us
     private = ShoppingList.objects.create(user=other_user, title="Private")
     own = ShoppingList.objects.create(user=user, title="Own")
     for target in ({}, {"shopping_list_id": private.pk}, {"shopping_list_id": own.pk, "title": "New"}):
-        assert api.post(url, {"week": "2027-01-01", **target}, format="json").status_code == 400
+        expected = 404 if target == {"shopping_list_id": private.pk} else 400
+        assert api.post(url, {"week": "2027-01-01", **target}, format="json").status_code == expected
     assert not private.items.exists()
     assert not own.items.exists()
     assert not ShoppingList.objects.filter(user=user, title="New").exists()

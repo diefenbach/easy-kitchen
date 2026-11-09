@@ -67,6 +67,32 @@ def test_postgres_quantity_overflow_is_validation_error_and_rolls_back():
     item.full_clean()
 
 
+def test_simultaneous_recipe_partial_updates_preserve_both_changes():
+    from easy_kitchen.services import create_recipe, update_owned_recipe
+
+    postgres_only()
+    user = get_user_model().objects.create_user(username="recipe-race")
+    recipe = create_recipe(user, title="Soup", calories=100)
+    barrier = Barrier(2)
+
+    def update(changes):
+        close_old_connections()
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SET lock_timeout = '10s'")
+            barrier.wait(timeout=10)
+            update_owned_recipe(user, recipe_id=recipe.pk, changes=changes)
+        finally:
+            connections.close_all()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures = [pool.submit(update, {"title": "Dinner"}), pool.submit(update, {"fat": 65})]
+        for future in futures:
+            future.result(timeout=20)
+    recipe.refresh_from_db()
+    assert recipe.title == "Dinner" and recipe.fat == 65 and recipe.calories == 100
+
+
 def test_simultaneous_first_article_creation_recovers_unique_conflict(monkeypatch):
     postgres_only()
     user = get_user_model().objects.create_user(username="article-race")

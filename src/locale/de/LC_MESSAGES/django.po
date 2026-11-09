@@ -1365,3 +1365,38 @@ msgstr "Geplante Gerichte nächster Woche"
 
 msgid "No meals planned for next week yet."
 msgstr "Für nächste Woche sind noch keine Gerichte geplant."
+
+msgid "Unsupported recipe field."
+msgstr "Nicht unterstütztes Rezeptfeld."
+
+msgid "Unsupported update field."
+msgstr "Nicht unterstütztes Änderungsfeld."
+
+msgid "Article not found."
+msgstr "Artikel nicht gefunden."
+
+msgid "Department not found."
+msgstr "Abteilung nicht gefunden."
+
+msgid "This field cannot be blank."
+msgstr "Dieses Feld darf nicht leer sein."
+
+msgid "That name matches more than one item. Choose an item ID."
+msgstr "Dieser Name passt zu mehreren Einträgen. Wähle eine Eintrags-ID."
+
+#, python-format
+msgid "Choose a limit between 1 and %(maximum)d."
+msgstr "Wähle eine Trefferzahl zwischen 1 und %(maximum)d."
+
+#, python-format
+msgid "Choose an offset between 0 and %(maximum)d."
+msgstr "Wähle einen Versatz zwischen 0 und %(maximum)d."
+
+msgid "Start date must not be after end date."
+msgstr "Das Startdatum darf nicht nach dem Enddatum liegen."
+
+msgid "The supplied ID and title do not match."
+msgstr "Die angegebene ID und der Titel passen nicht zusammen."
+
+msgid "The supplied ID and name do not match."
+msgstr "Die angegebene ID und der Name passen nicht zusammen."
