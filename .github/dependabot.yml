@@ -1,0 +1,36 @@
+# Weekly update PRs, one per ecosystem. Each PR runs the full CI (tests and image probe); merging one that touches
+# runtime files (uv.lock, Dockerfile) deploys like any other merge. Security updates come separately and at once.
+version: 2
+updates:
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      python:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      javascript:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    ignore:
+      # A new Python version (3.13 -> 3.14) is a deliberate change, not a routine update.
+      - dependency-name: python
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]

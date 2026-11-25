@@ -138,3 +138,7 @@ Roll back to an older image with `gh workflow run deploy.yml -R diefenbach/easy-
 Documentation-only changes (for example `docs/`, `AGENTS.md`, or `README.md`) still run **test** and the **build** probe, but push no image and skip **deploy**. Read the Docs publishes the docs tree separately.
 
 Feature branches are tested. They are not deployed.
+
+## Dependency updates
+
+Dependabot opens one grouped pull request per week for each of uv (`uv.lock`), npm, GitHub Actions, and the `Dockerfile` base image (`.github/dependabot.yml`). It skips new Python versions in the base image, because moving from 3.13 to 3.14 is a deliberate change. Security fixes arrive as separate pull requests as soon as an advisory is published. Every one of these pull requests runs the full CI. Merge one only when CI is green; a merge that changes `uv.lock` or the `Dockerfile` deploys like any other.
