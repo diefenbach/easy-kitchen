@@ -1,10 +1,18 @@
+from typing import TYPE_CHECKING
+
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.db.models.functions import Lower
 from django.utils.translation import gettext_lazy as _
 
+if TYPE_CHECKING:
+    # Django adds the reverse relations at runtime; these declarations tell the type checker.
+    from django.db.models.fields.related_descriptors import RelatedManager
 
-class UserManager(BaseUserManager):
+    from easy_kitchen.models import Article, Department, MealPlanEntry, Recipe, ShoppingList
+
+
+class UserManager(BaseUserManager["User"]):
     use_in_migrations = True
 
     def _create_user(self, email, password, **extra_fields):
@@ -31,6 +39,13 @@ class UserManager(BaseUserManager):
 class User(AbstractUser):
     """A person using EasyKitchen, identified by their email address."""
 
+    if TYPE_CHECKING:
+        shopping_lists: "RelatedManager[ShoppingList]"
+        departments: "RelatedManager[Department]"
+        articles: "RelatedManager[Article]"
+        recipes: "RelatedManager[Recipe]"
+        meal_plan_entries: "RelatedManager[MealPlanEntry]"
+
     username = None
     email = models.EmailField(_("email address"), unique=True)
 
@@ -38,7 +53,8 @@ class User(AbstractUser):
     EMAIL_FIELD = "email"
     REQUIRED_FIELDS = []
 
-    objects = UserManager()
+    # Email-only manager; replaces AbstractUser's username-based one, whose type the stubs expect here.
+    objects = UserManager()  # pyright: ignore[reportAssignmentType]
 
     class Meta:
         verbose_name = _("user")

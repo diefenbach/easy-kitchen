@@ -29,8 +29,10 @@ conventions (`~/Development/agents/AGENTS.md`); where they disagree, this file w
 The general principles (YAGNI, TDD, DRY, typing, docstrings, skills) are in the maintainer's global agent
 conventions. In this project:
 
-- Application code is `src/easy_kitchen` and `src/project`; typing and docstring rules apply there. The type
-  checker is pyright (`[tool.pyright]` in `pyproject.toml`).
+- Application code is `src/easy_kitchen`, `src/project`, and `src/accounts`; typing and docstring rules apply
+  there. CI runs `uv run pyright` (standard mode, `[tool.pyright]` in `pyproject.toml`) and it must report no
+  errors. Use `# pyright: ignore[<rule>]` only where the Django/DRF stubs cannot describe correct code, with a
+  comment saying why. In views behind a login, get a typed user with `signed_in_user(request)`.
 - Sources of truth: business rules in `easy_kitchen/services.py`, choices on the model, versions in
   `package.json` and `pyproject.toml`, settings in the settings modules.
 - Project skills go in `.claude/skills/<name>/SKILL.md`.

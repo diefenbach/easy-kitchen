@@ -1,9 +1,10 @@
 import json
-from typing import Any, Literal
+from typing import Any, Literal, TypeVar, cast
 
 from django import forms
 from django.db.models import Prefetch
 from django.forms import BaseInlineFormSet, BaseModelFormSet, inlineformset_factory, modelformset_factory
+from django.forms.formsets import DELETION_FIELD_NAME
 from django.core.validators import URLValidator
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError as DRFValidationError
@@ -58,9 +59,10 @@ class ShoppingItemForm(forms.ModelForm):
 
     def __init__(self, *args, user, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["department"].queryset = user.departments.all()
-        self.fields["department"].to_field_name = "code"
-        self.fields["department"].choices = department_choices(user)
+        department = _field(self, "department", forms.ModelChoiceField)
+        department.queryset = user.departments.all()
+        department.to_field_name = "code"
+        department.choices = department_choices(user)
         self.initial["department"] = self.instance.department_code
 
 
@@ -78,7 +80,7 @@ class ArticleForm(forms.Form):
         self.user = user
         self.instance = instance
         super().__init__(*args, **kwargs)
-        self.fields["department"].choices = department_choices(user)
+        _field(self, "department", forms.ChoiceField).choices = department_choices(user)
 
     def clean_name(self):
         """Normalize the name and reject a blank or duplicate article."""
@@ -112,9 +114,10 @@ class ArticleEditorForm(forms.ModelForm):
 
     def __init__(self, *args, user, department_options=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["department"].queryset = user.departments.all()
-        self.fields["department"].to_field_name = "code"
-        self.fields["department"].choices = department_options if department_options is not None else department_choices(user)
+        department = _field(self, "department", forms.ModelChoiceField)
+        department.queryset = user.departments.all()
+        department.to_field_name = "code"
+        department.choices = department_options if department_options is not None else department_choices(user)
         self.initial["department"] = self.instance.department_code
 
     def clean_name(self):
@@ -153,7 +156,7 @@ class BaseArticleEditorFormSet(BaseModelFormSet):
         names = {name.casefold() for name in self.user.articles.exclude(pk__in=ids).values_list("name", flat=True)}
         draft_names = {}
         for form in self.forms:
-            if self.can_delete and self._should_delete_form(form):
+            if self.can_delete and form.cleaned_data.get(DELETION_FIELD_NAME):
                 continue
             name = form.cleaned_data.get("name")
             if not name:
@@ -219,7 +222,7 @@ class BaseDepartmentEditorFormSet(BaseModelFormSet):
         names = {str(department).casefold() for department in self.user.departments.exclude(pk__in=ids)}
         draft_names = {}
         for form in self.forms:
-            if self._should_delete_form(form):
+            if form.cleaned_data.get(DELETION_FIELD_NAME):
                 continue
             name = form.cleaned_data.get("name")
             if not name:
@@ -402,6 +405,17 @@ class RecipeLineForm(forms.Form):
             )
 
 
+_FieldT = TypeVar("_FieldT", bound=forms.Field)
+
+
+def _field(form: forms.BaseForm, name: str, kind: type[_FieldT]) -> _FieldT:
+    """Return the form's field `name` as the declared `kind`, so its queryset or choices can be set per user."""
+    field = form.fields[name]
+    if not isinstance(field, kind):
+        raise TypeError(f"{type(form).__name__}.{name} is a {type(field).__name__}, not a {kind.__name__}.")
+    return field
+
+
 class OwnedMultipleChoiceField(forms.ModelMultipleChoiceField):
     """Keep ids that belong to the queryset and ignore the rest."""
 
@@ -410,9 +424,11 @@ class OwnedMultipleChoiceField(forms.ModelMultipleChoiceField):
             value = frozenset(value)
         except TypeError:
             raise forms.ValidationError(self.error_messages["invalid_list"], code="invalid_list")
+        queryset = self.queryset
+        assert queryset is not None, "the form sets the queryset in __init__"
         for pk in value:
             try:
-                number = self.queryset.model._meta.pk.to_python(pk)
+                number = queryset.model._meta.pk.to_python(pk)
                 if not -(2**63) <= number < 2**63:
                     raise ValueError
             except (ValueError, TypeError, forms.ValidationError):
@@ -420,7 +436,7 @@ class OwnedMultipleChoiceField(forms.ModelMultipleChoiceField):
                     self.error_messages["invalid_pk_value"],
                     code="invalid_pk_value", params={"pk": pk},
                 ) from None
-        return self.queryset.filter(pk__in=value)
+        return queryset.filter(pk__in=value)
 
 
 class ExportForm(forms.Form):
@@ -441,12 +457,13 @@ class ExportForm(forms.Form):
 
     def __init__(self, *args, user, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["lists"].queryset = user.shopping_lists.prefetch_related(Prefetch("items", queryset=ShoppingItem.objects.select_related("department")))
-        self.fields["recipes"].queryset = user.recipes.prefetch_related("ingredients", "steps")
+        _field(self, "lists", forms.ModelMultipleChoiceField).queryset = user.shopping_lists.prefetch_related(Prefetch("items", queryset=ShoppingItem.objects.select_related("department")))
+        _field(self, "recipes", forms.ModelMultipleChoiceField).queryset = user.recipes.prefetch_related("ingredients", "steps")
 
     def clean(self):
         """Require at least one list or recipe."""
-        cleaned = super().clean()
+        super().clean()
+        cleaned = self.cleaned_data
         if not cleaned.get("lists") and not cleaned.get("recipes"):
             raise forms.ValidationError(_("Choose at least one shopping list or recipe."))
         return cleaned
@@ -464,7 +481,7 @@ class MealPlanDayForm(forms.Form):
 
     def __init__(self, *args, user, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["recipe"].queryset = Recipe.objects.filter(user=user).order_by("title", "pk")
+        _field(self, "recipe", forms.ModelChoiceField).queryset = Recipe.objects.filter(user=user).order_by("title", "pk")
 
 
 class AddRecipeToPlannerForm(forms.Form):
@@ -498,11 +515,12 @@ class AddRecipeToListForm(forms.Form):
 
     def __init__(self, *args, user, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["shopping_list"].queryset = ShoppingList.objects.filter(user=user)
+        _field(self, "shopping_list", forms.ModelChoiceField).queryset = ShoppingList.objects.filter(user=user)
 
     def clean(self):
         """Require an existing list or a title for a new one."""
-        cleaned = super().clean()
+        super().clean()
+        cleaned = self.cleaned_data
         title = _normalized_name(cleaned.get("title") or "")
         cleaned["title"] = title
         if not title and not cleaned.get("shopping_list"):
@@ -541,25 +559,34 @@ class OrderedEditorLineFormSet(BaseInlineFormSet):
         return saved
 
 
-RecipeIngredientEditorFormSet = inlineformset_factory(
-    Recipe, RecipeIngredient, formset=OrderedEditorLineFormSet,
-    fields=("name", "quantity"), extra=0, can_delete=True, can_order=True,
-    widgets={"name": forms.TextInput(attrs={"class": "form-control"}), "quantity": forms.TextInput(attrs={"class": "form-control"})},
+RecipeIngredientEditorFormSet = cast(
+    "type[OrderedEditorLineFormSet]",
+    inlineformset_factory(
+        Recipe, RecipeIngredient, formset=OrderedEditorLineFormSet,
+        fields=("name", "quantity"), extra=0, can_delete=True, can_order=True,
+        widgets={"name": forms.TextInput(attrs={"class": "form-control"}), "quantity": forms.TextInput(attrs={"class": "form-control"})},
+    ),
 )
-RecipeStepEditorFormSet = inlineformset_factory(
-    Recipe, RecipeStep, formset=OrderedEditorLineFormSet,
-    fields=("text",), extra=0, can_delete=True, can_order=True,
-    widgets={"text": forms.Textarea(attrs={"class": "form-control", "rows": 3})},
+RecipeStepEditorFormSet = cast(
+    "type[OrderedEditorLineFormSet]",
+    inlineformset_factory(
+        Recipe, RecipeStep, formset=OrderedEditorLineFormSet,
+        fields=("text",), extra=0, can_delete=True, can_order=True,
+        widgets={"text": forms.Textarea(attrs={"class": "form-control", "rows": 3})},
+    ),
 )
 
 
-ShoppingItemEditorFormSet = inlineformset_factory(
-    ShoppingList, ShoppingItem, formset=OrderedEditorLineFormSet,
-    fields=("name", "quantity", "department", "checked"), extra=0, can_delete=True, can_order=True,
-    widgets={
-        "name": forms.TextInput(attrs={"class": "form-control"}),
-        "quantity": forms.TextInput(attrs={"class": "form-control"}),
-        "department": forms.Select(attrs={"class": "form-select"}),
-        "checked": forms.CheckboxInput(attrs={"class": "form-check-input"}),
-    },
+ShoppingItemEditorFormSet = cast(
+    "type[OrderedEditorLineFormSet]",
+    inlineformset_factory(
+        ShoppingList, ShoppingItem, formset=OrderedEditorLineFormSet,
+        fields=("name", "quantity", "department", "checked"), extra=0, can_delete=True, can_order=True,
+        widgets={
+            "name": forms.TextInput(attrs={"class": "form-control"}),
+            "quantity": forms.TextInput(attrs={"class": "form-control"}),
+            "department": forms.Select(attrs={"class": "form-select"}),
+            "checked": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        },
+    ),
 )

@@ -1,3 +1,9 @@
+"""DRF serializers for the REST API; writes go through easy_kitchen.services."""
+
+# drf-stubs declare `ModelSerializer.Meta`, so every serializer's own `class Meta` reads as an incompatible
+# override; that is how DRF is meant to be used.
+# pyright: reportIncompatibleVariableOverride=false
+
 from collections.abc import Mapping
 
 from rest_framework import serializers
@@ -14,7 +20,7 @@ from easy_kitchen.services import (
 )
 
 
-class StrictInputMixin:
+class StrictInputMixin(serializers.Serializer):
     """Reject attempts to write unknown or read-only fields on update endpoints."""
 
     def to_internal_value(self, data):
@@ -26,6 +32,24 @@ class StrictInputMixin:
         return super().to_internal_value(data)
 
 
+def _department_code(serializer: serializers.Serializer, value: str) -> str:
+    """Resolve a department name or code for the request's user; return its code, or "" for none.
+
+    Raises a ValidationError with the resolver's candidates when the department is unknown or ambiguous.
+    """
+    request = serializer.context.get("request")
+    user = request.user if request else serializer.context.get("user")
+    if not value:
+        return ""
+    if user is None:
+        raise serializers.ValidationError(_("Invalid department."))
+    try:
+        department = resolve_department(user, value)
+    except DepartmentResolutionError as error:
+        raise serializers.ValidationError(error.as_dict()) from None
+    return department.code if department else ""
+
+
 class StrictUpdateSerializer(StrictInputMixin, serializers.ModelSerializer):
     pass
 
@@ -35,20 +59,23 @@ class StrictSerializer(StrictInputMixin, serializers.Serializer):
 
 
 class WholeNumberField(serializers.IntegerField):
-    def to_internal_value(self, value):
-        if value == "":
+    def to_internal_value(self, data):
+        if data == "":
             self.fail("invalid")
         try:
-            return clean_count(value)
+            number = clean_count(data)
         except ServiceError as error:
             raise serializers.ValidationError(str(error), code=error.code) from None
+        if number is None:
+            self.fail("invalid")
+        return number
 
 
 class StrictBooleanField(serializers.BooleanField):
-    def to_internal_value(self, value):
-        if not isinstance(value, bool):
-            self.fail("invalid", input=value)
-        return value
+    def to_internal_value(self, data):
+        if not isinstance(data, bool):
+            self.fail("invalid", input=data)
+        return data
 
 
 class CollectionQuerySerializer(StrictSerializer):
@@ -83,7 +110,8 @@ class ArticleListQuerySerializer(CollectionQuerySerializer):
 
 
 class DepartmentSerializer(StrictUpdateSerializer):
-    label = serializers.CharField(source="__str__", read_only=True)
+    # A field named like Field.label; DRF's metaclass moves declared fields off the class, so they never clash.
+    label = serializers.CharField(source="__str__", read_only=True)  # pyright: ignore[reportAssignmentType]
 
     class Meta:
         model = Department
@@ -143,17 +171,7 @@ class ShoppingItemSerializer(CompleteChildSerializer):
     department = serializers.CharField(source="department_code", required=False, allow_blank=True, max_length=255)
 
     def validate_department(self, value):
-        request = self.context.get("request")
-        user = request.user if request else self.context.get("user")
-        if not value:
-            return ""
-        if user is None:
-            raise serializers.ValidationError(_("Invalid department."))
-        try:
-            department = resolve_department(user, value)
-        except DepartmentResolutionError as error:
-            raise serializers.ValidationError(error.as_dict()) from None
-        return department.code if department else ""
+        return _department_code(self, value)
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
@@ -223,7 +241,7 @@ class AddShoppingItemSerializer(StrictSerializer):
     def validate_department(self, value):
         if value is None:
             return None
-        return ShoppingItemSerializer.validate_department(self, value)
+        return _department_code(self, value)
 
 
 class AddRecipeToListSerializer(StrictSerializer):

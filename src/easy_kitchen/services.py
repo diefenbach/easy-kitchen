@@ -8,13 +8,14 @@ from typing import Any, Literal
 from uuid import uuid4
 
 from django.conf import settings
-from django.contrib.auth.models import AbstractBaseUser
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import Exists, F, Manager, Max, Model, OuterRef, Q
+from django.db.models import CharField, Exists, F, Manager, Max, Model, OuterRef, Q
 from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import gettext as _, override
+
+from accounts.models import User
 
 from .departments import DEFAULT_DEPARTMENTS
 from .errors import ObjectNotFoundError, QuantityOverflowError, SelectionMismatchError, ServiceError
@@ -107,7 +108,7 @@ def _merge_quantities(quantity_entries: Sequence[str]) -> str:
     return ", ".join(rendered)
 
 
-def seed_default_departments(user: AbstractBaseUser, *, using: str = "default") -> None:
+def seed_default_departments(user: User, *, using: str = "default") -> None:
     """Create the starter catalogue once when a new account is created."""
     Department.objects.using(using).bulk_create([
         Department(user_id=user.pk, code=code, name=name, position=position)
@@ -142,34 +143,34 @@ def _owned_record(queryset, pk: int, message):
     return record
 
 
-def get_owned_recipe(user: AbstractBaseUser, *, recipe_id: int) -> Recipe:
+def get_owned_recipe(user: User, *, recipe_id: int) -> Recipe:
     return _owned_record(user.recipes.prefetch_related("ingredients", "steps"), recipe_id, _("Recipe not found."))
 
 
-def get_owned_shopping_list(user: AbstractBaseUser, *, list_id: int) -> ShoppingList:
+def get_owned_shopping_list(user: User, *, list_id: int) -> ShoppingList:
     return _owned_record(user.shopping_lists.prefetch_related("items__department"), list_id, _("Shopping list not found."))
 
 
-def get_owned_shopping_item(user: AbstractBaseUser, *, item_id: int) -> ShoppingItem:
+def get_owned_shopping_item(user: User, *, item_id: int) -> ShoppingItem:
     return _owned_record(ShoppingItem.objects.filter(shopping_list__user=user).select_related("department"), item_id, _("Item not found."))
 
 
-def get_owned_article(user: AbstractBaseUser, *, article_id: int) -> Article:
+def get_owned_article(user: User, *, article_id: int) -> Article:
     return _owned_record(user.articles.select_related("department"), article_id, _("Article not found."))
 
 
-def get_owned_department(user: AbstractBaseUser, *, department_id: int) -> Department:
+def get_owned_department(user: User, *, department_id: int) -> Department:
     return _owned_record(user.departments.all(), department_id, _("Department not found."))
 
 
-def delete_owned_recipe(user: AbstractBaseUser, *, recipe_id: int) -> None:
+def delete_owned_recipe(user: User, *, recipe_id: int) -> None:
     """Delete the owned recipe with its children and existing planner references."""
     count, _details = user.recipes.filter(pk=recipe_id).delete()
     if not count:
         raise ObjectNotFoundError(_("Recipe not found."))
 
 
-def delete_owned_shopping_list(user: AbstractBaseUser, *, list_id: int) -> None:
+def delete_owned_shopping_list(user: User, *, list_id: int) -> None:
     """Delete the owned list and entries, retaining saved articles and recipes."""
     count, _details = user.shopping_lists.filter(pk=list_id).delete()
     if not count:
@@ -238,7 +239,7 @@ def query_owned_articles(user, *, q="", department=None, limit=DEFAULT_LIST_LIMI
     return articles[window]
 
 
-def list_department_data(user: AbstractBaseUser, *, q="", limit=DEFAULT_LIST_LIMIT, offset=0) -> list[dict]:
+def list_department_data(user: User, *, q="", limit=DEFAULT_LIST_LIMIT, offset=0) -> list[dict]:
     """List only this user's departments, sorted by the displayed label."""
     q, window = _collection_window(q, limit, offset)
 
@@ -264,7 +265,7 @@ def _department_match_key(value: str) -> str:
     return " ".join("and" if word == "und" else word for word in words)
 
 
-def resolve_department(user: AbstractBaseUser, value: Department | str | None) -> Department | None:
+def resolve_department(user: User, value: Department | str | None) -> Department | None:
     """Resolve owned codes or unambiguous names; return suggestions instead of guessing."""
     if value is None or value == "":
         return None
@@ -312,7 +313,7 @@ def resolve_department(user: AbstractBaseUser, value: Department | str | None) -
     raise DepartmentResolutionError(query, candidates=[candidate(department) for score, department in ranked[:5]])
 
 
-def remember_article(user: AbstractBaseUser, name: str, department: Department | str | None = None) -> Article | None:
+def remember_article(user: User, name: str, department: Department | str | None = None) -> Article | None:
     """Store the item name for later suggestions, reusing a case-insensitive match."""
     resolved_department = resolve_department(user, department)
     name = _normalized_name(name)
@@ -334,7 +335,7 @@ def remember_article(user: AbstractBaseUser, name: str, department: Department |
         return remember_article(user, name, department)
 
 
-def save_article(user: AbstractBaseUser, name: str, article: Article | None = None,
+def save_article(user: User, name: str, article: Article | None = None,
                  department: Department | str | None = None) -> Article:
     """Create an article, or rename the given one."""
     name = _normalized_name(name)
@@ -348,7 +349,7 @@ def save_article(user: AbstractBaseUser, name: str, article: Article | None = No
 
 
 @transaction.atomic
-def save_articles(user: AbstractBaseUser, records: Sequence[Mapping[str, Any]], deleted_ids: Sequence[int]) -> None:
+def save_articles(user: User, records: Sequence[Mapping[str, Any]], deleted_ids: Sequence[int]) -> None:
     """Save an article draft atomically, permitting name swaps and name reuse after deletion."""
     existing = {article.pk: article for article in user.articles.select_for_update()}
     ids = [record["id"] for record in records if record["id"] is not None]
@@ -377,7 +378,7 @@ def save_articles(user: AbstractBaseUser, records: Sequence[Mapping[str, Any]], 
 
 
 @transaction.atomic
-def save_departments(user: AbstractBaseUser, records: Sequence[Mapping[str, Any]], deleted_ids: Sequence[int]) -> None:
+def save_departments(user: User, records: Sequence[Mapping[str, Any]], deleted_ids: Sequence[int]) -> None:
     """Save only this user's department draft, keeping existing codes and references stable."""
     existing = {department.pk: department for department in user.departments.select_for_update()}
     ids = [record["id"] for record in records if record["id"] is not None]
@@ -428,7 +429,7 @@ def _validate_update(instance: Model) -> None:
 
 
 @transaction.atomic
-def update_owned_shopping_item(user: AbstractBaseUser, *, item_id: int, changes: Mapping[str, Any]) -> ShoppingItem:
+def update_owned_shopping_item(user: User, *, item_id: int, changes: Mapping[str, Any]) -> ShoppingItem:
     """Replace supplied item fields without merging quantities or resetting checked state."""
     item = ShoppingItem.objects.select_for_update().filter(pk=item_id, shopping_list__user=user).first()
     if item is None:
@@ -438,7 +439,7 @@ def update_owned_shopping_item(user: AbstractBaseUser, *, item_id: int, changes:
     for field, value in values.items():
         if field == "department":
             value = resolve_department(user, value)
-        if field == "name":
+        elif field == "name":
             value = _normalized_name(value)
         setattr(item, field, value)
     _validate_update(item)
@@ -451,7 +452,7 @@ def update_owned_shopping_item(user: AbstractBaseUser, *, item_id: int, changes:
 
 
 @transaction.atomic
-def update_owned_shopping_list(user: AbstractBaseUser, *, list_id: int, changes: Mapping[str, Any]) -> ShoppingList:
+def update_owned_shopping_list(user: User, *, list_id: int, changes: Mapping[str, Any]) -> ShoppingList:
     """Update list metadata; replace items only when explicitly supplied."""
     shopping_list = user.shopping_lists.select_for_update().filter(pk=list_id).first()
     if shopping_list is None:
@@ -474,7 +475,7 @@ def update_owned_shopping_list(user: AbstractBaseUser, *, list_id: int, changes:
 
 
 @transaction.atomic
-def update_owned_article(user: AbstractBaseUser, *, article_id: int, changes: Mapping[str, Any]) -> Article:
+def update_owned_article(user: User, *, article_id: int, changes: Mapping[str, Any]) -> Article:
     """Change an article default without rewriting existing shopping-list entries."""
     article = user.articles.select_for_update().filter(pk=article_id).first()
     if article is None:
@@ -490,7 +491,7 @@ def update_owned_article(user: AbstractBaseUser, *, article_id: int, changes: Ma
 
 
 @transaction.atomic
-def update_owned_department(user: AbstractBaseUser, *, department_id: int, changes: Mapping[str, Any]) -> Department:
+def update_owned_department(user: User, *, department_id: int, changes: Mapping[str, Any]) -> Department:
     """Rename an owned department, preserving its stable code and all references."""
     department = user.departments.select_for_update().filter(pk=department_id).first()
     if department is None:
@@ -503,7 +504,7 @@ def update_owned_department(user: AbstractBaseUser, *, department_id: int, chang
 
 
 def set_owned_recipe_favorite(
-    user: AbstractBaseUser, *, is_favorite: bool, recipe_id: int | None = None, recipe_title: str = "",
+    user: User, *, is_favorite: bool, recipe_id: int | None = None, recipe_title: str = "",
 ) -> Recipe:
     """Set an explicit favorite state, making retries safe."""
     if not isinstance(is_favorite, bool):
@@ -565,7 +566,9 @@ def create_item(
 
 
 def _validate_item_quantity(quantity: str) -> None:
-    limit = ShoppingItem._meta.get_field("quantity").max_length
+    field = ShoppingItem._meta.get_field("quantity")
+    assert isinstance(field, CharField) and field.max_length is not None
+    limit = field.max_length
     if len(quantity) > limit:
         raise QuantityOverflowError(
             _("The combined quantity exceeds %(limit)d characters. Use a shorter quantity.")
@@ -584,7 +587,7 @@ def _clean_list_icon(icon: str | None) -> str | None:
 
 @transaction.atomic
 def create_shopping_list(
-    user: AbstractBaseUser,
+    user: User,
     *,
     title: str,
     date: date | None = None,
@@ -609,7 +612,7 @@ def create_shopping_list(
 
 @transaction.atomic
 def import_shopping_lists(
-    user: AbstractBaseUser, lists_data: Sequence[Mapping[str, Any]]
+    user: User, lists_data: Sequence[Mapping[str, Any]]
 ) -> list[ShoppingList]:
     """Insert imported lists at the front and shift the user's existing lists down."""
     records = [dict(record) for record in lists_data]
@@ -622,7 +625,7 @@ def import_shopping_lists(
 
 
 @transaction.atomic
-def reorder_shopping_lists(user: AbstractBaseUser, list_ids: Sequence[int]) -> None:
+def reorder_shopping_lists(user: User, list_ids: Sequence[int]) -> None:
     """Set list positions. The ids must be exactly this user's lists."""
     _reorder_owned(user.shopping_lists, list_ids)
 
@@ -666,7 +669,7 @@ def _write_ingredients(manager: Manager, ingredients: Sequence[Mapping[str, Any]
 
 @transaction.atomic
 def create_recipe(
-    user: AbstractBaseUser,
+    user: User,
     *,
     title: str,
     description: str = "",
@@ -717,7 +720,7 @@ def _save_recipe_changes(recipe: Recipe, changes: Mapping[str, Any]) -> Recipe:
 
 @transaction.atomic
 def import_recipes(
-    user: AbstractBaseUser, recipes_data: Sequence[Mapping[str, Any]]
+    user: User, recipes_data: Sequence[Mapping[str, Any]]
 ) -> list[Recipe]:
     """Insert imported recipes at the front and shift the user's existing recipes down."""
     records = [dict(record) for record in recipes_data]
@@ -730,7 +733,7 @@ def import_recipes(
 
 
 @transaction.atomic
-def reorder_recipes(user: AbstractBaseUser, recipe_ids: Sequence[int]) -> None:
+def reorder_recipes(user: User, recipe_ids: Sequence[int]) -> None:
     """Set recipe positions. The ids must be exactly this user's recipes."""
     _reorder_owned(user.recipes, recipe_ids)
 
@@ -817,7 +820,7 @@ def copy_recipe_to_list(
 
 
 def owned_recipe(
-    user: AbstractBaseUser, *, recipe_id: int | None = None, title: str = ""
+    user: User, *, recipe_id: int | None = None, title: str = ""
 ) -> Recipe:
     """Return one of this user's recipes by id or unique title."""
     if recipe_id is not None:
@@ -844,7 +847,7 @@ def owned_recipe(
 
 @transaction.atomic
 def update_owned_recipe(
-    user: AbstractBaseUser,
+    user: User,
     *,
     changes: Mapping[str, Any],
     recipe_id: int | None = None,
@@ -857,7 +860,7 @@ def update_owned_recipe(
 
 
 def owned_or_today_list(
-    user: AbstractBaseUser, *, list_id: int | None = None, title: str = ""
+    user: User, *, list_id: int | None = None, title: str = ""
 ) -> ShoppingList:
     """Return a list by id or title, or today's list, creating it when needed."""
     if list_id is not None:
@@ -889,7 +892,7 @@ def owned_or_today_list(
 
 
 def set_item_checked(
-    user: AbstractBaseUser,
+    user: User,
     *,
     name: str = "",
     checked: bool = True,
@@ -938,14 +941,14 @@ def delete_completed_items(shopping_list: ShoppingList) -> int:
     return count
 
 
-def delete_owned_shopping_item(user: AbstractBaseUser, *, item_id: int) -> None:
+def delete_owned_shopping_item(user: User, *, item_id: int) -> None:
     """Delete only the owned list entry, retaining the saved article and list."""
     count, _details = ShoppingItem.objects.filter(pk=item_id, shopping_list__user=user).delete()
     if not count:
         raise ObjectNotFoundError(_("Item not found."))
 
 
-def delete_completed_items_from_owned_list(user: AbstractBaseUser, *, list_id: int) -> int:
+def delete_completed_items_from_owned_list(user: User, *, list_id: int) -> int:
     """Delete completed entries from an existing owned list, never creating one."""
     shopping_list = user.shopping_lists.filter(pk=list_id).first()
     if shopping_list is None:
@@ -955,7 +958,7 @@ def delete_completed_items_from_owned_list(user: AbstractBaseUser, *, list_id: i
 
 @transaction.atomic
 def add_recipe_to_owned_list(
-    user: AbstractBaseUser,
+    user: User,
     *,
     recipe_id: int | None = None,
     recipe_title: str = "",
@@ -970,7 +973,7 @@ def add_recipe_to_owned_list(
 
 @transaction.atomic
 def add_item_to_owned_list(
-    user: AbstractBaseUser,
+    user: User,
     *,
     name: str,
     quantity: str = "",
@@ -1043,7 +1046,7 @@ def recipe_export_data(recipe: Recipe) -> dict[str, Any]:
     return data
 
 
-def recipe_search_documents(user: AbstractBaseUser) -> dict[str, dict[str, str]]:
+def recipe_search_documents(user: User) -> dict[str, dict[str, str]]:
     """Provide the user's recipe titles and pictures for planner autocomplete."""
     return {
         str(recipe.pk): {"text": recipe.title, "picture_url": recipe.picture_url}
@@ -1062,7 +1065,7 @@ def week_dates(week_start: date) -> list[date]:
     return [week_start + timedelta(days=offset) for offset in range(7)]
 
 
-def meal_plan_for_week(user: AbstractBaseUser, week_start: date) -> dict[date, MealPlanEntry | None]:
+def meal_plan_for_week(user: User, week_start: date) -> dict[date, MealPlanEntry | None]:
     """Map each day in the week to a plan entry, if one exists."""
     dates = week_dates(week_start)
     entries = {
@@ -1074,7 +1077,7 @@ def meal_plan_for_week(user: AbstractBaseUser, week_start: date) -> dict[date, M
     return {day: entries.get(day) for day in dates}
 
 
-def set_meal_plan_recipe(user: AbstractBaseUser, day: date, recipe: Recipe) -> MealPlanEntry:
+def set_meal_plan_recipe(user: User, day: date, recipe: Recipe) -> MealPlanEntry:
     """Assign one recipe to a day for this user."""
     if recipe.user_id != user.pk:
         raise ObjectNotFoundError(_("Recipe not found."))
@@ -1086,20 +1089,20 @@ def set_meal_plan_recipe(user: AbstractBaseUser, day: date, recipe: Recipe) -> M
     return entry
 
 
-def clear_meal_plan_day(user: AbstractBaseUser, day: date) -> None:
+def clear_meal_plan_day(user: User, day: date) -> None:
     """Remove the planned recipe for one day."""
     MealPlanEntry.objects.filter(user=user, date=day).delete()
 
 
-def planned_recipe_count(user: AbstractBaseUser, week_start: date) -> int:
+def planned_recipe_count(user: User, week_start: date) -> int:
     """Return how many days in the week have a planned recipe."""
     plan = meal_plan_for_week(user, week_start)
-    return sum(1 for day in week_dates(week_start) if plan.get(day) and plan[day].recipe_id)
+    return sum(1 for day in week_dates(week_start) if (entry := plan.get(day)) and entry.recipe_id)
 
 
 @transaction.atomic
 def add_meal_plan_week_to_list(
-    user: AbstractBaseUser,
+    user: User,
     week_start: date,
     *,
     shopping_list: ShoppingList | None,
@@ -1149,7 +1152,7 @@ def _complete_meal_plan_week(day: date) -> date:
     return start
 
 
-def meal_plan_week_data(user: AbstractBaseUser, week: date | None = None) -> dict[str, Any]:
+def meal_plan_week_data(user: User, week: date | None = None) -> dict[str, Any]:
     """Read all seven days of the selected local week for the current user."""
     start = _complete_meal_plan_week(week if week is not None else timezone.localdate())
     plan = meal_plan_for_week(user, start)
@@ -1164,7 +1167,7 @@ def meal_plan_week_data(user: AbstractBaseUser, week: date | None = None) -> dic
 
 
 def plan_owned_recipe(
-    user: AbstractBaseUser,
+    user: User,
     day: date,
     *,
     recipe_id: int | None = None,
@@ -1177,7 +1180,7 @@ def plan_owned_recipe(
 
 
 def add_meal_plan_to_owned_list(
-    user: AbstractBaseUser,
+    user: User,
     week: date,
     *,
     list_id: int | None = None,

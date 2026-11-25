@@ -18,6 +18,9 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+  "django-stubs>=5.2,<5.3",
+  "djangorestframework-stubs>=3.16,<4",
+  "pyright>=1.1.414,<1.2",
   "pytest>=8.3,<10",
   "pytest-django>=4.9,<5",
   "pytest-playwright>=0.7,<1",
@@ -49,7 +52,12 @@ line-length = 100
 select = ["E4", "E7", "E9", "F"]
 
 [tool.pyright]
+# CI runs `uv run pyright`; it must report no errors. Application code only.
+include = ["src/easy_kitchen", "src/project", "src/accounts"]
+exclude = ["src/easy_kitchen/tests", "**/migrations"]
+pythonVersion = "3.13"
 venvPath = "."
 venv = ".venv"
-pythonVersion = "3.13"
 extraPaths = ["src"]
+typeCheckingMode = "standard"
+

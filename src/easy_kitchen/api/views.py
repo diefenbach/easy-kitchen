@@ -5,7 +5,10 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from easy_kitchen.authentication import signed_in_user
 from easy_kitchen.errors import ObjectNotFoundError, ServiceError
 from easy_kitchen.models import Article, Department, Recipe, ShoppingItem, ShoppingList
 from easy_kitchen.services import (
@@ -84,13 +87,13 @@ def _collection_response(view, request, query_serializer, operation):
     return Response(view.get_serializer(records, many=True, context=context).data)
 
 
-class ServiceErrorsMixin:
+class ServiceErrorsMixin(APIView):
     """Translate shared business errors once, keeping field details and stable codes."""
 
     def handle_exception(self, exc):
         if isinstance(exc, ServiceError):
             detail = exc.as_dict()
-            data = {"code": exc.code, "detail": str(exc)}
+            data: dict[str, object] = {"code": exc.code, "detail": str(exc)}
             if isinstance(exc, DepartmentResolutionError):
                 data["department"] = detail
             elif exc.field:
@@ -113,7 +116,7 @@ class DepartmentViewSet(ServiceErrorsMixin, mixins.UpdateModelMixin, viewsets.Re
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
             return Department.objects.none()
-        return self.request.user.departments.all()
+        return signed_in_user(self.request).departments.all()
 
     @extend_schema(parameters=[CollectionQuerySerializer], responses=DepartmentSerializer(many=True))
     def list(self, request):
@@ -127,6 +130,8 @@ class DepartmentViewSet(ServiceErrorsMixin, mixins.UpdateModelMixin, viewsets.Re
         query = DepartmentQuerySerializer(data=request.query_params)
         query.is_valid(raise_exception=True)
         department = resolve_department(request.user, query.validated_data["query"])
+        if department is None:  # only for a blank query, which DepartmentQuerySerializer already rejects
+            raise ValidationError({"query": [_("Enter a department name.")]})
         return Response(department_data(department))
 
 
@@ -143,7 +148,7 @@ class ShoppingItemViewSet(ServiceErrorsMixin, mixins.DestroyModelMixin, mixins.U
         return ShoppingItem.objects.filter(shopping_list__user=self.request.user).select_related("department")
 
     def perform_destroy(self, instance):
-        delete_owned_shopping_item(self.request.user, item_id=instance.pk)
+        delete_owned_shopping_item(signed_in_user(self.request), item_id=instance.pk)
 
 
 class ArticleViewSet(ServiceErrorsMixin, mixins.UpdateModelMixin, viewsets.ReadOnlyModelViewSet):
@@ -172,7 +177,7 @@ class ShoppingListViewSet(ServiceErrorsMixin, viewsets.ModelViewSet):
         return ShoppingList.objects.filter(user=self.request.user).prefetch_related("items__department")
 
     def perform_destroy(self, instance):
-        delete_owned_shopping_list(self.request.user, list_id=instance.pk)
+        delete_owned_shopping_list(signed_in_user(self.request), list_id=instance.pk)
 
     @extend_schema(request=AddShoppingItemSerializer, responses={200: ShoppingItemUpdateSerializer})
     @action(detail=True, methods=["post"], url_path="add-item")
@@ -259,7 +264,7 @@ class RecipeViewSet(ServiceErrorsMixin, viewsets.ModelViewSet):
         )
 
     def perform_destroy(self, instance):
-        delete_owned_recipe(self.request.user, recipe_id=instance.pk)
+        delete_owned_recipe(signed_in_user(self.request), recipe_id=instance.pk)
 
     @extend_schema(request=AddRecipeToListSerializer, responses={200: ShoppingListSerializer})
     @action(detail=True, methods=["post"], url_path="add-to-list")
