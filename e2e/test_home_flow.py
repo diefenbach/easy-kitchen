@@ -1,3 +1,5 @@
+"""Browser tests of the home page actions and next week's meals."""
+
 import re
 from datetime import timedelta
 

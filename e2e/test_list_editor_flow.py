@@ -1,3 +1,7 @@
+"""Browser tests of the shopping list editor: draft, cancel, save, validation, delete, and scroll
+position.
+"""
+
 import re
 
 import pytest

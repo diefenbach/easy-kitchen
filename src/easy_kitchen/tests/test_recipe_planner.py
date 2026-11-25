@@ -1,3 +1,5 @@
+"""Planning a recipe from its detail page."""
+
 from datetime import date
 
 import pytest

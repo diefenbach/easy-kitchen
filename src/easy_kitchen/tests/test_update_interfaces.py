@@ -1,3 +1,5 @@
+"""Partial updates of items, lists, articles, and departments keep what was not sent."""
+
 from datetime import date
 
 import pytest

@@ -1,3 +1,9 @@
+"""MCP server: the EasyKitchen tools for AI assistants, authenticated with the user's Bearer token.
+
+Each tool calls the same services as the web UI and the REST API; run it with `python -m
+easy_kitchen.mcp_server`.
+"""
+
 from __future__ import annotations
 
 import os
@@ -82,6 +88,7 @@ class StrictMCPServer(MCPServer):
     """Keep the SDK's generated tool-argument schemas strict at one boundary."""
 
     def add_tool(self, fn: Callable[..., Any], name: str | None = None, **kwargs: Any) -> None:  # pyright: ignore[reportIncompatibleMethodOverride]  # passes the SDK's keyword options through unchanged
+        """Register a tool that closes stale database connections around each call and rejects unknown arguments."""
         @wraps(fn)
         def database_call(*args, **call_kwargs):
             # MCP workers do not pass through Django's request/connection lifecycle.
@@ -127,6 +134,8 @@ mcp = StrictMCPServer(
 
 
 class InputModel(BaseModel):
+    """Base for tool arguments: unknown fields are rejected and strings are stripped."""
+
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
 
@@ -173,24 +182,34 @@ class RecipeUpdateInput(InputModel):
 
 
 class NamedUpdateInput(InputModel):
+    """Fields to change on a named record; only the fields sent are changed."""
+
     model_config = ConfigDict(extra="forbid")
     name: Annotated[str, Field(min_length=1, max_length=NAME_LIMIT)] = ""
 
 
 class ArticleUpdateInput(NamedUpdateInput):
+    """Fields to change on a saved article."""
+
     department: Annotated[str, Field(max_length=NAME_LIMIT)] = ""
 
 
 class ShoppingItemUpdateInput(ArticleUpdateInput):
+    """Fields to change on a shopping list item."""
+
     quantity: Annotated[str, Field(max_length=QUANTITY_LIMIT)] = ""
     checked: StrictBool = False
 
 
 class DepartmentUpdateInput(NamedUpdateInput):
+    """Fields to change on a department."""
+
     name: Annotated[str, Field(min_length=1, max_length=QUANTITY_LIMIT)] = ""
 
 
 class ShoppingListUpdateInput(InputModel):
+    """Fields to change on a shopping list; `items` replaces all items."""
+
     model_config = ConfigDict(extra="forbid")
     title: Annotated[str, Field(min_length=1, max_length=NAME_LIMIT)] = ""
     date: Date = Date.min
@@ -200,10 +219,14 @@ class ShoppingListUpdateInput(InputModel):
 
 class RecipeImportInput(RecipeUpdateInput):
     # Required here though optional in the update input; pydantic allows tightening a field in a subclass.
+    """One recipe to import; unlike an update, the title is required."""
+
     title: Annotated[str, Field(min_length=1, max_length=NAME_LIMIT)]  # pyright: ignore[reportGeneralTypeIssues]
 
 
 class ShoppingListImportInput(InputModel):
+    """One shopping list to import; the date defaults to today."""
+
     title: Annotated[str, Field(min_length=1, max_length=NAME_LIMIT)]
     date: Date = Field(default_factory=timezone.localdate)
     icon: ShoppingList.Icon = ShoppingList.Icon.BASKET

@@ -1,3 +1,7 @@
+"""Data model: shopping lists with items, articles and departments, recipes with ingredients and steps,
+and the meal plan. Every record belongs to one user.
+"""
+
 from typing import TYPE_CHECKING
 
 from django.conf import settings
@@ -83,6 +87,7 @@ class ShoppingList(models.Model):
         verbose_name_plural = _("shopping lists")
 
     def __str__(self):
+        """Return the title."""
         return self.title
 
     @property
@@ -91,6 +96,8 @@ class ShoppingList(models.Model):
         return self.ICON_CLASSES.get(self.icon, self.ICON_CLASSES[self.Icon.BASKET])
 
     def save(self, *args, **kwargs):
+        """Save; a new list is placed first and the user's other lists move down, in one transaction.
+        """
         with transaction.atomic():
             _place_new_record_first(self)
             return super().save(*args, **kwargs)
@@ -116,6 +123,7 @@ class Department(models.Model):
         constraints = [models.UniqueConstraint(fields=("user", "code"), name="shopping_department_unique_code_per_user")]
 
     def __str__(self):
+        """Return the name, translated when it is one of the default departments."""
         return str(_(self.name))
 
 
@@ -154,6 +162,7 @@ class ShoppingItem(DepartmentReference, models.Model):
         verbose_name_plural = _("shopping items")
 
     def __str__(self):
+        """Return the item name."""
         return self.name
 
 
@@ -186,6 +195,7 @@ class Article(DepartmentReference, models.Model):
         ]
 
     def __str__(self):
+        """Return the article name."""
         return self.name
 
 
@@ -226,9 +236,13 @@ class Recipe(models.Model):
         verbose_name_plural = _("recipes")
 
     def __str__(self):
+        """Return the title."""
         return self.title
 
     def save(self, *args, **kwargs):
+        """Save; a new recipe is placed first and the user's other recipes move down, in one
+        transaction.
+        """
         with transaction.atomic():
             _place_new_record_first(self)
             return super().save(*args, **kwargs)
@@ -271,6 +285,7 @@ class MealPlanEntry(models.Model):
         ]
 
     def __str__(self):
+        """Return the date and the planned recipe id."""
         return f"{self.date}: {self.recipe_id}"
 
 
@@ -288,6 +303,7 @@ class RecipeIngredient(models.Model):
         verbose_name_plural = _("ingredients")
 
     def __str__(self):
+        """Return the ingredient name."""
         return self.name
 
 
@@ -304,4 +320,5 @@ class RecipeStep(models.Model):
         verbose_name_plural = _("steps")
 
     def __str__(self):
+        """Return the step text."""
         return self.text

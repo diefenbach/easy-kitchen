@@ -1,3 +1,5 @@
+"""Web pages: logo, home, login, and that lists are private to their owner."""
+
 import json
 
 import pytest

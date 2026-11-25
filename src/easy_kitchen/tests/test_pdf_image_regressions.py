@@ -1,3 +1,5 @@
+"""Recipe PDFs fit tall and wide images on the page."""
+
 from io import BytesIO
 
 import pytest

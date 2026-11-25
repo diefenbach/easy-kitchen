@@ -2,10 +2,12 @@
 
 
 def article_data(article):
+    """Return an article as JSON-ready data with its department code."""
     return {"id": article.pk, "name": article.name, "department": article.department_code}
 
 
 def item_data(item):
+    """Return a shopping item as JSON-ready data, including its list id and position."""
     return {
         **article_data(item), "quantity": item.quantity, "checked": item.checked,
         "position": item.position, "list_id": item.shopping_list_id,
@@ -13,6 +15,7 @@ def item_data(item):
 
 
 def shopping_list_data(shopping_list, *, summary=False):
+    """Return a shopping list as JSON-ready data; without `summary` it includes the items."""
     data = {
         "id": shopping_list.pk, "title": shopping_list.title, "icon": shopping_list.icon,
         "date": shopping_list.date.isoformat(), "position": shopping_list.position,
@@ -25,6 +28,10 @@ def shopping_list_data(shopping_list, *, summary=False):
 
 
 def recipe_data(recipe, *, absolute_url=lambda value: value, summary=False):
+    """Return a recipe as JSON-ready data; without `summary` it includes ingredients and steps.
+
+    `absolute_url` turns the uploaded image's path into a full URL for API and MCP clients.
+    """
     picture_url = absolute_url(recipe.image.url) if recipe.image else recipe.image_url
     data = {
         "id": recipe.pk, "title": recipe.title, "description": recipe.description,

@@ -1,3 +1,5 @@
+"""Development and production settings read from environment variables."""
+
 import importlib
 
 import pytest

@@ -16,7 +16,7 @@ conventions (`~/Development/agents/AGENTS.md`); where they disagree, this file w
 - Do not commit or push directly to `main` for runtime or user-visible application changes; they go through a pull request.
 - Documentation-only and housekeeping changes (`docs/`, `AGENTS.md`, `README.md` without matching `src/` changes, and CI tweaks such as skipping deploy for those paths) do not need a separate GitHub branch or pull request. Commit sensible chunks on `main`, push, and let CI on `main` run; production deploy is skipped when only non-runtime paths changed (see `.github/workflows/ci-cd.yml`).
 - Git and pull requests (agents, for application work):
-  - Before every commit that touches `src/easy_kitchen/`, run `uv run ruff check src/easy_kitchen` (same as CI) and fix any findings first.
+  - Before every commit that touches Python code, run `uv run ruff check src e2e` and `uv run pyright` (same as CI) and fix any findings first.
   - Push with `git push -u origin HEAD:your-branch` so the remote branch name matches the feature branch.
   - Open the PR with `gh pr create --base main --head your-branch`.
 - Keep Django model, service, API, permission, and view tests under `src/easy_kitchen/tests/`. Put browser journeys in `e2e/`, using Playwright through pytest-playwright. Browser tests run with `uv run pytest`; install Chromium once with `uv run playwright install chromium`.
@@ -30,7 +30,7 @@ The general principles (YAGNI, TDD, DRY, typing, docstrings, skills) are in the 
 conventions. In this project:
 
 - Application code is `src/easy_kitchen`, `src/project`, and `src/accounts`; typing and docstring rules apply
-  there. CI runs `uv run pyright` (standard mode, `[tool.pyright]` in `pyproject.toml`) and it must report no
+  there. ruff checks docstrings (`D100`–`D105`); test modules need only a module docstring. CI runs `uv run pyright` (standard mode, `[tool.pyright]` in `pyproject.toml`) and it must report no
   errors. Use `# pyright: ignore[<rule>]` only where the Django/DRF stubs cannot describe correct code, with a
   comment saying why. In views behind a login, get a typed user with `signed_in_user(request)`.
 - Sources of truth: business rules in `easy_kitchen/services.py`, choices on the model, versions in

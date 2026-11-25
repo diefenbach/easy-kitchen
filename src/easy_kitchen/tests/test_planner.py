@@ -1,3 +1,5 @@
+"""Meal planner web views: the week, assigning and clearing days, and building a list."""
+
 import json
 import re
 from datetime import date, timedelta

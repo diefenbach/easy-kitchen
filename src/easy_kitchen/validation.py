@@ -21,6 +21,11 @@ RECIPE_FIELDS = ("title", "description", "image_url", *NUTRITION_FIELDS)
 
 
 def clean_text(value, *, field, limit, required=False, normalize=False):
+    """Return `value` stripped (or with all whitespace collapsed when `normalize`).
+
+    Raises ServiceError for a non-string, an empty required value, or more than `limit` characters;
+    the error names `field`.
+    """
     if not isinstance(value, str):
         raise ServiceError(_("Invalid request."), field=field)
     value = " ".join(value.split()) if normalize else value.strip()
@@ -35,6 +40,10 @@ def clean_text(value, *, field, limit, required=False, normalize=False):
 
 
 def clean_count(value):
+    """Return a whole number from 0 to COUNT_LIMIT, or None for None or an empty string.
+
+    Accepts int, float, Decimal, or a numeric string; booleans and fractions raise ServiceError.
+    """
     if value is None or value == "":
         return None
     try:
@@ -49,6 +58,8 @@ def clean_count(value):
 
 
 def clean_image_url(value):
+    """Return a cleaned http(s) image URL, or an empty string. Raises ServiceError for other URLs.
+    """
     value = clean_text(value, field="image_url", limit=IMAGE_URL_LIMIT)
     if value:
         try:
@@ -59,6 +70,11 @@ def clean_image_url(value):
 
 
 def clean_recipe_changes(changes):
+    """Validate a recipe create/update payload and return a cleaned copy.
+
+    Rejects unknown fields; cleans title, description, image URL, nutrition, and every ingredient
+    and step (a step may be given as a plain string). Raises ServiceError naming the field.
+    """
     allowed = {*RECIPE_FIELDS, "ingredients", "steps"}
     if set(changes) - allowed:
         raise ServiceError(_("Unsupported recipe field."))

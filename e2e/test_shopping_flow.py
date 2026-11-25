@@ -1,3 +1,6 @@
+"""Browser tests of the shopping flow: lists, saved articles, suggestions, and the account menu.
+"""
+
 import re
 
 import pytest
@@ -294,7 +297,7 @@ def test_edit_mode_starts_off_and_resets_when_the_page_reloads(authenticated_pag
 def test_user_can_edit_a_list_from_the_overview(authenticated_page, user):
     from easy_kitchen.models import ShoppingList
 
-    shopping_list = ShoppingList.objects.create(user=user, title="Alter Titel")
+    ShoppingList.objects.create(user=user, title="Alter Titel")
     page = authenticated_page
     page.reload()
     open_shopping_lists(page)

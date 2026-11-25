@@ -1,3 +1,5 @@
+"""MCP tools: authentication by token, list and item creation, and tool errors."""
+
 from datetime import date
 from types import SimpleNamespace
 

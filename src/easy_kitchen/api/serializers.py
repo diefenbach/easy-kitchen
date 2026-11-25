@@ -24,6 +24,8 @@ class StrictInputMixin(serializers.Serializer):
     """Reject attempts to write unknown or read-only fields on update endpoints."""
 
     def to_internal_value(self, data):
+        """Reject input naming a field that does not exist or is read-only, then validate as usual.
+        """
         if not isinstance(data, Mapping):
             return super().to_internal_value(data)
         allowed = {name for name, field in self.fields.items() if not field.read_only}
@@ -51,15 +53,24 @@ def _department_code(serializer: serializers.Serializer, value: str) -> str:
 
 
 class StrictUpdateSerializer(StrictInputMixin, serializers.ModelSerializer):
+    """Model serializer that rejects unknown and read-only fields."""
+
     pass
 
 
 class StrictSerializer(StrictInputMixin, serializers.Serializer):
+    """Plain serializer that rejects unknown and read-only fields."""
+
     pass
 
 
 class WholeNumberField(serializers.IntegerField):
+    """Integer field with the same rules as the services: 0 to COUNT_LIMIT, no fractions or
+    booleans.
+    """
+
     def to_internal_value(self, data):
+        """Return the whole number; an empty string or an invalid value is a validation error."""
         if data == "":
             self.fail("invalid")
         try:
@@ -72,13 +83,18 @@ class WholeNumberField(serializers.IntegerField):
 
 
 class StrictBooleanField(serializers.BooleanField):
+    """Boolean field that accepts only JSON true and false, not strings or numbers."""
+
     def to_internal_value(self, data):
+        """Return the value when it is a real boolean; anything else is a validation error."""
         if not isinstance(data, bool):
             self.fail("invalid", input=data)
         return data
 
 
 class CollectionQuerySerializer(StrictSerializer):
+    """Query parameters every collection accepts: search words `q`, `limit`, and `offset`."""
+
     q = serializers.CharField(max_length=255, required=False, allow_blank=True, default="")
     limit = serializers.IntegerField(min_value=1, max_value=MAX_LIST_LIMIT, default=DEFAULT_LIST_LIMIT)
     offset = serializers.IntegerField(min_value=0, max_value=COUNT_LIMIT, default=0)
@@ -86,31 +102,43 @@ class CollectionQuerySerializer(StrictSerializer):
 
 class OptionalQueryBooleanField(serializers.BooleanField):
     # Query parameters are optional filters, not unchecked HTML form checkboxes.
+    """Boolean query filter that stays unset when the parameter is missing."""
+
     default_empty_html = empty
 
 
 class RecipeListQuerySerializer(CollectionQuerySerializer):
+    """Query parameters of GET /recipes/."""
+
     is_favorite = OptionalQueryBooleanField(required=False)
     summary = serializers.BooleanField(default=False)
 
 
 class ShoppingListQuerySerializer(CollectionQuerySerializer):
+    """Query parameters of GET /shopping-lists/."""
+
     date_from = serializers.DateField(required=False)
     date_to = serializers.DateField(required=False)
     summary = serializers.BooleanField(default=False)
 
 
 class ShoppingItemQuerySerializer(CollectionQuerySerializer):
+    """Query parameters of GET /shopping-items/."""
+
     checked = OptionalQueryBooleanField(required=False)
     list_id = serializers.IntegerField(min_value=1, required=False)
 
 
 class ArticleListQuerySerializer(CollectionQuerySerializer):
+    """Query parameters of GET /articles/."""
+
     department = serializers.CharField(max_length=255, required=False, allow_blank=True)
 
 
 class DepartmentSerializer(StrictUpdateSerializer):
     # A field named like Field.label; DRF's metaclass moves declared fields off the class, so they never clash.
+    """A department; only the name can be changed."""
+
     label = serializers.CharField(source="__str__", read_only=True)  # pyright: ignore[reportAssignmentType]
 
     class Meta:
@@ -119,10 +147,13 @@ class DepartmentSerializer(StrictUpdateSerializer):
         read_only_fields = ("id", "code", "label")
 
     def update(self, instance, validated_data):
+        """Rename the department through the shared service."""
         return update_owned_department(self.context["request"].user, department_id=instance.pk, changes=validated_data)
 
 
 class DepartmentQuerySerializer(StrictSerializer):
+    """Query parameter of GET /departments/resolve/."""
+
     query = serializers.CharField(max_length=255)
 
 
@@ -157,6 +188,7 @@ class CompleteChildSerializer(StrictUpdateSerializer):
     position = WholeNumberField(required=False, min_value=0, max_value=COUNT_LIMIT)
 
     def validate(self, attrs):
+        """Require the replacement field, so a replaced child is never saved half empty."""
         field = self.required_replacement_field
         if field not in attrs:
             raise serializers.ValidationError({field: self.fields[field].error_messages["required"]})
@@ -171,9 +203,11 @@ class ShoppingItemSerializer(CompleteChildSerializer):
     department = serializers.CharField(source="department_code", required=False, allow_blank=True, max_length=255)
 
     def validate_department(self, value):
+        """Resolve the department name or code to the user's department code."""
         return _department_code(self, value)
 
     def validate(self, attrs):
+        """Hand the resolved department on under the model's field name."""
         attrs = super().validate(attrs)
         if "department_code" in attrs:
             attrs["department"] = attrs.pop("department_code")
@@ -199,18 +233,23 @@ class ShoppingItemUpdateSerializer(StrictUpdateSerializer):
         read_only_fields = ("id", "list_id", "position")
 
     def validate(self, attrs):
+        """Hand the resolved department on under the model's field name."""
         if "department_code" in attrs:
             attrs["department"] = attrs.pop("department_code")
         return attrs
 
     def to_representation(self, instance):
+        """Return the item in the shared JSON shape."""
         return item_data(instance)
 
     def update(self, instance, validated_data):
+        """Update the item through the shared service."""
         return update_owned_shopping_item(self.context["request"].user, item_id=instance.pk, changes=validated_data)
 
 
 class ArticleSerializer(StrictUpdateSerializer):
+    """A saved article: name and department code."""
+
     department = serializers.CharField(source="department_code", required=False, allow_blank=True, max_length=255)
     validate_department = ShoppingItemSerializer.validate_department
 
@@ -222,34 +261,45 @@ class ArticleSerializer(StrictUpdateSerializer):
         validators = []
 
     def to_representation(self, instance):
+        """Return the article in the shared JSON shape."""
         return article_data(instance)
 
     def update(self, instance, validated_data):
+        """Update the article through the shared service."""
         if "department_code" in validated_data:
             validated_data["department"] = validated_data.pop("department_code")
         return update_owned_article(self.context["request"].user, article_id=instance.pk, changes=validated_data)
 
 
 class RecipeFavoriteSerializer(StrictSerializer):
+    """Body of POST /recipes/{id}/favorite/."""
+
     is_favorite = StrictBooleanField()
 
 
 class AddShoppingItemSerializer(StrictSerializer):
+    """Body of POST /shopping-lists/{id}/add_item/."""
+
     name = serializers.CharField(max_length=255)
     quantity = serializers.CharField(max_length=100, required=False, allow_blank=True)
     department = serializers.CharField(max_length=255, required=False, allow_blank=True, allow_null=True)
     def validate_department(self, value):
+        """Resolve the department; null keeps the article's default."""
         if value is None:
             return None
         return _department_code(self, value)
 
 
 class AddRecipeToListSerializer(StrictSerializer):
+    """Body of POST /recipes/{id}/add_to_list/: an existing list id or a title for a new list."""
+
     list_id = serializers.IntegerField(min_value=1, required=False, allow_null=True)
     list_title = serializers.CharField(max_length=255, required=False, allow_blank=True)
 
 
 class DeletedItemsSerializer(StrictSerializer):
+    """Response of POST /shopping-lists/{id}/delete_completed/."""
+
     list_id = serializers.IntegerField()
     deleted_count = serializers.IntegerField(min_value=0)
 
@@ -270,6 +320,7 @@ class ShoppingListSerializer(StrictUpdateSerializer):
         return create_shopping_list(self.context["request"].user, **validated_data)
 
     def to_representation(self, instance):
+        """Return the list in the shared JSON shape; summary omits the items."""
         return shopping_list_data(instance, summary=self.context.get("summary", False))
 
     def update(self, instance, validated_data):
@@ -355,9 +406,13 @@ class RecipeSerializer(StrictUpdateSerializer):
         return create_recipe(self.context["request"].user, **validated_data)
 
     def to_representation(self, instance):
+        """Return the recipe in the shared JSON shape with an absolute picture URL; summary omits
+        ingredients and steps.
+        """
         return recipe_data(instance, absolute_url=self._absolute, summary=self.context.get("summary", False))
 
     def update(self, instance, validated_data):
+        """Update the recipe through the shared service."""
         return update_owned_recipe(self.context["request"].user, recipe_id=instance.pk, changes=validated_data)
 
 

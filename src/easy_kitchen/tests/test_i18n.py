@@ -1,3 +1,5 @@
+"""English by default and German translations of the pages."""
+
 import pytest
 from django.urls import reverse
 from django.utils import translation

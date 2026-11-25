@@ -1,3 +1,7 @@
+"""Settings shared by every environment. Environment-specific modules import everything from here and
+override.
+"""
+
 import os
 from pathlib import Path
 

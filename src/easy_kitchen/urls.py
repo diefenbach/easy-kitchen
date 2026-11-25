@@ -1,3 +1,5 @@
+"""Web UI URLs: lists, articles, departments, recipes, the meal planner, and import/export."""
+
 from django.urls import path
 from . import planner_views, recipe_views, views
 

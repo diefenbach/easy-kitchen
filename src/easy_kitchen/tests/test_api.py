@@ -1,3 +1,5 @@
+"""REST API: ownership, import, reordering, and create/update/delete of lists and recipes."""
+
 import json
 
 import pytest

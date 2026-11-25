@@ -1,3 +1,5 @@
+"""Departments on items and articles: defaults, grouping, and validation."""
+
 import pytest
 from django.urls import reverse
 

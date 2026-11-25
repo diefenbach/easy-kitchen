@@ -1,3 +1,5 @@
+"""App configuration for easy_kitchen."""
+
 from django.apps import AppConfig
 
 
@@ -9,4 +11,5 @@ class EasyKitchenConfig(AppConfig):
     label = "shopping"
 
     def ready(self):
+        """Connect the signal handlers."""
         from . import signals  # noqa: F401

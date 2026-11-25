@@ -1,3 +1,5 @@
+"""Browser tests of default departments, grouping on a list, and editing departments."""
+
 import pytest
 from playwright.sync_api import expect
 

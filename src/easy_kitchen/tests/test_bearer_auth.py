@@ -1,3 +1,5 @@
+"""Bearer token authentication for the API, MCP, and the OpenAPI schema."""
+
 import pytest
 from django.urls import reverse
 from mcp.server.mcpserver.exceptions import ToolError

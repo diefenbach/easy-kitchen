@@ -1,3 +1,5 @@
+"""REST API routes and the OpenAPI schema and Swagger UI."""
+
 from django.urls import path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.permissions import AllowAny

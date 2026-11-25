@@ -1,3 +1,5 @@
+"""Shared fixtures: verified users, a shopping list, and a cleared rate-limit cache per test."""
+
 import pytest
 from allauth.account.models import EmailAddress
 from django.contrib.auth import get_user_model

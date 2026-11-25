@@ -1,3 +1,7 @@
+"""Root URLs: admin, allauth accounts, the REST API under /api/v1/, and the app. Media is served here
+only with DEBUG.
+"""
+
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin

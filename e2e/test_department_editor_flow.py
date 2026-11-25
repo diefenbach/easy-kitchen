@@ -1,3 +1,5 @@
+"""Browser tests of the department editor: one private draft, errors keep it."""
+
 import pytest
 from playwright.sync_api import expect
 

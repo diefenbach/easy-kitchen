@@ -1,3 +1,9 @@
+"""REST API viewsets. Every endpoint needs a Bearer token or a session and only sees the
+authenticated user's records.
+
+Writes go through easy_kitchen.services, so the API and MCP share their rules and error codes.
+"""
+
 from typing import Any
 
 from django.utils.translation import gettext as _
@@ -91,6 +97,9 @@ class ServiceErrorsMixin(APIView):
     """Translate shared business errors once, keeping field details and stable codes."""
 
     def handle_exception(self, exc):
+        """Answer ServiceError as 400 (404 for missing objects) with its stable code; add `code` to
+        DRF's own errors too.
+        """
         if isinstance(exc, ServiceError):
             detail = exc.as_dict()
             data: dict[str, object] = {"code": exc.code, "detail": str(exc)}
@@ -114,12 +123,14 @@ class DepartmentViewSet(ServiceErrorsMixin, mixins.UpdateModelMixin, viewsets.Re
     serializer_class = DepartmentSerializer
 
     def get_queryset(self):
+        """Return the user's departments (none while the OpenAPI schema is generated)."""
         if getattr(self, "swagger_fake_view", False):
             return Department.objects.none()
         return signed_in_user(self.request).departments.all()
 
     @extend_schema(parameters=[CollectionQuerySerializer], responses=DepartmentSerializer(many=True))
     def list(self, request):
+        """Return one page of the user's departments, filtered by ?q=."""
         selection = CollectionQuerySerializer(data=request.query_params)
         selection.is_valid(raise_exception=True)
         return Response(list_department_data(request.user, **selection.validated_data))
@@ -127,6 +138,9 @@ class DepartmentViewSet(ServiceErrorsMixin, mixins.UpdateModelMixin, viewsets.Re
     @extend_schema(parameters=[DepartmentQuerySerializer], responses={200: DepartmentSerializer, 400: OpenApiTypes.OBJECT})
     @action(detail=False, methods=["get"])
     def resolve(self, request):
+        """Resolve ?query= (code, name, or translation) to one department, or answer 400 with
+        candidates to choose from.
+        """
         query = DepartmentQuerySerializer(data=request.query_params)
         query.is_valid(raise_exception=True)
         department = resolve_department(request.user, query.validated_data["query"])
@@ -136,29 +150,38 @@ class DepartmentViewSet(ServiceErrorsMixin, mixins.UpdateModelMixin, viewsets.Re
 
 
 class ShoppingItemViewSet(ServiceErrorsMixin, mixins.DestroyModelMixin, mixins.UpdateModelMixin, viewsets.ReadOnlyModelViewSet):
+    """Items on the user's lists: list, read, update, delete."""
+
     serializer_class = ShoppingItemUpdateSerializer
 
     @extend_schema(parameters=[ShoppingItemQuerySerializer], responses=ShoppingItemUpdateSerializer(many=True))
     def list(self, request):
+        """Return one page of items, filtered by ?q=, ?checked=, and ?list_id=."""
         return _collection_response(self, request, ShoppingItemQuerySerializer, query_owned_shopping_items)
 
     def get_queryset(self):
+        """Return the items on the user's lists (none while the OpenAPI schema is generated)."""
         if getattr(self, "swagger_fake_view", False):
             return ShoppingItem.objects.none()
         return ShoppingItem.objects.filter(shopping_list__user=self.request.user).select_related("department")
 
     def perform_destroy(self, instance):
+        """Delete the item through the shared service."""
         delete_owned_shopping_item(signed_in_user(self.request), item_id=instance.pk)
 
 
 class ArticleViewSet(ServiceErrorsMixin, mixins.UpdateModelMixin, viewsets.ReadOnlyModelViewSet):
+    """The user's saved articles: list, read, update."""
+
     serializer_class = ArticleSerializer
 
     @extend_schema(parameters=[ArticleListQuerySerializer], responses=ArticleSerializer(many=True))
     def list(self, request):
+        """Return one page of articles, filtered by ?q= and ?department=."""
         return _collection_response(self, request, ArticleListQuerySerializer, query_owned_articles)
 
     def get_queryset(self):
+        """Return the user's articles (none while the OpenAPI schema is generated)."""
         if getattr(self, "swagger_fake_view", False):
             return Article.objects.none()
         return Article.objects.filter(user=self.request.user).select_related("department")
@@ -171,17 +194,23 @@ class ShoppingListViewSet(ServiceErrorsMixin, viewsets.ModelViewSet):
 
     @extend_schema(parameters=[ShoppingListQuerySerializer], responses=ShoppingListSerializer(many=True))
     def list(self, request):
+        """Return one page of lists, filtered by ?q=, ?date_from=, and ?date_to=; ?summary=true
+        omits the items.
+        """
         return _collection_response(self, request, ShoppingListQuerySerializer, query_owned_shopping_lists)
 
     def get_queryset(self):
+        """Return the user's lists with their items."""
         return ShoppingList.objects.filter(user=self.request.user).prefetch_related("items__department")
 
     def perform_destroy(self, instance):
+        """Delete the list through the shared service."""
         delete_owned_shopping_list(signed_in_user(self.request), list_id=instance.pk)
 
     @extend_schema(request=AddShoppingItemSerializer, responses={200: ShoppingItemUpdateSerializer})
     @action(detail=True, methods=["post"], url_path="add-item")
     def add_item(self, request, pk=None):
+        """Add an item to the list, merging it into an item of the same name."""
         shopping_list = self.get_object()
         serializer = AddShoppingItemSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
@@ -191,6 +220,7 @@ class ShoppingListViewSet(ServiceErrorsMixin, viewsets.ModelViewSet):
     @extend_schema(request=None, responses={200: DeletedItemsSerializer})
     @action(detail=True, methods=["post"], url_path="delete-completed")
     def delete_completed(self, request, pk=None):
+        """Delete the list's checked items and return how many were deleted."""
         shopping_list = self.get_object()
         count = delete_completed_items_from_owned_list(request.user, list_id=shopping_list.pk)
         return Response({"list_id": shopping_list.pk, "deleted_count": count})
@@ -198,6 +228,7 @@ class ShoppingListViewSet(ServiceErrorsMixin, viewsets.ModelViewSet):
     @extend_schema(request=ReorderItemsSerializer, responses={200: ShoppingListSerializer})
     @action(detail=True, methods=["post"])
     def reorder(self, request, pk=None):
+        """Set the order of the list's items; `item_ids` must be exactly the list's items."""
         shopping_list = self.get_object()
         selection = ReorderItemsSerializer(data=request.data)
         selection.is_valid(raise_exception=True)
@@ -210,6 +241,7 @@ class ShoppingListViewSet(ServiceErrorsMixin, viewsets.ModelViewSet):
     )
     @action(detail=False, methods=["post"], url_path="reorder")
     def reorder_lists(self, request):
+        """Set the order of the user's lists; `list_ids` must be exactly the user's lists."""
         selection = ReorderListsSerializer(data=request.data)
         selection.is_valid(raise_exception=True)
         reorder_shopping_lists(request.user, selection.validated_data["list_ids"])
@@ -237,6 +269,8 @@ class ShoppingListViewSet(ServiceErrorsMixin, viewsets.ModelViewSet):
     )
     @action(detail=False, methods=["post"])
     def import_json(self, request):
+        """Import lists from `[...]` or `{"lists": [...]}`, all or nothing; they are placed first.
+        """
         records = _import_records(request.data, "lists")
         if not isinstance(records, list):
             return Response(
@@ -256,19 +290,25 @@ class RecipeViewSet(ServiceErrorsMixin, viewsets.ModelViewSet):
 
     @extend_schema(parameters=[RecipeListQuerySerializer], responses=RecipeSerializer(many=True))
     def list(self, request):
+        """Return one page of recipes, filtered by ?q= and ?is_favorite=; ?summary=true omits
+        ingredients and steps.
+        """
         return _collection_response(self, request, RecipeListQuerySerializer, query_owned_recipes)
 
     def get_queryset(self):
+        """Return the user's recipes with ingredients and steps."""
         return Recipe.objects.filter(user=self.request.user).prefetch_related(
             "ingredients", "steps"
         )
 
     def perform_destroy(self, instance):
+        """Delete the recipe through the shared service."""
         delete_owned_recipe(signed_in_user(self.request), recipe_id=instance.pk)
 
     @extend_schema(request=AddRecipeToListSerializer, responses={200: ShoppingListSerializer})
     @action(detail=True, methods=["post"], url_path="add-to-list")
     def add_to_list(self, request, pk=None):
+        """Add the recipe's ingredients to an existing list or a new one and return that list."""
         recipe = self.get_object()
         serializer = AddRecipeToListSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -279,6 +319,7 @@ class RecipeViewSet(ServiceErrorsMixin, viewsets.ModelViewSet):
     @extend_schema(request=RecipeFavoriteSerializer, responses={200: RecipeSerializer})
     @action(detail=True, methods=["post"])
     def favorite(self, request, pk=None):
+        """Mark or unmark the recipe as favourite."""
         recipe = self.get_object()
         serializer = RecipeFavoriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -296,6 +337,8 @@ class RecipeViewSet(ServiceErrorsMixin, viewsets.ModelViewSet):
     @extend_schema(request=ReorderRecipesSerializer, responses={200: RecipeSerializer(many=True)})
     @action(detail=False, methods=["post"], url_path="reorder")
     def reorder_recipes(self, request):
+        """Set the order of the user's recipes; `recipe_ids` must be exactly the user's recipes.
+        """
         selection = ReorderRecipesSerializer(data=request.data)
         selection.is_valid(raise_exception=True)
         reorder_recipes(request.user, selection.validated_data["recipe_ids"])
@@ -304,11 +347,13 @@ class RecipeViewSet(ServiceErrorsMixin, viewsets.ModelViewSet):
     @extend_schema(request=ReorderLinesSerializer, responses={200: RecipeSerializer})
     @action(detail=True, methods=["post"], url_path="reorder-ingredients")
     def reorder_ingredients(self, request, pk=None):
+        """Set the order of the recipe's ingredients."""
         return self._reorder(request, "ingredient")
 
     @extend_schema(request=ReorderLinesSerializer, responses={200: RecipeSerializer})
     @action(detail=True, methods=["post"], url_path="reorder-steps")
     def reorder_steps(self, request, pk=None):
+        """Set the order of the recipe's steps."""
         return self._reorder(request, "step")
 
     @extend_schema(
@@ -333,6 +378,9 @@ class RecipeViewSet(ServiceErrorsMixin, viewsets.ModelViewSet):
     )
     @action(detail=False, methods=["post"])
     def import_json(self, request):
+        """Import recipes from `[...]` or `{"recipes": [...]}`, all or nothing; they are placed
+        first.
+        """
         records = _import_records(request.data, "recipes")
         if not isinstance(records, list):
             return Response(
@@ -356,6 +404,7 @@ class MealPlanViewSet(ServiceErrorsMixin, viewsets.GenericViewSet):
 
     @extend_schema(parameters=[MealPlanWeekQuerySerializer], responses=MealPlanWeekSerializer)
     def list(self, request):
+        """Return the planned recipes of the week containing ?week= (default: this week)."""
         query = MealPlanWeekQuerySerializer(data=request.query_params)
         query.is_valid(raise_exception=True)
         data = meal_plan_week_data(request.user, query.validated_data.get("week"))
@@ -367,6 +416,7 @@ class MealPlanViewSet(ServiceErrorsMixin, viewsets.GenericViewSet):
         responses=MealPlanDaySerializer,
     )
     def update(self, request, date=None):
+        """Plan a recipe for the date in the URL, replacing that day's recipe."""
         day = MealPlanDateSerializer(data={"date": date})
         day.is_valid(raise_exception=True)
         selection = MealPlanAssignSerializer(data=request.data)
@@ -379,6 +429,7 @@ class MealPlanViewSet(ServiceErrorsMixin, viewsets.GenericViewSet):
         responses={204: None},
     )
     def destroy(self, request, date=None):
+        """Remove the planned recipe for the date in the URL."""
         day = MealPlanDateSerializer(data={"date": date})
         day.is_valid(raise_exception=True)
         clear_meal_plan_day(request.user, day.validated_data["date"])
@@ -387,6 +438,7 @@ class MealPlanViewSet(ServiceErrorsMixin, viewsets.GenericViewSet):
     @extend_schema(request=MealPlanToListSerializer, responses=ShoppingListSerializer)
     @action(detail=False, methods=["post"], url_path="add-to-list")
     def add_to_list(self, request):
+        """Add the ingredients of every recipe planned in `week` to an existing or a new list."""
         selection = MealPlanToListSerializer(data=request.data)
         selection.is_valid(raise_exception=True)
         data = selection.validated_data

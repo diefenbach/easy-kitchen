@@ -1,3 +1,5 @@
+"""The planner calendar stays within its supported weeks."""
+
 
 import pytest
 from django.urls import reverse

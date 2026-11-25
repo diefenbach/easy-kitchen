@@ -1,3 +1,5 @@
+"""Meal planner MCP tools: reading, planning, clearing, and copying a week to a list."""
+
 from datetime import date
 
 import pytest

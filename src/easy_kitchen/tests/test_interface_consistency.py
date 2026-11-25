@@ -1,3 +1,5 @@
+"""The web UI, the API, and MCP reject the same invalid input and return one shape."""
+
 from types import SimpleNamespace
 import json
 

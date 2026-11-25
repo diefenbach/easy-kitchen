@@ -1,3 +1,5 @@
+"""The Sphinx documentation builds without warnings."""
+
 from pathlib import Path
 
 from sphinx.cmd.build import build_main

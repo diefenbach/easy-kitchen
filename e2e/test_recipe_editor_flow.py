@@ -1,3 +1,6 @@
+"""Browser tests of the recipe editor: draft, cancel, errors, history, modals, and scroll position.
+"""
+
 import io
 
 import pytest

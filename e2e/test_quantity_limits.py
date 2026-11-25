@@ -1,3 +1,5 @@
+"""Browser test that an overflowing quantity shows a form error and keeps the item."""
+
 from datetime import date
 
 import pytest

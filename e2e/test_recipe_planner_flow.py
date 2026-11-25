@@ -1,3 +1,5 @@
+"""Browser tests of planning a recipe and adding it to a list from the recipe pages."""
+
 import pytest
 from playwright.sync_api import expect
 

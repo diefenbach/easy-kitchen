@@ -1,3 +1,5 @@
+"""Resolving departments by code, name, or translation, with candidates instead of guesses."""
+
 import json
 from datetime import date
 

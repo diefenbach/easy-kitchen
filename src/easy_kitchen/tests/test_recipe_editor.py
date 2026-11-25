@@ -1,3 +1,5 @@
+"""Recipe editor: lines, deletions, and order save together in one transaction."""
+
 from unittest.mock import patch
 
 import pytest

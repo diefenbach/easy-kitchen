@@ -1,3 +1,5 @@
+"""Start-up refuses to run with pending migrations."""
+
 import pytest
 from django.core.exceptions import ImproperlyConfigured
 from easy_kitchen.startup import ensure_migrations_applied, pending_migration_labels

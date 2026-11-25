@@ -1,3 +1,5 @@
+"""MCP and the API agree on owned reads, deletions, and reordering."""
+
 import pytest
 from asgiref.sync import async_to_sync
 from django.urls import reverse

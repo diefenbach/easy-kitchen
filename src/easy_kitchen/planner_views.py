@@ -1,3 +1,5 @@
+"""Views of the weekly meal planner."""
+
 from datetime import date, timedelta
 
 from django.contrib import messages
@@ -40,6 +42,7 @@ class MealPlanView(LoginRequiredMixin, TemplateView):
     template_name = "easy_kitchen/planner/week.html"
 
     def get_context_data(self, **kwargs):
+        """Add the planned week (from ?week=) and its forms."""
         context = super().get_context_data(**kwargs)
         context.update(_planner_context(self.request))
         return context
@@ -91,6 +94,8 @@ class MealPlanAssignView(LoginRequiredMixin, View):
     """Assign a recipe to one day."""
 
     def post(self, request):
+        """Plan the chosen recipe for one day, replacing that day's recipe, and return to the week.
+        """
         week_start = _week_start_from_request(request)
         form = MealPlanDayForm(request.POST, user=request.user)
         if not form.is_valid():
@@ -105,6 +110,7 @@ class MealPlanClearView(LoginRequiredMixin, View):
     """Remove the planned recipe from one day."""
 
     def post(self, request, day):
+        """Remove the planned recipe for `day` (ISO date) and return to the week."""
         week_start = _week_start_from_request(request)
         try:
             planned_day = date.fromisoformat(day)
@@ -119,6 +125,10 @@ class MealPlanAddToListView(LoginRequiredMixin, View):
     """Build a shopping list from the planned recipes in one week."""
 
     def post(self, request):
+        """Add the ingredients of every recipe planned this week to an existing or a new list.
+
+        Re-renders the week with status 422 when the form or the service rejects the input.
+        """
         week_start = _week_start_from_request(request)
         form = AddRecipeToListForm(request.POST, user=request.user)
         if not form.is_valid():

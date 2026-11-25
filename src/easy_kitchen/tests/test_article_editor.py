@@ -1,3 +1,6 @@
+"""Article editor: changes save together, invalid drafts save nothing, foreign ids are rejected.
+"""
+
 from unittest.mock import patch
 
 import pytest

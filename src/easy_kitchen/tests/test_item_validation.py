@@ -1,3 +1,5 @@
+"""Item validation responses keep the entered values and answer 422."""
+
 import pytest
 from django.urls import reverse
 from django.utils import translation

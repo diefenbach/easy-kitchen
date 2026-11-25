@@ -1,3 +1,5 @@
+"""Meal planner API: the week, assigning, replacing, and clearing days, privately."""
+
 from datetime import date
 
 import pytest

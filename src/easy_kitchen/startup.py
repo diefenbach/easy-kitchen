@@ -1,3 +1,5 @@
+"""Start-up checks for the production WSGI app."""
+
 from django.core.exceptions import ImproperlyConfigured
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
