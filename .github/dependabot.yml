@@ -10,12 +10,17 @@ updates:
       python:
         patterns: ["*"]
 
+  # Two groups: tooling (lint, format) is not shipped and its PRs pass on their own. The frontend libraries are
+  # copied into src/easy_kitchen/static/easy_kitchen/vendor/, which Dependabot does not rebuild, so their PR fails
+  # `vendor:check` until someone runs `npm run vendor:build` and commits the result; then check the pages.
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
     groups:
-      javascript:
+      frontend:
+        patterns: ["bootstrap", "bootstrap-icons", "htmx.org", "sortablejs"]
+      tooling:
         patterns: ["*"]
 
   - package-ecosystem: github-actions
