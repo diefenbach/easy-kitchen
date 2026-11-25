@@ -44,7 +44,7 @@ The recipe overview also offers cart and calendar buttons in the top-right corne
 - Django 5.2 templates and class-based views. HTMX updates items in place. SortableJS is used only for reordering.
 - Bootstrap 5.3, with touch targets large enough for a phone.
 - English source strings. German is the default interface language.
-- Django accounts, login, logout, and the Django admin.
+- Sign-up with email confirmation or Google, email sign-in, password reset, logout, and the Django admin.
 - A JSON import page at `/lists/import/` accepts the same document as the API. The format is described under [JSON import](#json-import).
 - Recipes have the same shape at `/recipes/`, including `/recipes/import/`. The format is described under [Recipe JSON](#recipe-json).
 

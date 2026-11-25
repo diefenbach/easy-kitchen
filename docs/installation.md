@@ -35,6 +35,23 @@ POSTGRES_HOST=localhost uv run --env-file .env python src/manage.py runserver
 
 The site is at `http://localhost:8000`. Development settings enable `DEBUG`, so Django serves static files from `src/easy_kitchen/static/`.
 
+## Accounts
+
+People sign up at `/accounts/signup/` with their email address and a password, and sign in with their email address. Sign-up sends a confirmation link, and nobody can sign in before confirming. Locally the mail is printed in the `runserver` terminal. The Django admin still uses the username.
+
+Accounts created before email sign-in keep working if they had an email address: migration `0020` marks that address as confirmed. Give accounts without an address one in the admin before their owners sign in again. The migration skips an address that a second account also uses.
+
+### Google sign-in
+
+The "Continue with Google" button appears only when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set. Create an OAuth client of type *Web application* in the Google Cloud console (APIs & Services → Credentials) and add these authorized redirect URIs:
+
+```text
+http://localhost:8000/accounts/google/login/callback/
+https://kitchen.iqpp.de/accounts/google/login/callback/
+```
+
+A Google sign-in with an address that already has an account signs in to that account and links Google to it. Otherwise it creates a new, confirmed account.
+
 ## MCP locally
 
 ```sh
@@ -65,7 +82,18 @@ POSTGRES_USER=<user>
 POSTGRES_PASSWORD=<password>
 POSTGRES_HOST=postgres
 POSTGRES_PORT=5432
+DJANGO_DEFAULT_FROM_EMAIL=EasyKitchen <noreply@kitchen.iqpp.de>
+EMAIL_HOST=<smtp-host>
+EMAIL_PORT=587
+EMAIL_HOST_USER=<smtp-user>
+EMAIL_HOST_PASSWORD=<smtp-password>
+EMAIL_USE_TLS=true
+# Optional: enables "Continue with Google".
+GOOGLE_CLIENT_ID=<client-id>
+GOOGLE_CLIENT_SECRET=<client-secret>
 ```
+
+Production refuses to start without `DJANGO_DEFAULT_FROM_EMAIL` and `EMAIL_HOST`, because sign-up needs confirmation mail. Use `EMAIL_USE_SSL=true` with `EMAIL_USE_TLS=false` for port 465.
 
 The deploy script runs migrations and `collectstatic`. Static files go to a shared Nginx volume at `/static/`. Uploaded recipe pictures go to `/media/`. Do not commit `src/staticfiles/` or `src/media/`.
 
