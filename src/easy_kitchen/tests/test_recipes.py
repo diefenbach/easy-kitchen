@@ -350,7 +350,7 @@ def test_recipe_json_import_accepts_an_image_url(client, user):
 @pytest.mark.django_db
 def test_api_recipes_stay_with_the_token_owner(client, user, other_user):
     token = Token.objects.create(user=user)
-    headers = {"HTTP_AUTHORIZATION": f"Token {token.key}"}
+    headers = {"HTTP_AUTHORIZATION": f"Bearer {token.key}"}
     created = client.post(
         reverse("recipe-list"),
         json.dumps({
@@ -378,7 +378,7 @@ def test_api_recipes_stay_with_the_token_owner(client, user, other_user):
     assert [(line["name"], line["quantity"]) for line in body["ingredients"]] == [("Flour", "200 g"), ("Eggs", "2")]
     assert Recipe.objects.get(pk=body["id"]).user == user
 
-    hidden = client.get(reverse("recipe-list"), HTTP_AUTHORIZATION=f"Token {Token.objects.create(user=other_user).key}")
+    hidden = client.get(reverse("recipe-list"), HTTP_AUTHORIZATION=f"Bearer {Token.objects.create(user=other_user).key}")
     assert hidden.json() == []
 
     imported = client.post(
@@ -500,15 +500,15 @@ def test_api_hides_a_foreign_recipe_and_can_reorder_steps(client, user, other_us
     other = Token.objects.create(user=other_user)
     detail = reverse("recipe-detail", args=[recipe.pk])
 
-    assert client.get(detail, HTTP_AUTHORIZATION=f"Token {other.key}").status_code == 404
+    assert client.get(detail, HTTP_AUTHORIZATION=f"Bearer {other.key}").status_code == 404
     stolen = client.patch(
         detail,
         json.dumps({"title": "Stolen"}),
         content_type="application/json",
-        HTTP_AUTHORIZATION=f"Token {other.key}",
+        HTTP_AUTHORIZATION=f"Bearer {other.key}",
     )
     assert stolen.status_code == 404
-    assert client.delete(detail, HTTP_AUTHORIZATION=f"Token {other.key}").status_code == 404
+    assert client.delete(detail, HTTP_AUTHORIZATION=f"Bearer {other.key}").status_code == 404
     recipe.refresh_from_db()
     assert recipe.title == "Pancakes"
 
@@ -517,7 +517,7 @@ def test_api_hides_a_foreign_recipe_and_can_reorder_steps(client, user, other_us
         reverse("recipe-reorder-steps", args=[recipe.pk]),
         json.dumps({"line_ids": step_ids}),
         content_type="application/json",
-        HTTP_AUTHORIZATION=f"Token {owner.key}",
+        HTTP_AUTHORIZATION=f"Bearer {owner.key}",
     )
 
     assert reordered.status_code == 200

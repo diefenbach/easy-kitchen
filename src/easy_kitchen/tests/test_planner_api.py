@@ -16,7 +16,7 @@ pytestmark = pytest.mark.django_db
 def api(user):
     client = APIClient()
     token = Token.objects.create(user=user)
-    client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.key}")
     return client
 
 

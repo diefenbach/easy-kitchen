@@ -176,7 +176,7 @@ def test_list_and_recipe_status_messages_use_the_active_language(client, user):
 def test_api_errors_are_english_and_can_be_german(client, user):
     token = Token.objects.create(user=user)
     shopping_list = ShoppingList.objects.create(user=user, title="Week")
-    headers = {"HTTP_AUTHORIZATION": f"Token {token.key}"}
+    headers = {"HTTP_AUTHORIZATION": f"Bearer {token.key}"}
     import_url = reverse("shopping-list-import-json")
     reorder_url = reverse("shopping-list-reorder", args=[shopping_list.pk])
 

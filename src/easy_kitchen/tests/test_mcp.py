@@ -23,7 +23,7 @@ from easy_kitchen.services import create_shopping_list as save_shopping_list
 
 
 def authorization_context(token):
-    request = SimpleNamespace(headers={"authorization": f"Token {token.key}"})
+    request = SimpleNamespace(headers={"authorization": f"Bearer {token.key}"})
     return Context(
         mcp_server=mcp,
         request_context=ServerRequestContext(

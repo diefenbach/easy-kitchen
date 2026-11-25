@@ -291,11 +291,12 @@ def _reorder_recipe_children(ctx, recipe_id, line_ids, kind):
 
 
 def user_from_authorization(authorization: str | None) -> AbstractBaseUser:
-    """Resolve the EasyKitchen user from an Authorization: Token header."""
-    message = "Send the user's EasyKitchen token in the Authorization header: Token <token>."
-    if not authorization or not authorization.lower().startswith("token "):
+    """Resolve the EasyKitchen user from an `Authorization: Bearer <token>` header."""
+    message = "Send the user's EasyKitchen token in the Authorization header: Bearer <token>."
+    scheme, _, key = (authorization or "").partition(" ")
+    if scheme.lower() != "bearer":
         raise ToolError(message)
-    key = authorization.split(" ", 1)[1].strip()
+    key = key.strip()
     if not key:
         raise ToolError(message)
     try:
