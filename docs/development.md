@@ -129,7 +129,7 @@ Open `docs/_build/html/index.html`. Read the Docs reads `.readthedocs.yaml` and 
 `.github/workflows/ci-cd.yml` runs on pull requests and on `main`:
 
 - **javascript** — ESLint, Prettier, vendor build tests, and vendor consistency checks using locked npm dependencies.
-- **test** — Ruff, pyright (`uv run pyright`, must report no errors), pytest, and the browser suite (every pull request and every push to `main`).
+- **test** — Ruff (including docstrings, `ruff check src e2e`), pyright (`uv run pyright`, must report no errors), pytest, and the browser suite (every pull request and every push to `main`).
 - **build** — on every pull request and push. Builds the image, then probes it under the production settings against an empty Postgres service: `check`, `migrate`, `import project.wsgi`, and `collectstatic`. Only a push to `main` with runtime changes (`src/`, `Dockerfile`, lockfiles) pushes `ghcr.io/diefenbach/easy-kitchen:<tag>`, where `<tag>` is the commit date and short SHA, for example `20261125-02f9793`. The last 10 versions stay on ghcr.io.
 - **deploy** — same gate as the push. Calls `.github/workflows/deploy.yml`, which runs `deploy kitchen <tag>` over SSH. The secrets live in the GitHub environment `production`, which accepts only runs from `main`. The server key may only start `iqpp_prod/scripts/deploy.sh --only kitchen`. That script backs up the database, migrates, collects static files, restarts `kitchen` and `kitchen-mcp`, checks the site, and starts the previous image again if anything fails.
 
