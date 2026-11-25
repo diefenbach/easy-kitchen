@@ -11,7 +11,7 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer
+from reportlab.platypus import Flowable, Image, Paragraph, SimpleDocTemplate, Spacer
 
 from .models import Recipe
 
@@ -86,7 +86,7 @@ def build_recipe_pdf(recipe: Recipe) -> bytes:
         spaceAfter=4,
     )
 
-    story = [_paragraph(recipe.title, title_style)]
+    story: list[Flowable] = [_paragraph(recipe.title, title_style)]
     if recipe.description.strip():
         story.append(_paragraph(recipe.description.strip(), body_style))
         story.append(Spacer(1, 6))

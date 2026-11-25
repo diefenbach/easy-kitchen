@@ -12,7 +12,7 @@ router.register("shopping-items", ShoppingItemViewSet, basename="shopping-item")
 router.register("shopping-lists", ShoppingListViewSet, basename="shopping-list")
 router.register("recipes", RecipeViewSet, basename="recipe")
 router.register("meal-planner", MealPlanViewSet, basename="meal-plan")
-resource_urls = [url for url in router.urls if url.name != "api-root"]
+resource_urls = [url for url in router.urls if getattr(url, "name", None) != "api-root"]
 urlpatterns = [
     path("schema/", SpectacularAPIView.as_view(permission_classes=[AllowAny]), name="api-schema"),
     path("", SpectacularSwaggerView.as_view(url_name="api-schema", permission_classes=[AllowAny]), name="swagger-ui"),

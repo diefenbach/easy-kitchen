@@ -4,14 +4,15 @@ import os
 import json
 from datetime import date as Date
 from functools import wraps
-from typing import TYPE_CHECKING, Annotated
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Annotated, Any
 
 import django
 from django.conf import settings
 from django.db import close_old_connections, connections
 
 if TYPE_CHECKING:
-    from django.contrib.auth.models import AbstractBaseUser
+    from accounts.models import User
 
 if not settings.configured:
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings.production")
@@ -80,7 +81,7 @@ from easy_kitchen.services import set_item_checked as mark_item_checked
 class StrictMCPServer(MCPServer):
     """Keep the SDK's generated tool-argument schemas strict at one boundary."""
 
-    def add_tool(self, fn, name=None, **kwargs):
+    def add_tool(self, fn: Callable[..., Any], name: str | None = None, **kwargs: Any) -> None:  # pyright: ignore[reportIncompatibleMethodOverride]  # passes the SDK's keyword options through unchanged
         @wraps(fn)
         def database_call(*args, **call_kwargs):
             # MCP workers do not pass through Django's request/connection lifecycle.
@@ -92,6 +93,8 @@ class StrictMCPServer(MCPServer):
 
         super().add_tool(database_call, name=name, **kwargs)
         tool = self._tool_manager.get_tool(name or fn.__name__)
+        if tool is None:
+            raise RuntimeError(f"Tool {name or fn.__name__} was not registered.")
         base = tool.fn_metadata.arg_model
         strict = create_model(base.__name__, __base__=base, __config__=ConfigDict(extra="forbid", str_strip_whitespace=True))
         tool.fn_metadata.arg_model = strict
@@ -196,7 +199,8 @@ class ShoppingListUpdateInput(InputModel):
 
 
 class RecipeImportInput(RecipeUpdateInput):
-    title: Annotated[str, Field(min_length=1, max_length=NAME_LIMIT)]
+    # Required here though optional in the update input; pydantic allows tightening a field in a subclass.
+    title: Annotated[str, Field(min_length=1, max_length=NAME_LIMIT)]  # pyright: ignore[reportGeneralTypeIssues]
 
 
 class ShoppingListImportInput(InputModel):
@@ -290,7 +294,7 @@ def _reorder_recipe_children(ctx, recipe_id, line_ids, kind):
     return _run_operation(ctx, operation)
 
 
-def user_from_authorization(authorization: str | None) -> AbstractBaseUser:
+def user_from_authorization(authorization: str | None) -> User:
     """Resolve the EasyKitchen user from an `Authorization: Bearer <token>` header."""
     message = "Send the user's EasyKitchen token in the Authorization header: Bearer <token>."
     scheme, _, key = (authorization or "").partition(" ")
@@ -508,6 +512,8 @@ def resolve_department(name: Annotated[str, Field(min_length=1, max_length=NAME_
         department = resolve_owned_department(user, name)
     except ValueError as error:
         raise _tool_error(error) from None
+    if department is None:  # only for a blank name, rejected above
+        raise ToolError(_("Enter a department name."))
     return department_data(department)
 
 
