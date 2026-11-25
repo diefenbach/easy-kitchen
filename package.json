@@ -15,12 +15,12 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
-    "bootstrap": "5.3.3",
-    "bootstrap-icons": "1.11.3",
+    "bootstrap": "5.3.9",
+    "bootstrap-icons": "1.13.2",
     "eslint": "10.15.0",
     "globals": "17.14.0",
-    "htmx.org": "2.0.4",
-    "prettier": "3.9.10",
-    "sortablejs": "1.15.6"
+    "htmx.org": "2.0.11",
+    "prettier": "3.10.1",
+    "sortablejs": "1.15.7"
   }
 }
