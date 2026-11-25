@@ -80,3 +80,9 @@ def test_deploy_runs_the_restricted_server_script_with_a_tag():
 
 def test_the_old_self_copied_deploy_script_is_gone():
     assert not (ROOT / ".github" / "scripts" / "deploy.sh").exists()
+
+
+def test_ci_type_checks_the_application_code():
+    workflow = CI_CD.read_text()
+
+    assert "- run: uv run pyright" in workflow
