@@ -1,5 +1,10 @@
+import json
+from pathlib import Path
+
 import pytest
 from playwright.sync_api import expect
+
+PACKAGES = json.loads((Path(__file__).resolve().parents[1] / "package.json").read_text())["devDependencies"]
 
 
 @pytest.mark.e2e
@@ -21,9 +26,9 @@ def test_vendor_assets_work_without_external_requests(page, live_server, user):
     expect(page.get_by_role("heading", name="Shopping lists")).to_be_visible()
     page.wait_for_load_state("domcontentloaded")
 
-    assert page.evaluate("htmx.version") == "2.0.4"
-    assert page.evaluate("Sortable.version") == "1.15.6"
-    assert page.evaluate("bootstrap.Dropdown.VERSION") == "5.3.3"
+    assert page.evaluate("htmx.version") == PACKAGES["htmx.org"]
+    assert page.evaluate("Sortable.version") == PACKAGES["sortablejs"]
+    assert page.evaluate("bootstrap.Dropdown.VERSION") == PACKAGES["bootstrap"]
     assert page.evaluate("document.fonts.load('16px bootstrap-icons').then(fonts => fonts.length)") == 1
 
     page.get_by_role("button", name=user.email, exact=True).click()
