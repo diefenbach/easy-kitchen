@@ -97,7 +97,7 @@ GOOGLE_CLIENT_SECRET=<client-secret>
 
 Production refuses to start without `DJANGO_DEFAULT_FROM_EMAIL` and `EMAIL_HOST`, because sign-up needs confirmation mail. Use `EMAIL_USE_SSL=true` with `EMAIL_USE_TLS=false` for port 465.
 
-The deploy script runs migrations and `collectstatic`. Static files go to a shared Nginx volume at `/static/`. Uploaded recipe pictures go to `/media/`. Do not commit `src/staticfiles/` or `src/media/`.
+The deploy script runs migrations and `collectstatic`. Static files go to a shared Nginx volume at `/static/`. Production stores them with a content hash in the name (`project.storage.HashedStaticFilesStorage`, Django's `ManifestStaticFilesStorage` that also rewrites ES module imports), so Nginx can let browsers cache `/static/` for good and a deploy still reaches every browser at once. A template that references a missing static file makes `collectstatic` fail in the CI image probe instead of a page failing in production. Uploaded recipe pictures go to `/media/`. Do not commit `src/staticfiles/` or `src/media/`.
 
 To roll back, run `gh workflow run deploy.yml -R diefenbach/easy-kitchen -f tag=<older-tag>`.
 
