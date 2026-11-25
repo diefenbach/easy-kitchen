@@ -22,7 +22,7 @@ def postgres_only():
 @pytest.mark.parametrize("same_list", [False, True])
 def test_simultaneous_additions_preserve_quantities_and_article_uniqueness(existing, same_list):
     postgres_only()
-    user = get_user_model().objects.create_user(username="concurrent")
+    user = get_user_model().objects.create_user("concurrent@example.com")
     lists = [create_shopping_list(user, title=str(i), date=date.today()) for i in range(2)]
     if existing:
         for shopping_list in lists:
@@ -56,7 +56,7 @@ def test_simultaneous_additions_preserve_quantities_and_article_uniqueness(exist
 
 def test_postgres_quantity_overflow_is_validation_error_and_rolls_back():
     postgres_only()
-    user = get_user_model().objects.create_user(username="quantity-limit")
+    user = get_user_model().objects.create_user("quantity-limit@example.com")
     shopping_list = create_shopping_list(user, title="Test", date=date.today())
     item = create_item(shopping_list, name="Milk", quantity="1 " + "a" * 98)
     with pytest.raises(ValueError, match="100"):
@@ -71,7 +71,7 @@ def test_simultaneous_recipe_partial_updates_preserve_both_changes():
     from easy_kitchen.services import create_recipe, update_owned_recipe
 
     postgres_only()
-    user = get_user_model().objects.create_user(username="recipe-race")
+    user = get_user_model().objects.create_user("recipe-race@example.com")
     recipe = create_recipe(user, title="Soup", calories=100)
     barrier = Barrier(2)
 
@@ -95,7 +95,7 @@ def test_simultaneous_recipe_partial_updates_preserve_both_changes():
 
 def test_simultaneous_first_article_creation_recovers_unique_conflict(monkeypatch):
     postgres_only()
-    user = get_user_model().objects.create_user(username="article-race")
+    user = get_user_model().objects.create_user("article-race@example.com")
     barrier = Barrier(2)
     original = QuerySet.create
 

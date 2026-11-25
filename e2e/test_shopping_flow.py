@@ -14,7 +14,7 @@ def open_shopping_lists(page):
 
 
 def open_account_menu(page):
-    page.get_by_role("button", name="e2e-user", exact=True).click()
+    page.get_by_role("button", name="e2e-user@example.com", exact=True).click()
 
 
 @pytest.mark.e2e
@@ -23,7 +23,7 @@ def test_saved_articles_are_suggested_and_can_be_renamed(authenticated_page):
     page = authenticated_page
     overview = page.get_by_role("link", name="Overview", exact=True)
     lists = page.get_by_role("link", name="Shopping lists", exact=True)
-    account = page.get_by_role("button", name="e2e-user", exact=True)
+    account = page.get_by_role("button", name="e2e-user@example.com", exact=True)
     expect(overview).to_be_visible()
     recipes = page.get_by_role("link", name="Recipes", exact=True)
     assert overview.bounding_box()["x"] < recipes.bounding_box()["x"] < lists.bounding_box()["x"] < account.bounding_box()["x"]

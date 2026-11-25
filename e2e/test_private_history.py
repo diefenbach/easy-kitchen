@@ -17,7 +17,7 @@ def test_private_history_and_logout_cache_cleanup(authenticated_page, user, othe
     page.get_by_role('link', name='Cancel', exact=True).first.click()
     expect(page.get_by_role('heading', name=recipe.title, exact=True)).to_be_visible()
     page.evaluate("localStorage.setItem('htmx-history-cache', 'legacy private cache')")
-    page.get_by_role('button', name=user.username, exact=True).click()
+    page.get_by_role('button', name=user.email, exact=True).click()
     page.get_by_role('button', name='Log out', exact=True).click()
     expect(page.get_by_role('button', name='Sign in', exact=True)).to_be_visible()
     assert page.evaluate("localStorage.getItem('htmx-history-cache')") is None

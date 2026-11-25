@@ -21,7 +21,7 @@ def test_signup_confirm_email_and_sign_in(page, live_server, mailoutbox):
     page.get_by_role("button", name="Confirm").click()
 
     expect(page.get_by_role("heading", name="Shopping lists")).to_be_visible()
-    page.get_by_role("button", name="new-cook", exact=True).click()
+    page.get_by_role("button", name="new-cook@example.com", exact=True).click()
     page.get_by_role("button", name="Log out", exact=True).click()
 
     page.get_by_label("Email").fill("new-cook@example.com")

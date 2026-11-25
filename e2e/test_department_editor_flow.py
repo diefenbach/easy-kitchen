@@ -16,7 +16,7 @@ def test_departments_are_edited_as_one_private_draft(authenticated_page, user, o
     page = authenticated_page
     page.set_viewport_size({"width": width, "height": 844})
     page.goto(f"{live_server.url}/lists/{shopping_list.pk}/")
-    page.get_by_role("button", name=user.username, exact=True).click()
+    page.get_by_role("button", name=user.email, exact=True).click()
     page.get_by_role("link", name="Edit departments", exact=True).click()
     expect(page.get_by_role("heading", name="Departments", exact=True)).to_be_visible()
     assert "Other user's private department" not in page.locator("input").evaluate_all("inputs => inputs.map(input => input.value)")
@@ -26,7 +26,7 @@ def test_departments_are_edited_as_one_private_draft(authenticated_page, user, o
     page.locator(".department-editor-footer").get_by_role("link", name="Cancel", exact=True).click()
     expect(page.get_by_role("heading", name="Market", exact=True)).to_be_visible()
     assert user.departments.get(code="dairy").name == "Dairy products"
-    page.get_by_role("button", name=user.username, exact=True).click()
+    page.get_by_role("button", name=user.email, exact=True).click()
     page.get_by_role("link", name="Edit departments", exact=True).click()
     dairy.get_by_label("Department", exact=True).fill("My dairy")
     rows.filter(has=page.locator('input[value="Bread"]')).get_by_role("button", name="Remove department", exact=True).click()

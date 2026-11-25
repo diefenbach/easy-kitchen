@@ -5,7 +5,7 @@ Base path: `/api/v1/`. Authentication is `Authorization: Token <token>`, not Bea
 Create a token through Django admin or:
 
 ```sh
-uv run --env-file .env python src/manage.py drf_create_token <username>
+uv run --env-file .env python src/manage.py drf_create_token <email>
 ```
 
 Swagger UI is public at `/api/v1/`. The OpenAPI document is at `/api/v1/schema/`. List and recipe operations stay authenticated.
