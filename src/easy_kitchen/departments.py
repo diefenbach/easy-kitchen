@@ -1,3 +1,5 @@
+"""The default supermarket departments every new user receives, and their display order."""
+
 import unicodedata
 
 from django.utils.translation import gettext_lazy as _, gettext_noop

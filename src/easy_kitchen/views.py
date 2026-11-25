@@ -1,3 +1,10 @@
+"""Web UI views for the home page, shopping lists, items, articles, departments, and JSON
+import/export.
+
+Every view requires a login and looks records up through the signed-in user; HTMX requests get
+partial templates.
+"""
+
 import json
 from datetime import timedelta
 
@@ -48,6 +55,7 @@ class UserListMixin(LoginRequiredMixin):
     request: HttpRequest
 
     def get_queryset(self):
+        """Return the signed-in user's shopping lists."""
         return ShoppingList.objects.filter(user=self.request.user)
 
 
@@ -57,6 +65,7 @@ class HomeView(LoginRequiredMixin, TemplateView):
     template_name = "easy_kitchen/home.html"
 
     def get_context_data(self, **kwargs):
+        """Add this and next week's planned meals and the three newest lists and recipes."""
         context = super().get_context_data(**kwargs)
         user = signed_in_user(self.request)
         week_start = week_start_for(timezone.localdate())
@@ -88,6 +97,7 @@ class ShoppingListListView(LoginRequiredMixin, ListView):
     context_object_name = "shopping_lists"
 
     def get_queryset(self):
+        """Return the user's lists with their items and departments."""
         return ShoppingList.objects.filter(user=self.request.user).prefetch_related("items__department")
 
 
@@ -95,6 +105,8 @@ class ShoppingListReorderView(LoginRequiredMixin, View):
     """Save a new order for the signed-in user's lists."""
 
     def post(self, request):
+        """Save a new list order from a JSON body `{"list_ids": [...]}`; 204, or 400 for invalid input.
+        """
         try:
             payload = json.loads(request.body)
             reorder_shopping_lists(request.user, [int(value) for value in payload["list_ids"]])
@@ -107,6 +119,9 @@ class ListHideCompletedView(LoginRequiredMixin, View):
     """Persist whether completed items stay hidden on this list."""
 
     def post(self, request, pk):
+        """Save whether completed items are hidden on the list (JSON body `{"hide": bool}`); 204, or
+        400.
+        """
         shopping_list = get_object_or_404(ShoppingList, pk=pk, user=request.user)
         try:
             hide = bool(json.loads(request.body)["hide"])
@@ -124,6 +139,9 @@ class ShoppingListDetailView(UserListMixin, DetailView):
     template_name = "easy_kitchen/lists/detail.html"
 
     def get_context_data(self, **kwargs):
+        """Add the new-item form, the user's articles for suggestions, and the number of completed
+        items.
+        """
         context = super().get_context_data(**kwargs)
         context["form"] = ShoppingItemForm(user=self.request.user)
         context["shopping_list"] = self.object
@@ -140,16 +158,19 @@ class ShoppingListCreateView(LoginRequiredMixin, CreateView):
     template_name = "easy_kitchen/lists/form.html"
 
     def form_valid(self, form):
+        """Assign the new list to the user and confirm with a message."""
         form.instance.user = self.request.user
         response = super().form_valid(form)
         messages.success(self.request, _("Shopping list created."))
         return response
 
     def get_success_url(self):
+        """Go to the new list."""
         assert self.object is not None, "set by the create/update view before redirecting"
         return reverse("easy_kitchen:detail", kwargs={"pk": self.object.pk})
 
     def get_context_data(self, **kwargs):
+        """Add the cancel link back to the overview."""
         context = super().get_context_data(**kwargs)
         context["cancel_url"] = reverse("easy_kitchen:list")
         return context
@@ -161,9 +182,15 @@ class ImportView(LoginRequiredMixin, View):
     template_name = "easy_kitchen/import.html"
 
     def get(self, request):
+        """Show the empty import form."""
         return render(request, self.template_name, {"form": ImportForm(user=request.user)})
 
     def post(self, request):
+        """Import lists and recipes from the submitted JSON and go to what was imported.
+
+        Re-renders the form (422 when quantities would overflow) without importing anything
+        partially.
+        """
         form = ImportForm(request.POST, user=request.user)
         if not form.is_valid():
             return render(request, self.template_name, {"form": form})
@@ -204,9 +231,12 @@ class ExportView(LoginRequiredMixin, View):
     template_name = "easy_kitchen/export.html"
 
     def get(self, request):
+        """Show the lists and recipes to choose for export."""
         return render(request, self.template_name, self._context(request))
 
     def post(self, request):
+        """Return the chosen lists and recipes as a downloadable JSON file that Import JSON reads.
+        """
         form = ExportForm(request.POST, user=request.user)
         if not form.is_valid():
             return render(request, self.template_name, self._context(request, form))
@@ -233,10 +263,17 @@ class ShoppingListUpdateView(UserListMixin, View):
     """Edit list metadata and items as one draft with an atomic save."""
 
     def get(self, request, pk):
+        """Show the list editor."""
         shopping_list = get_object_or_404(self.get_queryset(), pk=pk)
         return self.render_editor(request, shopping_list)
 
     def post(self, request, pk):
+        """Save title, date, icon, and the items in their new order, then return to the list or the
+        overview.
+
+        Changed item names or departments also update the saved articles. Invalid input re-renders
+        the editor with 422; HTMX requests get the target page directly.
+        """
         shopping_list = get_object_or_404(self.get_queryset(), pk=pk)
         form = ShoppingListForm(request.POST, instance=shopping_list)
         items = ShoppingItemEditorFormSet(request.POST, instance=shopping_list, prefix="items")
@@ -258,11 +295,13 @@ class ShoppingListUpdateView(UserListMixin, View):
         return self.render_editor(request, shopping_list, form=form, items=items, status=422)
 
     def return_url(self, request, shopping_list):
+        """Return the overview when ?return_to=overview, otherwise the list."""
         if request.GET.get("return_to") == "overview":
             return reverse("easy_kitchen:list")
         return reverse("easy_kitchen:detail", args=[shopping_list.pk])
 
     def render_editor(self, request, shopping_list, *, form=None, items=None, status=200):
+        """Render the list editor with the item formset and the user's articles."""
         if form is None:
             form = ShoppingListForm(instance=shopping_list)
         for field in form.fields.values():
@@ -286,6 +325,7 @@ class ShoppingListDeleteView(UserListMixin, DeleteView):
     success_url = reverse_lazy("easy_kitchen:list")
 
     def form_valid(self, form):
+        """Delete the list and confirm with a message."""
         response = super().form_valid(form)
         messages.success(self.request, _("Shopping list deleted."))
         return response
@@ -295,6 +335,10 @@ class ItemCreateView(LoginRequiredMixin, View):
     """Add an item, merging the quantity when that name is already on the list."""
 
     def post(self, request, list_pk):
+        """Add an item to the user's list, merging it into an item of the same name, which is unchecked again.
+
+        Invalid input or an overflowing quantity answers 422 (HTMX: only the form is replaced).
+        """
         shopping_list = get_object_or_404(ShoppingList, pk=list_pk, user=request.user)
         form = ShoppingItemForm(request.POST, user=request.user)
         if form.is_valid():
@@ -350,11 +394,13 @@ class ItemUpdateView(LoginRequiredMixin, View):
     """Edit one item on a list belonging to the signed-in user."""
 
     def get_item(self, request, list_pk, pk):
+        """Return the item, or 404 unless it is on this list of the signed-in user."""
         return get_object_or_404(
             ShoppingItem, pk=pk, shopping_list__pk=list_pk, shopping_list__user=request.user
         )
 
     def get(self, request, list_pk, pk):
+        """Show the inline edit form for one item."""
         item = self.get_item(request, list_pk, pk)
         return render(
             request,
@@ -363,6 +409,9 @@ class ItemUpdateView(LoginRequiredMixin, View):
         )
 
     def post(self, request, list_pk, pk):
+        """Save the item through the shared service and return the regrouped items; invalid input
+        answers 422.
+        """
         item = self.get_item(request, list_pk, pk)
         form = ShoppingItemForm(request.POST, instance=item, user=request.user, auto_id=f"item-{item.pk}-%s")
         if form.is_valid():
@@ -388,6 +437,9 @@ class ItemToggleView(LoginRequiredMixin, View):
     """Mark one item completed or open again."""
 
     def post(self, request, list_pk, pk):
+        """Toggle the item's checked state; HTMX gets the updated item, others are redirected to the
+        list.
+        """
         item = get_object_or_404(
             ShoppingItem, pk=pk, shopping_list__pk=list_pk, shopping_list__user=request.user
         )
@@ -406,6 +458,7 @@ class ItemDeleteView(LoginRequiredMixin, View):
     """Delete one item from a list belonging to the signed-in user."""
 
     def post(self, request, list_pk, pk):
+        """Delete the item from the user's list."""
         item = get_object_or_404(
             ShoppingItem, pk=pk, shopping_list__pk=list_pk, shopping_list__user=request.user
         )
@@ -419,6 +472,8 @@ class ItemReorderView(LoginRequiredMixin, View):
     """Save a new order for the items of one list."""
 
     def post(self, request, list_pk):
+        """Save a new item order from a JSON body `{"item_ids": [...]}`; 204, or 400 for invalid input.
+        """
         shopping_list = get_object_or_404(ShoppingList, pk=list_pk, user=request.user)
         try:
             payload = json.loads(request.body)
@@ -451,10 +506,16 @@ class ArticleListView(LoginRequiredMixin, View):
     template_name = "easy_kitchen/lists/articles.html"
 
     def get(self, request):
+        """Show the article editor."""
         return self.render_editor(request)
 
     def post(self, request):
         # Keep existing single-article clients working; the web editor posts a formset.
+        """Save the article editor (rename, change department, delete) in one transaction; invalid
+        input answers 422.
+
+        A single `name` field without a formset is still accepted for older clients.
+        """
         if "name" in request.POST and "articles-TOTAL_FORMS" not in request.POST:
             form = ArticleForm(request.POST, user=request.user)
             if form.is_valid():
@@ -485,6 +546,10 @@ class ArticleListView(LoginRequiredMixin, View):
         return self.render_editor(request, formset=formset, status=422)
 
     def render_editor(self, request, *, formset=None, legacy_error=None, status=200):
+        """Render the article editor.
+
+        X-Article-Editor tells editor.js the response is the editor again, so it keeps unsaved input.
+        """
         response = render(request, self.template_name, self._context(request, formset=formset, edit_form=legacy_error), status=status)
         response["X-Article-Editor"] = "true"
         return response
@@ -504,9 +569,13 @@ class DepartmentListView(LoginRequiredMixin, View):
     """Edit the current user's departments as a single draft."""
 
     def get(self, request):
+        """Show the department editor."""
         return self.render_editor(request)
 
     def post(self, request):
+        """Save the department editor (rename, delete) in one transaction and return to the list it was
+        opened from.
+        """
         formset = DepartmentEditorFormSet(request.POST, user=request.user, prefix="departments")
         if formset.is_valid():
             records, deleted_ids = [], []
@@ -532,6 +601,10 @@ class DepartmentListView(LoginRequiredMixin, View):
         return self.render_editor(request, formset=formset, status=422)
 
     def render_editor(self, request, *, formset=None, status=200):
+        """Render the department editor with a cancel link back to the list it was opened from.
+
+        X-Department-Editor tells editor.js the response is the editor again, so it keeps unsaved input.
+        """
         shopping_list = return_list_for(request)
         response = render(request, "easy_kitchen/lists/departments.html", {
             "department_formset": formset if formset is not None else DepartmentEditorFormSet(user=request.user, prefix="departments"),
@@ -546,6 +619,8 @@ class ArticleUpdateView(LoginRequiredMixin, View):
     """Rename one saved article belonging to the signed-in user."""
 
     def post(self, request, pk):
+        """Save one article from the single-article form; errors re-render the article page with 422.
+        """
         article = get_object_or_404(Article, pk=pk, user=request.user)
         form = ArticleForm(request.POST, user=request.user, instance=article)
         if form.is_valid():
@@ -563,6 +638,7 @@ class ArticleDeleteView(LoginRequiredMixin, View):
     """Delete one saved article without changing shopping-list items."""
 
     def post(self, request, pk):
+        """Delete one of the user's articles."""
         article = get_object_or_404(Article, pk=pk, user=request.user)
         article.delete()
         return redirect_to_articles(request)
@@ -572,6 +648,7 @@ class ItemsDeleteCompletedView(LoginRequiredMixin, View):
     """Delete every completed item on the list after confirmation."""
 
     def post(self, request, list_pk):
+        """Delete all checked items of the list and say how many."""
         shopping_list = get_object_or_404(ShoppingList, pk=list_pk, user=request.user)
         deleted = delete_completed_items(shopping_list)
         if deleted:

@@ -24,6 +24,7 @@ class BearerTokenScheme(OpenApiAuthenticationExtension):
     priority = 1
 
     def get_security_definition(self, auto_schema):
+        """Describe the scheme as HTTP bearer for the OpenAPI schema."""
         return build_bearer_security_scheme_object(header_name="AUTHORIZATION", token_prefix="Bearer")
 
 

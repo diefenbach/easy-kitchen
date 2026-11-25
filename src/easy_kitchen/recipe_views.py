@@ -1,3 +1,9 @@
+"""Web UI views for recipes: list, detail, editor, ingredients and steps, PDF, and adding a recipe
+to the planner or a list.
+
+Every view requires a login and only finds the signed-in user's recipes.
+"""
+
 import json
 from typing import Literal
 from urllib.parse import urlencode
@@ -40,6 +46,7 @@ class UserRecipeMixin(LoginRequiredMixin):
     request: HttpRequest
 
     def get_queryset(self):
+        """Return the signed-in user's recipes."""
         return Recipe.objects.filter(user=self.request.user)
 
 
@@ -47,6 +54,9 @@ class RecipeListView(LoginRequiredMixin, View):
     """Show every recipe of the signed-in user."""
 
     def get(self, request):
+        """Show the user's recipes, filtered by every word of ?q= in title or description and by
+        ?favorites=1.
+        """
         search_query = request.GET.get("q", "").strip()
         favorites_only = request.GET.get("favorites") == "1"
         recipes = Recipe.objects.filter(user=request.user).prefetch_related("ingredients")
@@ -72,6 +82,9 @@ class RecipeFavoriteView(UserRecipeMixin, View):
     """Set the favorite state of an owned recipe and return to its originating page."""
 
     def post(self, request, pk):
+        """Mark or unmark the recipe as favourite (is_favorite 0 or 1) and return to the detail page
+        or the filtered list.
+        """
         recipe = get_object_or_404(self.get_queryset(), pk=pk)
         value = request.POST.get("is_favorite")
         if value not in {"0", "1"}:
@@ -95,6 +108,9 @@ class RecipeReorderView(LoginRequiredMixin, View):
     """Save a new order for the signed-in user's recipes."""
 
     def post(self, request):
+        """Save a new recipe order from a JSON body `{"recipe_ids": [...]}`; 204, or 400 for invalid
+        input.
+        """
         try:
             payload = json.loads(request.body)
             reorder_recipes(request.user, [int(value) for value in payload["recipe_ids"]])
@@ -111,16 +127,19 @@ class RecipeCreateView(LoginRequiredMixin, CreateView):
     template_name = "easy_kitchen/recipes/form.html"
 
     def form_valid(self, form):
+        """Assign the new recipe to the user and confirm with a message."""
         form.instance.user = self.request.user
         response = super().form_valid(form)
         messages.success(self.request, _("Recipe created."))
         return response
 
     def get_success_url(self):
+        """Go to the new recipe."""
         assert self.object is not None, "set by the create view before redirecting"
         return reverse("easy_kitchen:recipe-detail", kwargs={"pk": self.object.pk})
 
     def get_context_data(self, **kwargs):
+        """Add the cancel link back to the recipe list."""
         context = super().get_context_data(**kwargs)
         context["cancel_url"] = reverse("easy_kitchen:recipes")
         return context
@@ -130,10 +149,16 @@ class RecipeUpdateView(UserRecipeMixin, View):
     """Edit the whole recipe as a draft and save all sections atomically."""
 
     def get(self, request, pk):
+        """Show the recipe editor."""
         recipe = get_object_or_404(self.get_queryset(), pk=pk)
         return self.render_editor(request, recipe)
 
     def post(self, request, pk):
+        """Save the recipe with its ingredients and steps in their new order, then return to the
+        recipe or the overview.
+
+        Invalid input re-renders the editor with 422; HTMX requests get the target page directly.
+        """
         recipe = get_object_or_404(self.get_queryset(), pk=pk)
         form = RecipeForm(request.POST, request.FILES, instance=recipe)
         ingredients = RecipeIngredientEditorFormSet(request.POST, instance=recipe, prefix="ingredients")
@@ -157,11 +182,13 @@ class RecipeUpdateView(UserRecipeMixin, View):
         return self.render_editor(request, recipe, form=form, ingredients=ingredients, steps=steps, status=422)
 
     def return_url(self, request, recipe):
+        """Return the recipe list when ?return_to=overview, otherwise the recipe."""
         if request.GET.get("return_to") == "overview":
             return reverse("easy_kitchen:recipes")
         return reverse("easy_kitchen:recipe-detail", args=[recipe.pk])
 
     def render_editor(self, request, recipe, *, form=None, ingredients=None, steps=None, status=200):
+        """Render the recipe editor with its ingredient and step formsets."""
         if form is None:
             form = RecipeForm(instance=recipe)
         for field in form.fields.values():
@@ -184,11 +211,13 @@ class RecipeDeleteView(UserRecipeMixin, DeleteView):
     template_name = "easy_kitchen/recipes/confirm_delete.html"
 
     def form_valid(self, form):
+        """Delete the recipe and confirm with a message."""
         response = super().form_valid(form)
         messages.success(self.request, _("Recipe deleted."))
         return response
 
     def get_success_url(self):
+        """Go back to the recipe list."""
         return reverse("easy_kitchen:recipes")
 
 
@@ -196,6 +225,7 @@ class RecipePdfView(UserRecipeMixin, View):
     """Download one recipe as a PDF in the active UI language."""
 
     def get(self, request, pk):
+        """Return the recipe as a PDF download named after its title."""
         recipe = get_object_or_404(
             self.get_queryset().prefetch_related("ingredients", "steps"), pk=pk
         )
@@ -210,6 +240,7 @@ class RecipeDetailView(UserRecipeMixin, View):
     """Show one recipe and the form that copies its ingredients to a list."""
 
     def get(self, request, pk):
+        """Show the recipe with its ingredients, steps, and the planner and list forms."""
         recipe = get_object_or_404(
             self.get_queryset().prefetch_related("ingredients", "steps"), pk=pk
         )
@@ -235,6 +266,9 @@ class RecipeAddToPlannerView(UserRecipeMixin, View):
     """Plan an owned recipe for the chosen date and show that week."""
 
     def post(self, request, pk):
+        """Plan the recipe for the chosen day and go to that week of the planner; invalid input
+        answers 422.
+        """
         recipe = get_object_or_404(
             self.get_queryset().prefetch_related("ingredients", "steps"), pk=pk
         )
@@ -259,19 +293,24 @@ class RecipeLineView(LoginRequiredMixin, View):
     delete_name = "easy_kitchen:recipe-ingredient-delete"
 
     def recipe(self, request, recipe_pk):
+        """Return the recipe, or 404 unless it belongs to the signed-in user."""
         return get_object_or_404(Recipe, pk=recipe_pk, user=request.user)
 
     def line(self, request, recipe_pk, pk):
+        """Return the ingredient or step `pk` of the user's recipe and the recipe; 404 otherwise.
+        """
         recipe = self.recipe(request, recipe_pk)
         manager = recipe.ingredients if self.kind == "ingredient" else recipe.steps
         return get_object_or_404(manager, pk=pk), recipe
 
     def line_initial(self, line):
+        """Return the form's initial data for an existing line."""
         if self.kind == "ingredient":
             return {"name": line.name, "quantity": line.quantity}
         return {"text": line.text}
 
     def line_context(self, recipe, line, form=None, include_modal=True):
+        """Return the template context for one line, with its edit form."""
         return {
             "recipe": recipe,
             "line": line,
@@ -290,6 +329,9 @@ class RecipeLineCreateView(RecipeLineView):
     """Append an ingredient or step and return the new line for HTMX."""
 
     def post(self, request, recipe_pk):
+        """Add an ingredient or step at the end of the recipe; invalid input answers 422 (HTMX: only
+        the form is replaced).
+        """
         recipe = self.recipe(request, recipe_pk)
         form = RecipeLineForm(request.POST, kind=self.kind, auto_id=f"{self.kind}_%s")
         if form.is_valid():
@@ -329,6 +371,7 @@ class RecipeLineUpdateView(RecipeLineView):
     """Edit one ingredient or step of a recipe."""
 
     def get(self, request, recipe_pk, pk):
+        """Show the inline edit form for one ingredient or step."""
         line, recipe = self.line(request, recipe_pk, pk)
         form = RecipeLineForm(
             kind=self.kind, auto_id=f"edit_{line.pk}_%s", initial=self.line_initial(line)
@@ -340,6 +383,7 @@ class RecipeLineUpdateView(RecipeLineView):
         )
 
     def post(self, request, recipe_pk, pk):
+        """Save one ingredient or step; invalid input answers 422."""
         line, recipe = self.line(request, recipe_pk, pk)
         form = RecipeLineForm(request.POST, kind=self.kind, auto_id=f"edit_{line.pk}_%s")
         if form.is_valid():
@@ -367,6 +411,7 @@ class RecipeLineDeleteView(RecipeLineView):
     """Delete one ingredient or step of a recipe."""
 
     def post(self, request, recipe_pk, pk):
+        """Delete one ingredient or step of the user's recipe."""
         line, recipe = self.line(request, recipe_pk, pk)
         line.delete()
         if request.headers.get("HX-Request"):
@@ -380,6 +425,9 @@ class RecipeLineReorderView(LoginRequiredMixin, View):
     kind: Literal["ingredient", "step"] = "ingredient"
 
     def post(self, request, recipe_pk):
+        """Save a new order of ingredients or steps from a JSON body `{"line_ids": [...]}`; 400 for
+        invalid input.
+        """
         recipe = get_object_or_404(Recipe, pk=recipe_pk, user=request.user)
         try:
             payload = json.loads(request.body)
@@ -447,6 +495,10 @@ class RecipeAddToListView(LoginRequiredMixin, View):
     """Copy a recipe's ingredients onto an existing list or a new one."""
 
     def post(self, request, pk):
+        """Add the recipe's ingredients to an existing or a new list and go to that list.
+
+        A recipe without ingredients, invalid input, or an overflowing quantity answers 422.
+        """
         recipe = get_object_or_404(
             Recipe.objects.filter(user=request.user).prefetch_related("ingredients"),
             pk=pk,

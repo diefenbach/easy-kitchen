@@ -1,3 +1,7 @@
+"""Forms and formsets of the web UI. Querysets and choices are always limited to the signed-in user's
+records.
+"""
+
 import json
 from typing import Any, Literal, TypeVar, cast
 
@@ -103,6 +107,8 @@ class ArticleForm(forms.Form):
 
 
 class ArticleEditorForm(forms.ModelForm):
+    """One row of the article editor: name and department of a saved article."""
+
     class Meta:
         model = Article
         fields = ("name", "department")
@@ -121,6 +127,7 @@ class ArticleEditorForm(forms.ModelForm):
         self.initial["department"] = self.instance.department_code
 
     def clean_name(self):
+        """Return the normalized name; a blank name is an error."""
         name = _normalized_name(self.cleaned_data["name"])
         if not name:
             raise forms.ValidationError(_("Enter an article name."))
@@ -138,13 +145,18 @@ class BaseArticleEditorFormSet(BaseModelFormSet):
         super().__init__(*args, queryset=user.articles.select_related("department"), **kwargs)
 
     def get_form_kwargs(self, index):
+        """Pass the user and the shared department choices to every row."""
         return {**super().get_form_kwargs(index), "department_options": self.department_options, "user": self.user}
 
     def add_fields(self, form, index):
+        """Limit each row's hidden id to the user's articles, so a foreign id is invalid."""
         super().add_fields(form, index)
         form.fields["id"].queryset = self.get_queryset()
 
     def clean(self):
+        """Reject foreign or duplicate rows and names that collide, ignoring case, with another saved
+        or edited article.
+        """
         super().clean()
         if any(form.errors.get("id") for form in self.forms):
             raise forms.ValidationError(_("Invalid article selection."))
@@ -179,6 +191,8 @@ ArticleEditorFormSet = modelformset_factory(
 
 
 class DepartmentEditorForm(forms.ModelForm):
+    """One row of the department editor; shows translated default names."""
+
     class Meta:
         model = Department
         fields = ("name",)
@@ -191,6 +205,9 @@ class DepartmentEditorForm(forms.ModelForm):
             self.initial["name"] = str(self.instance)
 
     def clean_name(self):
+        """Return the normalized name; keep the stored name when the translated default was left
+        unchanged.
+        """
         name = _normalized_name(self.cleaned_data["name"])
         if not name:
             raise forms.ValidationError(_("Enter a department name."))
@@ -200,6 +217,8 @@ class DepartmentEditorForm(forms.ModelForm):
 
 
 class BaseDepartmentEditorFormSet(BaseModelFormSet):
+    """Formset of the department editor over the user's departments, ordered by name."""
+
     deletion_widget = forms.HiddenInput
 
     def __init__(self, *args, user, **kwargs):
@@ -207,10 +226,14 @@ class BaseDepartmentEditorFormSet(BaseModelFormSet):
         super().__init__(*args, queryset=user.departments.order_by("name", "id"), **kwargs)
 
     def add_fields(self, form, index):
+        """Limit each row's hidden id to the user's departments, so a foreign id is invalid."""
         super().add_fields(form, index)
         form.fields["id"].queryset = self.get_queryset()
 
     def clean(self):
+        """Reject foreign or duplicate rows and names that collide, ignoring case, with another saved
+        or edited department.
+        """
         super().clean()
         if any(form.errors.get("id") for form in self.forms):
             raise forms.ValidationError(_("Invalid department selection."))
@@ -535,6 +558,9 @@ class OrderedEditorLineFormSet(BaseInlineFormSet):
     deletion_widget = forms.HiddenInput
 
     def add_fields(self, form, index):
+        """Limit ids and departments to the owner of the parent record and preselect each line's
+        department.
+        """
         super().add_fields(form, index)
         form.fields["id"].queryset = self.get_queryset()
         if "department" in form.fields:
@@ -546,6 +572,9 @@ class OrderedEditorLineFormSet(BaseInlineFormSet):
             form.initial["department"] = form.instance.department_code
 
     def save_ordered(self):
+        """Delete removed lines, then save the rest with positions in the submitted order; return the
+        saved lines.
+        """
         for form in self.deleted_forms:
             if form.instance.pk:
                 form.instance.delete()

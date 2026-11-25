@@ -1,3 +1,5 @@
+"""Template filter for shopping list icons."""
+
 from django import template
 
 from easy_kitchen.models import ShoppingList

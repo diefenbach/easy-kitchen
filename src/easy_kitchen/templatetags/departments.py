@@ -1,3 +1,5 @@
+"""Template tags for grouping list items and choosing departments."""
+
 from django import template
 from django.utils.translation import gettext as _
 
@@ -24,4 +26,5 @@ def department_groups(shopping_list):
 
 @register.simple_tag
 def department_choices(user):
+    """Return the user's departments as sorted (code, label) choices for a select."""
     return sorted_department_choices(user)

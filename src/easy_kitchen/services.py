@@ -1,3 +1,10 @@
+"""Business operations shared by the web UI, the REST API, and MCP.
+
+Every function takes the acting user and only reads or changes that user's records; another user's
+id behaves as if it did not exist (ObjectNotFoundError). Invalid input raises ServiceError with a
+stable code.
+"""
+
 import re
 import unicodedata
 from difflib import SequenceMatcher
@@ -128,6 +135,9 @@ class DepartmentResolutionError(ServiceError):
         super().__init__(str(message))
 
     def as_dict(self) -> dict:
+        """Return the error as JSON-ready data, including the query and the candidate departments to
+        choose from.
+        """
         return {"code": self.code, "query": self.query, "message": str(self), "candidates": self.candidates}
 
 
@@ -144,22 +154,35 @@ def _owned_record(queryset, pk: int, message):
 
 
 def get_owned_recipe(user: User, *, recipe_id: int) -> Recipe:
+    """Return the user's recipe with its ingredients and steps. Raises ObjectNotFoundError for unknown
+    or foreign ids.
+    """
     return _owned_record(user.recipes.prefetch_related("ingredients", "steps"), recipe_id, _("Recipe not found."))
 
 
 def get_owned_shopping_list(user: User, *, list_id: int) -> ShoppingList:
+    """Return the user's shopping list with its items. Raises ObjectNotFoundError for unknown or
+    foreign ids.
+    """
     return _owned_record(user.shopping_lists.prefetch_related("items__department"), list_id, _("Shopping list not found."))
 
 
 def get_owned_shopping_item(user: User, *, item_id: int) -> ShoppingItem:
+    """Return an item on one of the user's lists. Raises ObjectNotFoundError for unknown or foreign
+    ids.
+    """
     return _owned_record(ShoppingItem.objects.filter(shopping_list__user=user).select_related("department"), item_id, _("Item not found."))
 
 
 def get_owned_article(user: User, *, article_id: int) -> Article:
+    """Return the user's article with its department. Raises ObjectNotFoundError for unknown or foreign
+    ids.
+    """
     return _owned_record(user.articles.select_related("department"), article_id, _("Article not found."))
 
 
 def get_owned_department(user: User, *, department_id: int) -> Department:
+    """Return the user's department. Raises ObjectNotFoundError for unknown or foreign ids."""
     return _owned_record(user.departments.all(), department_id, _("Department not found."))
 
 
@@ -187,6 +210,12 @@ def _collection_window(q, limit, offset):
 
 
 def query_owned_recipes(user, *, q="", is_favorite=None, limit=DEFAULT_LIST_LIMIT, offset=0, summary=False):
+    """Return one page of the user's recipes matching every word of `q` in title, description, or an
+    ingredient.
+
+    Optionally only favourites or non-favourites. Raises ServiceError for an invalid query, limit,
+    or offset.
+    """
     q, window = _collection_window(q, limit, offset)
     recipes = user.recipes.all()
     if is_favorite is not None:
@@ -200,6 +229,11 @@ def query_owned_recipes(user, *, q="", is_favorite=None, limit=DEFAULT_LIST_LIMI
 
 
 def query_owned_shopping_lists(user, *, q="", date_from=None, date_to=None, limit=DEFAULT_LIST_LIMIT, offset=0, summary=False):
+    """Return one page of the user's lists whose title contains every word of `q`, optionally within a
+    date range.
+
+    Raises ServiceError for an invalid query, limit, offset, or a start date after the end date.
+    """
     q, window = _collection_window(q, limit, offset)
     if date_from is not None and date_to is not None and date_from > date_to:
         raise ServiceError(_("Start date must not be after end date."), field="date_from")
@@ -216,6 +250,11 @@ def query_owned_shopping_lists(user, *, q="", date_from=None, date_to=None, limi
 
 
 def query_owned_shopping_items(user, *, q="", checked=None, list_id=None, limit=DEFAULT_LIST_LIMIT, offset=0):
+    """Return one page of items on the user's lists matching every word of `q`, optionally of one list
+    or check state.
+
+    Raises ObjectNotFoundError for a foreign list id and ServiceError for invalid paging.
+    """
     q, window = _collection_window(q, limit, offset)
     items = ShoppingItem.objects.filter(shopping_list__user=user).select_related("department")
     if list_id is not None:
@@ -230,6 +269,11 @@ def query_owned_shopping_items(user, *, q="", checked=None, list_id=None, limit=
 
 
 def query_owned_articles(user, *, q="", department=None, limit=DEFAULT_LIST_LIMIT, offset=0):
+    """Return one page of the user's articles matching every word of `q`, optionally in one department.
+
+    The department is resolved like everywhere else, so an unknown or ambiguous one raises
+    DepartmentResolutionError.
+    """
     q, window = _collection_window(q, limit, offset)
     articles = user.articles.select_related("department")
     if department is not None:
