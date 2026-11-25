@@ -5,7 +5,7 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import IntegrityError, transaction
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
+from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
@@ -20,6 +20,7 @@ from django.views.generic import (
     TemplateView,
 )
 
+from .authentication import signed_in_user
 from .forms import DepartmentEditorFormSet, ArticleEditorFormSet, ArticleForm, ExportForm, ImportForm, ShoppingItemForm, ShoppingListForm, ShoppingItemEditorFormSet
 from .models import Article, ShoppingItem, ShoppingList
 from .services import (
@@ -44,6 +45,8 @@ from .services import (
 class UserListMixin(LoginRequiredMixin):
     """Limit shopping-list querysets to the signed-in user."""
 
+    request: HttpRequest
+
     def get_queryset(self):
         return ShoppingList.objects.filter(user=self.request.user)
 
@@ -55,22 +58,23 @@ class HomeView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        user = signed_in_user(self.request)
         week_start = week_start_for(timezone.localdate())
-        plan = meal_plan_for_week(self.request.user, week_start)
+        plan = meal_plan_for_week(user, week_start)
         context["planned_meals"] = [entry for entry in plan.values() if entry and entry.recipe]
         context["week_start"] = week_start
         context["week_end"] = next(reversed(plan))
         next_week_start = week_start + timedelta(days=7)
-        next_week_plan = meal_plan_for_week(self.request.user, next_week_start)
+        next_week_plan = meal_plan_for_week(user, next_week_start)
         context["next_week_start"] = next_week_start
         context["next_week_end"] = next(reversed(next_week_plan))
         context["next_week_planned_meals"] = [
             entry for entry in next_week_plan.values() if entry and entry.recipe
         ]
-        context["shopping_lists"] = self.request.user.shopping_lists.order_by(
+        context["shopping_lists"] = user.shopping_lists.order_by(
             "-created_at", "-id"
         ).prefetch_related("items__department")[:3]
-        context["recipes"] = self.request.user.recipes.order_by(
+        context["recipes"] = user.recipes.order_by(
             "-created_at", "-id"
         ).prefetch_related("ingredients")[:3]
         return context
@@ -123,7 +127,7 @@ class ShoppingListDetailView(UserListMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context["form"] = ShoppingItemForm(user=self.request.user)
         context["shopping_list"] = self.object
-        context["articles"] = self.request.user.articles.select_related("department")
+        context["articles"] = signed_in_user(self.request).articles.select_related("department")
         context["completed_item_count"] = self.object.items.filter(checked=True).count()
         return context
 
@@ -142,6 +146,7 @@ class ShoppingListCreateView(LoginRequiredMixin, CreateView):
         return response
 
     def get_success_url(self):
+        assert self.object is not None, "set by the create/update view before redirecting"
         return reverse("easy_kitchen:detail", kwargs={"pk": self.object.pk})
 
     def get_context_data(self, **kwargs):

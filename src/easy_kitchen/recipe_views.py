@@ -1,4 +1,5 @@
 import json
+from typing import Literal
 from urllib.parse import urlencode
 
 from django import forms
@@ -6,7 +7,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
 from django.db.models import Q
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
+from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.text import slugify
@@ -18,7 +19,7 @@ from .forms import (
     AddRecipeToListForm, AddRecipeToPlannerForm, RecipeForm, RecipeLineForm,
     RecipeIngredientEditorFormSet, RecipeStepEditorFormSet,
 )
-from .models import Recipe
+from .models import Recipe, RecipeIngredient
 from .recipe_pdf import build_recipe_pdf
 from .services import (
     _normalized_name,
@@ -35,6 +36,8 @@ from .services import (
 
 class UserRecipeMixin(LoginRequiredMixin):
     """Limit recipe querysets to the signed-in user."""
+
+    request: HttpRequest
 
     def get_queryset(self):
         return Recipe.objects.filter(user=self.request.user)
@@ -114,6 +117,7 @@ class RecipeCreateView(LoginRequiredMixin, CreateView):
         return response
 
     def get_success_url(self):
+        assert self.object is not None, "set by the create view before redirecting"
         return reverse("easy_kitchen:recipe-detail", kwargs={"pk": self.object.pk})
 
     def get_context_data(self, **kwargs):
@@ -250,7 +254,7 @@ class RecipeAddToPlannerView(UserRecipeMixin, View):
 class RecipeLineView(LoginRequiredMixin, View):
     """Shared access to one ingredient or step of the signed-in user's recipe."""
 
-    kind = "ingredient"
+    kind: Literal["ingredient", "step"] = "ingredient"
     update_name = "easy_kitchen:recipe-ingredient-update"
     delete_name = "easy_kitchen:recipe-ingredient-delete"
 
@@ -339,7 +343,7 @@ class RecipeLineUpdateView(RecipeLineView):
         line, recipe = self.line(request, recipe_pk, pk)
         form = RecipeLineForm(request.POST, kind=self.kind, auto_id=f"edit_{line.pk}_%s")
         if form.is_valid():
-            if self.kind == "ingredient":
+            if isinstance(line, RecipeIngredient):
                 line.name = _normalized_name(form.cleaned_data["name"])
                 line.quantity = (form.cleaned_data.get("quantity") or "").strip()
                 line.save(update_fields=["name", "quantity"])
@@ -373,7 +377,7 @@ class RecipeLineDeleteView(RecipeLineView):
 class RecipeLineReorderView(LoginRequiredMixin, View):
     """Save a new order for the ingredients or steps of one recipe."""
 
-    kind = "ingredient"
+    kind: Literal["ingredient", "step"] = "ingredient"
 
     def post(self, request, recipe_pk):
         recipe = get_object_or_404(Recipe, pk=recipe_pk, user=request.user)
