@@ -1,0 +1,55 @@
+name: Deploy
+
+# Deploys an image that is already on ghcr.io: iqpp_prod/scripts/deploy.sh on the server backs up the database,
+# pulls the image, migrates, collects static files, starts kitchen and kitchen-mcp and checks the site; on failure
+# the previous image runs again. See iqpp_prod/docs/deploy.md.
+#
+# Started by "CI/CD" after a push to main with runtime changes, or by hand with an older tag to roll back:
+#   gh workflow run deploy.yml -R diefenbach/easy-kitchen -f tag=20261124-7929fde
+# Every run shows up under the environment "production" (repository → Deployments) with its tag.
+#
+# Secrets of the environment "production":
+#   DEPLOY_SSH_KEY     private key; its public key is in the server's ~/.ssh/authorized_keys, restricted with
+#                      command="/home/iqpp/iqpp_prod/scripts/deploy.sh --only kitchen" (it can deploy only kitchen)
+#   DEPLOY_KNOWN_HOSTS the server's host key line (ssh-keyscan -p 22 46.101.162.117)
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Image tag, e.g. 20261124-7929fde"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kitchen-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: https://kitchen.iqpp.de/
+    steps:
+      - name: Run deploy script on the server
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          echo "Image: \`ghcr.io/diefenbach/easy-kitchen:$TAG\`" >> "$GITHUB_STEP_SUMMARY"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy -p 22 -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o BatchMode=yes \
+            iqpp@46.101.162.117 deploy kitchen "$TAG"
