@@ -40,3 +40,14 @@ EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "true").lower() == "true"
 EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "false").lower() == "true"
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
+# Without this, Django sends errors only by mail to ADMINS (empty) and shows nothing: log warnings and errors,
+# with traceback, to stderr, where `docker logs kitchen` shows them next to gunicorn's output.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {"plain": {"format": "[{asctime}] {levelname} {name}: {message}", "style": "{"}},
+    "handlers": {"stderr": {"class": "logging.StreamHandler", "stream": "ext://sys.stderr", "formatter": "plain"}},
+    "root": {"handlers": ["stderr"], "level": "WARNING"},
+    # Django's default config sets its logger to INFO; keep it at WARNING like the rest.
+    "loggers": {"django": {"level": "WARNING"}},
+}

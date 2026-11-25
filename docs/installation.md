@@ -100,3 +100,7 @@ Production refuses to start without `DJANGO_DEFAULT_FROM_EMAIL` and `EMAIL_HOST`
 The deploy script runs migrations and `collectstatic`. Static files go to a shared Nginx volume at `/static/`. Uploaded recipe pictures go to `/media/`. Do not commit `src/staticfiles/` or `src/media/`.
 
 To roll back, run `gh workflow run deploy.yml -R diefenbach/easy-kitchen -f tag=<older-tag>`.
+
+### Logs
+
+Production logs warnings and errors from Django and the app, with traceback, to stderr. Gunicorn writes every request and its own messages to the same stream. Read both on the server with `docker logs --since 1h kitchen`, and the MCP server with `docker logs kitchen-mcp`. Nginx logs every request for all sites to its own container log; each line starts with the host name, so `docker logs nginx 2>&1 | grep '^kitchen.iqpp.de'` shows kitchen. Docker keeps at most 5 × 10 MB per container. `iqpp_prod/docs/deploy.md` lists the deploy and backup logs.
