@@ -244,7 +244,7 @@ Clients call `https://kitchen.iqpp.de/mcp` with `Authorization: Token <token>`. 
 Create a token, for example through Django admin or the shell:
 
 ```sh
-uv run --env-file .env python src/manage.py drf_create_token <username>
+uv run --env-file .env python src/manage.py drf_create_token <email>
 ```
 
 Example:

@@ -37,9 +37,11 @@ The site is at `http://localhost:8000`. Development settings enable `DEBUG`, so 
 
 ## Accounts
 
-People sign up at `/accounts/signup/` with their email address and a password, and sign in with their email address. Sign-up sends a confirmation link, and nobody can sign in before confirming. Locally the mail is printed in the `runserver` terminal. The Django admin still uses the username.
+People sign up at `/accounts/signup/` with their email address and a password, and sign in with their email address. Sign-up sends a confirmation link, and nobody can sign in before confirming. Locally the mail is printed in the `runserver` terminal. The Django admin also signs in with the email address.
 
-Accounts created before email sign-in keep working if they had an email address: migration `0020` marks that address as confirmed. Give accounts without an address one in the admin before their owners sign in again. The migration skips an address that a second account also uses.
+The user model is `accounts.User`: the email address is the login and is unique ignoring case, and there is no username. `createsuperuser` asks for an email address. An account created with `createsuperuser` has no confirmed address yet, so confirm it once through the link that the first sign-in sends.
+
+A local database from before 25 November 2026 has the old migration history and the old user table. Drop it and start a fresh one, then run `migrate` again.
 
 ### Google sign-in
 
