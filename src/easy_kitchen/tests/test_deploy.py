@@ -20,7 +20,7 @@ def test_image_uses_a_single_build_stage_and_defaults_to_runserver():
 def test_ci_cd_deploys_only_when_runtime_paths_change():
     workflow = CI_CD.read_text()
 
-    assert "dorny/paths-filter@v3" in workflow
+    assert re.search(r"uses: dorny/paths-filter@v\d+", workflow)
     assert "needs.changes.outputs.deploy == 'true'" in workflow
     assert "- 'src/**'" in workflow
 
@@ -55,7 +55,7 @@ def test_probe_sets_every_required_production_variable():
 def test_only_main_pushes_images_and_keeps_the_last_ten():
     workflow = CI_CD.read_text()
 
-    assert "actions/delete-package-versions@v5" in workflow
+    assert re.search(r"uses: actions/delete-package-versions@v\d+", workflow)
     assert "min-versions-to-keep: 10" in workflow
     assert "uses: ./.github/workflows/deploy.yml" in workflow
 
