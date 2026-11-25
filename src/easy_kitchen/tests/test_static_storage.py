@@ -1,6 +1,7 @@
 import importlib
 import json
 import re
+from pathlib import Path
 
 import pytest
 from django.core.management import call_command
@@ -49,3 +50,23 @@ def test_pages_link_hashed_files(collected, client, user):
     css = paths["easy_kitchen/vendor/bootstrap/css/bootstrap.min.css"]
     assert f"/static/{css}" in page
     assert f"/static/{css}" in login
+
+
+TEMPLATES = Path(__file__).resolve().parents[1] / "templates"
+STATIC_TAG = re.compile(r"\{%\s*static\s+(.*?)\s*%\}")
+LITERAL = re.compile(r"""^(['"])([^'"]+)\1(\s+as\s+\w+)?$""")
+
+
+def test_every_static_path_in_the_templates_is_collected(collected):
+    """With hashed names a missing file is a 500 at render time, and collectstatic does not read templates."""
+    _root, paths = collected
+    found = {}
+    for template in TEMPLATES.rglob("*.html"):
+        for argument in STATIC_TAG.findall(template.read_text()):
+            literal = LITERAL.match(argument)
+            assert literal, f"{template.relative_to(TEMPLATES)}: use a literal path in {{% static {argument} %}}"
+            found.setdefault(literal.group(2), template.relative_to(TEMPLATES))
+
+    assert len(found) >= 10
+    missing = {name: str(where) for name, where in found.items() if name not in paths}
+    assert not missing
