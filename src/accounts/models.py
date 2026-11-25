@@ -1,3 +1,5 @@
+"""The email-only user model."""
+
 from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import AbstractUser, BaseUserManager
@@ -13,6 +15,8 @@ if TYPE_CHECKING:
 
 
 class UserManager(BaseUserManager["User"]):
+    """Creates users identified by email; there is no username."""
+
     use_in_migrations = True
 
     def _create_user(self, email, password, **extra_fields):
@@ -24,11 +28,16 @@ class UserManager(BaseUserManager["User"]):
         return user
 
     def create_user(self, email, password=None, **extra_fields):
+        """Create a regular user with a normalized email. Raises ValueError when the email is empty.
+        """
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
         return self._create_user(email, password, **extra_fields)
 
     def create_superuser(self, email, password=None, **extra_fields):
+        """Create a staff superuser. Raises ValueError when is_staff or is_superuser is passed as
+        False.
+        """
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         if not extra_fields["is_staff"] or not extra_fields["is_superuser"]:
@@ -62,4 +71,5 @@ class User(AbstractUser):
         constraints = [models.UniqueConstraint(Lower("email"), name="accounts_user_unique_email_ignoring_case")]
 
     def __str__(self):
+        """Return the email address."""
         return self.email

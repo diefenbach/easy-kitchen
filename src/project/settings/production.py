@@ -1,3 +1,7 @@
+"""Production settings for the Docker image. Every required environment variable fails start-up when
+missing.
+"""
+
 import os
 
 from django.core.exceptions import ImproperlyConfigured
@@ -7,6 +11,8 @@ from .base import SRC_DIR, postgres_database_from_environment
 
 
 def required(name):
+    """Return the environment variable `name`, or raise ImproperlyConfigured when it is unset or empty.
+    """
     value = os.environ.get(name)
     if not value:
         raise ImproperlyConfigured(f"{name} must be set in production.")

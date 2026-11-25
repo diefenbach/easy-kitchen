@@ -1,3 +1,5 @@
+"""Local development settings: DEBUG on, PostgreSQL and allowed hosts from environment variables."""
+
 import os
 
 from .base import *  # noqa: F403

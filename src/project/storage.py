@@ -1,3 +1,5 @@
+"""Static file storage used in production."""
+
 from django.contrib.staticfiles.storage import ManifestStaticFilesStorage
 
 

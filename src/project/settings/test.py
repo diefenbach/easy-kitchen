@@ -1,3 +1,5 @@
+"""pytest settings: SQLite, in-memory file storage, and plain static files."""
+
 from .base import *  # noqa: F403
 from .base import SRC_DIR
 
