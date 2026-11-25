@@ -56,7 +56,7 @@ Omit `department` to use the saved article default. Send `"department": ""` to e
 
 An unknown or ambiguous department returns HTTP 400 with `code` (`department_not_found` or `department_ambiguous`), `query`, `message`, and `candidates`. Candidates contain only owned departments, with `code`, `name`, and `label`. Similar names are suggestions, never automatic assignments. Ask the user to choose a candidate and retry with its code. An unresolved request does not create departments or partially save a list, import, or replacement collection.
 
-A resolver error looks like this; nested shopping items place the same detail under `items[index].department`:
+A resolver error looks like this. For nested shopping items, `items` is an object keyed by the position (as a string, counting from 0) of each item that failed, so the second item's error is under `items["1"].department`; valid items are left out:
 
 ```json
 {

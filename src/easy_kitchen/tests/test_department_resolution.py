@@ -93,7 +93,7 @@ def test_api_accepts_names_and_reports_candidates_without_partial_writes(client,
     before = list(user.shopping_lists.values_list("pk", "position"))
     response = client.post(url, {"title": "Unresolved", "date": date.today().isoformat(), "items": [{"name": "Milk", "department": "dairy"}, {"name": "Pear", "department": "Obst"}]}, content_type="application/json", **headers)
     assert response.status_code == 400
-    detail = response.json()["items"][1]["department"]
+    detail = response.json()["items"]["1"]["department"]
     assert detail["code"] == "department_not_found"
     assert "produce" in [entry["code"] for entry in detail["candidates"]]
     assert list(user.shopping_lists.values_list("pk", "position")) == before
