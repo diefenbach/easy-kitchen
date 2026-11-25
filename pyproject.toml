@@ -25,8 +25,8 @@ dev = [
   "ruff>=0.14,<0.15",
 ]
 docs = [
-  "myst-parser>=4.0,<5",
-  "sphinx>=8.0,<8.2",
+  "myst-parser>=5.2,<6",
+  "sphinx>=9.0.4,<9.1",
   "sphinx-rtd-theme>=3.0,<4",
 ]
 
