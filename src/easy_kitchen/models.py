@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from django.conf import settings
 from django.core.validators import URLValidator
 from django.db import models, transaction
@@ -5,6 +7,10 @@ from django.db.models import F
 from django.db.models.functions import Lower
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+
+if TYPE_CHECKING:
+    # Django adds reverse relations and `<field>_id` attributes at runtime; these declarations tell the type checker.
+    from django.db.models.fields.related_descriptors import RelatedManager
 
 
 
@@ -18,6 +24,10 @@ def _place_new_record_first(instance):
 
 class ShoppingList(models.Model):
     """A dated shopping list belonging to one user."""
+
+    if TYPE_CHECKING:
+        items: "RelatedManager[ShoppingItem]"
+        user_id: int
 
     class Icon(models.TextChoices):
         """Icon shown on the list card. New lists use the basket."""
@@ -89,6 +99,11 @@ class ShoppingList(models.Model):
 class Department(models.Model):
     """A user-owned supermarket department referenced by their articles and list entries."""
 
+    if TYPE_CHECKING:
+        items: "RelatedManager[ShoppingItem]"
+        articles: "RelatedManager[Article]"
+        user_id: int
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="departments")
     code = models.SlugField(_("code"), max_length=20)
     name = models.CharField(_("name"), max_length=100)
@@ -105,14 +120,21 @@ class Department(models.Model):
 
 
 class DepartmentReference:
+    """Mixin for models with an optional `department` foreign key (ShoppingItem, Article)."""
+
     @property
-    def department_code(self):
+    def department_code(self) -> str:
         """Stable code used by forms, JSON and MCP; an empty string means unassigned."""
-        return self.department.code if self.department_id else ""
+        # The models using this mixin define `department`; the mixin alone cannot declare it for the type checker.
+        return self.department.code if self.department_id else ""  # pyright: ignore[reportAttributeAccessIssue]
 
 
 class ShoppingItem(DepartmentReference, models.Model):
     """One line on a shopping list."""
+
+    if TYPE_CHECKING:
+        shopping_list_id: int
+        department_id: int | None
 
     shopping_list = models.ForeignKey(ShoppingList, on_delete=models.CASCADE, related_name="items")
     name = models.CharField(_("item"), max_length=255)
@@ -137,6 +159,10 @@ class ShoppingItem(DepartmentReference, models.Model):
 
 class Article(DepartmentReference, models.Model):
     """A saved item name suggested while filling a shopping list."""
+
+    if TYPE_CHECKING:
+        department_id: int | None
+        user_id: int
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="articles"
@@ -165,6 +191,12 @@ class Article(DepartmentReference, models.Model):
 
 class Recipe(models.Model):
     """A recipe belonging to one user. Empty nutrition fields mean the value is unknown."""
+
+    if TYPE_CHECKING:
+        ingredients: "RelatedManager[RecipeIngredient]"
+        steps: "RelatedManager[RecipeStep]"
+        meal_plan_entries: "RelatedManager[MealPlanEntry]"
+        user_id: int
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="recipes"
@@ -211,6 +243,10 @@ class Recipe(models.Model):
 
 class MealPlanEntry(models.Model):
     """One recipe assigned to a calendar day for meal planning."""
+
+    if TYPE_CHECKING:
+        recipe_id: int | None
+        user_id: int
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="meal_plan_entries"
