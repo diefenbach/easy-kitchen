@@ -17,6 +17,7 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "drf_spectacular",
     "drf_spectacular_sidecar",
+    "accounts",
     # Listed before allauth so its templates override allauth's.
     "easy_kitchen",
     "allauth",
@@ -69,12 +70,15 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGIN_URL = "account_login"
 LOGIN_REDIRECT_URL = "easy_kitchen:home"
 LOGOUT_REDIRECT_URL = "account_login"
+AUTH_USER_MODEL = "accounts.User"
+
 AUTHENTICATION_BACKENDS = [
-    # Username login for the Django admin.
+    # Email and password login for the Django admin.
     "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
 ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"

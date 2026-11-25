@@ -11,20 +11,20 @@ def clear_rate_limits():
     cache.clear()
 
 
-def verified_user(username, email, password="test-password"):
-    user = get_user_model().objects.create_user(username=username, email=email, password=password)
+def verified_user(email, password="test-password"):
+    user = get_user_model().objects.create_user(email, password)
     EmailAddress.objects.create(user=user, email=email, verified=True, primary=True)
     return user
 
 
 @pytest.fixture
 def user(db):
-    return verified_user(username="kai", email="kai@example.com")
+    return verified_user(email="kai@example.com")
 
 
 @pytest.fixture
 def other_user(db):
-    return verified_user(username="other", email="other@example.com")
+    return verified_user(email="other@example.com")
 
 
 @pytest.fixture

@@ -1,4 +1,3 @@
-import importlib
 import re
 from unittest import mock
 from urllib.parse import parse_qs, urlparse
@@ -6,7 +5,6 @@ from urllib.parse import parse_qs, urlparse
 import pytest
 from allauth.account.models import EmailAddress
 from allauth.socialaccount.models import SocialAccount
-from django.apps import apps as global_apps
 from django.contrib.auth import get_user_model
 from django.test import override_settings
 from django.urls import reverse
@@ -182,20 +180,3 @@ def test_google_provider_is_configured_from_environment(monkeypatch):
     provider = google_provider_from_environment()["google"]
     assert provider["APPS"] == [{"client_id": "client-id", "secret": "client-secret", "key": ""}]
 
-
-@pytest.mark.django_db
-def test_existing_user_emails_become_verified_login_addresses():
-    migration = importlib.import_module("easy_kitchen.migrations.0020_verify_existing_user_emails")
-    users = get_user_model().objects
-    with_email = users.create_user(username="cook", email="Cook@Example.com", password="x")
-    duplicate = users.create_user(username="twin", email="cook@example.com", password="x")
-    without_email = users.create_user(username="nomail", password="x")
-    EmailAddress.objects.all().delete()
-
-    migration.verify_existing_user_emails(global_apps, None)
-
-    address = EmailAddress.objects.get(user=with_email)
-    assert address.email == "cook@example.com"
-    assert address.verified and address.primary
-    assert not EmailAddress.objects.filter(user=duplicate).exists()
-    assert not EmailAddress.objects.filter(user=without_email).exists()

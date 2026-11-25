@@ -25,7 +25,7 @@ class ShoppingItemInline(admin.TabularInline):
 @admin.register(Article)
 class ArticleAdmin(admin.ModelAdmin):
     list_display = ("name", "user")
-    search_fields = ("name", "user__username")
+    search_fields = ("name", "user__email")
 
 
 class RecipeIngredientInline(admin.TabularInline):
@@ -41,7 +41,7 @@ class RecipeStepInline(admin.TabularInline):
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
     list_display = ("title", "user")
-    search_fields = ("title", "user__username")
+    search_fields = ("title", "user__email")
     inlines = (RecipeIngredientInline, RecipeStepInline)
 
 
@@ -49,5 +49,5 @@ class RecipeAdmin(admin.ModelAdmin):
 class ShoppingListAdmin(admin.ModelAdmin):
     list_display = ("title", "date", "user")
     list_filter = ("date",)
-    search_fields = ("title", "user__username")
+    search_fields = ("title", "user__email")
     inlines = (ShoppingItemInline,)

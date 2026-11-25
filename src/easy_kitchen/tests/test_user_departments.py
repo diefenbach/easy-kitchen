@@ -43,7 +43,7 @@ def test_duplicate_codes_are_allowed_only_for_different_users(user, other_user):
 
 
 def test_creating_user_through_the_standard_manager_seeds_defaults():
-    user = get_user_model().objects.create_user(username="new-user", password="test-password")
+    user = get_user_model().objects.create_user("new-user@example.com", "test-password")
     assert user.departments.count() == 21
 
 

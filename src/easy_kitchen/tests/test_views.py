@@ -63,8 +63,8 @@ def test_home_shows_the_three_newest_lists_and_recipes(client, user, other_user)
     assert "Sun," not in content
     assert 'class="btn btn-sm btn-outline-secondary is-active" href="/" aria-label="Overview"' in content
     assert 'class="btn btn-sm btn-outline-secondary dropdown-toggle"' in content
-    assert 'aria-label="kai"' in content
-    assert 'class="d-none d-md-inline">kai</span>' in content
+    assert 'aria-label="kai@example.com"' in content
+    assert 'class="d-none d-md-inline">kai@example.com</span>' in content
     assert 'class="dropdown-item"' in content
     assert 'class="btn btn-sm btn-outline-secondary" href="/lists/" aria-label="Shopping lists"' in content
     assert "See all lists" in content

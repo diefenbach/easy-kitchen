@@ -18,7 +18,7 @@ def test_interface_is_english_by_default(client, user):
     assert "See all lists" in content
     assert "See all recipes" in content
     assert "Overview" in content
-    assert 'aria-label="kai"' in content
+    assert 'aria-label="kai@example.com"' in content
     assert "New list" in content
     assert "New recipe" in content
     assert "Einkaufslisten" not in content
@@ -43,7 +43,7 @@ def test_german_translation_is_available(client, user, shopping_list):
     assert "Neue Liste" in home_content
     assert "Neues Rezept" in home_content
     assert "Übersicht" in home_content
-    assert 'aria-label="kai"' in home_content
+    assert 'aria-label="kai@example.com"' in home_content
     assert "Einkaufslisten" in overview_content
     assert "Neue Liste" in overview_content
     assert "Bearbeiten" in overview_content

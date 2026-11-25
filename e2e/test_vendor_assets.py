@@ -26,7 +26,7 @@ def test_vendor_assets_work_without_external_requests(page, live_server, user):
     assert page.evaluate("bootstrap.Dropdown.VERSION") == "5.3.3"
     assert page.evaluate("document.fonts.load('16px bootstrap-icons').then(fonts => fonts.length)") == 1
 
-    page.get_by_role("button", name=user.username, exact=True).click()
+    page.get_by_role("button", name=user.email, exact=True).click()
     expect(page.get_by_role("link", name="Import JSON", exact=True)).to_be_visible()
     assert local_errors == []
     assert page_errors == []
