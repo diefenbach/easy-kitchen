@@ -1,6 +1,8 @@
 # EasyKitchen development conventions
 
-- Let the user test changes locally first. Create a pull request only when the user explicitly asks for it; do not automatically push changes or create a PR after implementation.
+Project-specific rules. General working rules and engineering principles come from the maintainer's global agent
+conventions (`~/Development/agents/AGENTS.md`); where they disagree, this file wins.
+
 - Keep the application Django-first. Use Django forms, templates, and class-based views where practical.
 - The application is English-first. Write user-facing strings in English and mark them for translation. Add the German translation in `src/locale/de/LC_MESSAGES/django.po`.
 - Keep browser JavaScript small. HTMX is preferred for partial page updates; SortableJS is reserved for item ordering.
@@ -11,18 +13,12 @@
 - Use `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, and `POSTGRES_PORT` for database configuration; do not introduce `DATABASE_URL` or dotenv-loading dependencies.
 - `docker-compose.yaml` exists only for the local PostgreSQL service. Develop the Django app locally with `uv run --env-file .env python src/manage.py runserver`; the production Compose stack lives separately.
 - Keep source assets in `src/easy_kitchen/static/`. Generated `staticfiles/` are production output for the shared Nginx volume and must never be committed.
-- Do all feature and bug-fix work on a dedicated branch. Open a pull request and merge to `main` only when CI is green. Do not commit or push directly to `main` for runtime or user-visible application changes.
+- Do not commit or push directly to `main` for runtime or user-visible application changes; they go through a pull request.
 - Documentation-only and housekeeping changes (`docs/`, `AGENTS.md`, `README.md` without matching `src/` changes, and CI tweaks such as skipping deploy for those paths) do not need a separate GitHub branch or pull request. Commit sensible chunks on `main`, push, and let CI on `main` run; production deploy is skipped when only non-runtime paths changed (see `.github/workflows/ci-cd.yml`).
-- Always split changes into sensible, logically focused commits (one concern per commit).
-- Keep commit messages short, concise, and descriptive; clearly state the concrete change.
-- Keep development, source-code changes, local tests, commits, pushes, PR creation, CI monitoring, and merges on the user's computer unless explicitly instructed otherwise.
 - Git and pull requests (agents, for application work):
   - Before every commit that touches `src/easy_kitchen/`, run `uv run ruff check src/easy_kitchen` (same as CI) and fix any findings first.
-  - Create a feature branch from up-to-date `main`. Push with `git push -u origin HEAD:your-branch` so the remote branch name matches the feature branch.
+  - Push with `git push -u origin HEAD:your-branch` so the remote branch name matches the feature branch.
   - Open the PR with `gh pr create --base main --head your-branch`.
-  - For now, monitor PR checks and perform merges from the local chat. Do not delegate CI monitoring or merges to cloud agents unless the user explicitly requests it.
-  - Merge only when the user has explicitly requested it and all required CI checks pass for the current PR head. Verify the head before merging and bind the merge to that SHA when possible; never bypass checks or branch protection. Resolve conflicts and test changes locally before pushing the updated PR branch.
-  - After a merge is confirmed, synchronize the local `main` checkout at the next opportunity, preserving ongoing local work and uncommitted changes.
 - Keep Django model, service, API, permission, and view tests under `src/easy_kitchen/tests/`. Put browser journeys in `e2e/`, using Playwright through pytest-playwright. Browser tests run with `uv run pytest`; install Chromium once with `uv run playwright install chromium`.
 - For HTMX state-changing requests outside a form, send Django's CSRF token explicitly. Cover the browser interaction with an E2E test when it is user-visible.
 - Run `uv run pytest` before handing off. pytest-xdist runs that command in parallel (`-n auto`).
@@ -30,9 +26,11 @@
 
 ## Engineering principles
 
-- **YAGNI.** Build only what the current task needs. No speculative settings, options, abstractions, extension points, or code "for later". A new dependency, model field, setting, or layer needs a concrete use today. Prefer the smallest change that fully solves the task; prefer deleting code to adding a flag.
-- **TDD.** Every feature and bug fix comes with tests in the same change. Write the failing test first and see it fail for the expected reason; then make the smallest change that passes; then refactor. For a bug, the test reproduces the bug first. A test that still passes with the fix reverted proves nothing: check that it fails without the change.
-- **DRY, with judgment.** Keep one source of truth for each piece of knowledge: business rules in `easy_kitchen/services.py`, choices on the model, versions in `package.json` and `pyproject.toml`, settings in one settings module. Remove duplication when the same rule lives in two places, not when two pieces of code merely look alike; a few repeated lines beat a premature abstraction (YAGNI wins). Tests may repeat setup when it keeps them readable.
-- **Typing.** Annotate parameters and return types of every new or changed function in `src/easy_kitchen` and `src/project`. Use precise types: no `Any` unless a value is truly untyped; describe JSON-like payloads with `TypedDict`. A change must not add pyright errors to the files it touches.
-- **Docstrings.** Every module, class, function, and method in `src/easy_kitchen` and `src/project` has a docstring that says what it is for and anything a reader cannot see from the signature (side effects, ownership checks, errors raised). Exceptions: `class Meta` and `__init__`, which the class docstring covers. In tests the name states the behaviour: add a docstring only when the reason is not obvious, and give every test module one.
-- **Skills.** When a multi-step workflow repeats or is easy to get wrong, propose a project skill in `.claude/skills/<name>/SKILL.md` and describe what it would do. Create it only after the user agrees. Prefer an installed skill when one fits.
+The general principles (YAGNI, TDD, DRY, typing, docstrings, skills) are in the maintainer's global agent
+conventions. In this project:
+
+- Application code is `src/easy_kitchen` and `src/project`; typing and docstring rules apply there. The type
+  checker is pyright (`[tool.pyright]` in `pyproject.toml`).
+- Sources of truth: business rules in `easy_kitchen/services.py`, choices on the model, versions in
+  `package.json` and `pyproject.toml`, settings in the settings modules.
+- Project skills go in `.claude/skills/<name>/SKILL.md`.
