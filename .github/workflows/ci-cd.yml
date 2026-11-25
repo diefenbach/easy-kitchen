@@ -28,7 +28,6 @@ jobs:
               - 'Dockerfile'
               - 'pyproject.toml'
               - 'uv.lock'
-              - '.github/scripts/**'
 
   test:
     runs-on: ubuntu-latest
@@ -94,54 +93,81 @@ jobs:
       - run: npm run format:check
 
   build:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.deploy == 'true'
+    # Every pull request and push: build the image and probe it under the production settings. Only a push to
+    # main with runtime changes pushes it to ghcr.io/diefenbach/easy-kitchen:<tag> and deploys it. <tag> is the
+    # commit date (Europe/Berlin) and the short commit, e.g. 20261125-02f9793; a re-run gives the same tag.
     needs: [changes, test, postgres, javascript]
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     outputs:
-      image: ${{ steps.image.outputs.image }}
+      tag: ${{ steps.tag.outputs.tag }}
+    services:
+      postgres:
+        image: postgres:17.4
+        env:
+          POSTGRES_DB: probe
+          POSTGRES_USER: probe
+          POSTGRES_PASSWORD: probe-only-password
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      IMAGE: ghcr.io/diefenbach/easy-kitchen
+      PUBLISH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.deploy == 'true' }}
     steps:
       - uses: actions/checkout@v4
-      - id: image
+      - name: Tag
+        id: tag
         run: |
-          image="ghcr.io/$(printf '%s' "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]'):$GITHUB_SHA"
-          echo "image=${image}" >> "$GITHUB_OUTPUT"
+          tag="$(TZ=Europe/Berlin git log -1 --format=%cd --date=format-local:%Y%m%d)-$(git rev-parse --short=7 HEAD)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "TAG=$tag" >> "$GITHUB_ENV"
+          echo "Image: \`${IMAGE}:$tag\`" >> "$GITHUB_STEP_SUMMARY"
       - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+      - name: Build
+        uses: docker/build-push-action@v6
         with:
           context: .
-          push: true
-          tags: ${{ steps.image.outputs.image }}
+          platforms: linux/amd64
+          load: true
+          tags: ${{ env.IMAGE }}:${{ env.TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: check, migrate, WSGI import and collectstatic under production settings
+        # Fails if settings, migrations, the WSGI module (it refuses to start with unapplied migrations) or static
+        # files are broken. The values are dummies against the empty Postgres service above; the probe sets every
+        # variable that production.py requires (test_deploy.py checks that).
+        run: |
+          docker run --rm --network host \
+            -e DJANGO_SETTINGS_MODULE=project.settings.production \
+            -e DJANGO_SECRET_KEY=ci-only \
+            -e DJANGO_ALLOWED_HOSTS=localhost \
+            -e DJANGO_CSRF_TRUSTED_ORIGINS=https://localhost \
+            -e POSTGRES_DB=probe -e POSTGRES_USER=probe -e POSTGRES_PASSWORD=probe-only-password \
+            -e POSTGRES_HOST=127.0.0.1 -e POSTGRES_PORT=5432 \
+            -e DJANGO_DEFAULT_FROM_EMAIL=ci@localhost -e EMAIL_HOST=localhost \
+            "${IMAGE}:${TAG}" \
+            sh -c "python manage.py check && python manage.py migrate --noinput -v 0 && python -c 'import project.wsgi' && python manage.py collectstatic --noinput -v 0"
+      - name: Push
+        if: env.PUBLISH == 'true'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker push "${IMAGE}:${TAG}"
+      - name: Delete old images (keep the last 10)
+        if: env.PUBLISH == 'true'
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: easy-kitchen
+          package-type: container
+          min-versions-to-keep: 10
 
   deploy:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.deploy == 'true'
     needs: [changes, build]
-    runs-on: ubuntu-latest
-    environment: production
-    concurrency:
-      group: kitchen-production
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v4
-      - uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
-      - name: Deploy over SSH
-        run: |
-          set -eux
-          mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/known_hosts
-          scp .github/scripts/deploy.sh "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/tmp/easykitchen-deploy.sh"
-          ssh -o ServerAliveInterval=15 \
-            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            "chmod +x /tmp/easykitchen-deploy.sh && DEPLOY_PATH='${{ secrets.DEPLOY_PATH }}' /tmp/easykitchen-deploy.sh '${{ needs.build.outputs.image }}'"
+    uses: ./.github/workflows/deploy.yml
+    with:
+      tag: ${{ needs.build.outputs.tag }}
+    secrets: inherit

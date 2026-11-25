@@ -46,13 +46,13 @@ It listens on `http://127.0.0.1:8001/mcp`. Create a token with `drf_create_token
 
 ## Production
 
-GitHub Actions builds a SHA-tagged image on every push to `main`:
+GitHub Actions builds an image on every push to `main` that changes runtime files:
 
 ```text
-ghcr.io/diefenbach/easy-kitchen:<git-sha>
+ghcr.io/diefenbach/easy-kitchen:<commit-date>-<short-sha>
 ```
 
-The deploy job SSHs to the server, writes `EASYKITCHEN_IMAGE` in the Compose `.env`, and restarts `kitchen`, `kitchen-mcp`, and `nginx`. The production Compose file uses `image: ${EASYKITCHEN_IMAGE}` with no fallback tag.
+The deploy workflow runs `iqpp_prod/scripts/deploy.sh` on the server. It backs up the database, migrates, collects static files, restarts `kitchen` and `kitchen-mcp`, and checks the site. Only then does it write `EASYKITCHEN_IMAGE` in the Compose `.env`; on failure the previous image runs again. See `iqpp_prod/docs/deploy.md` for the details and the server setup.
 
 Minimum Django environment on the server:
 
@@ -67,6 +67,6 @@ POSTGRES_HOST=postgres
 POSTGRES_PORT=5432
 ```
 
-The container runs migrations and `collectstatic` on start. Static files go to a shared Nginx volume at `/static/`. Uploaded recipe pictures go to `/media/`. Do not commit `src/staticfiles/` or `src/media/`.
+The deploy script runs migrations and `collectstatic`. Static files go to a shared Nginx volume at `/static/`. Uploaded recipe pictures go to `/media/`. Do not commit `src/staticfiles/` or `src/media/`.
 
-To roll back, pin the previous SHA in `EASYKITCHEN_IMAGE` and bring the stack up again.
+To roll back, run `gh workflow run deploy.yml -R diefenbach/easy-kitchen -f tag=<older-tag>`.
