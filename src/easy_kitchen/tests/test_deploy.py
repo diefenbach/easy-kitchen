@@ -1,3 +1,5 @@
+"""The Dockerfile and the CI/CD and deploy workflows."""
+
 import re
 from pathlib import Path
 
@@ -86,3 +88,9 @@ def test_ci_type_checks_the_application_code():
     workflow = CI_CD.read_text()
 
     assert "- run: uv run pyright" in workflow
+
+
+def test_ci_lints_all_python_code_including_docstrings():
+    workflow = CI_CD.read_text()
+
+    assert "- run: uv run ruff check src e2e" in workflow
