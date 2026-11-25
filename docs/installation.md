@@ -61,7 +61,7 @@ DJANGO_SETTINGS_MODULE=project.settings.development PYTHONPATH=src POSTGRES_HOST
   uv run --env-file .env python -m easy_kitchen.mcp_server
 ```
 
-It listens on `http://127.0.0.1:8001/mcp`. Create a token with `drf_create_token` and send it as `Authorization: Token <token>`. See {doc}`mcp`.
+It listens on `http://127.0.0.1:8001/mcp`. Create a token with `drf_create_token` and send it as `Authorization: Bearer <token>`. See {doc}`mcp`.
 
 ## Production
 

@@ -19,7 +19,7 @@ pytestmark = pytest.mark.django_db(transaction=True)
 def query(request, user):
     token = Token.objects.create(user=user)
     client = APIClient()
-    client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.key}")
     ctx = authorization_context(token)
 
     def call(kind, params=None, *, expected=200):
@@ -191,7 +191,7 @@ def test_conflicting_target_title_fails_in_api_and_mcp(user):
         server.add_recipe_to_list(ctx=ctx, recipe_id=recipe.pk, list_id=shopping_list.pk, list_title="Different")
     assert json.loads(str(error.value))["code"] == "selection_mismatch"
     client = APIClient()
-    client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.key}")
     response = client.post(reverse("recipe-add-to-list", args=[recipe.pk]),
                            {"list_id": shopping_list.pk, "list_title": "Different"}, format="json")
     assert response.status_code == 400 and response.json()["code"] == "selection_mismatch"
@@ -211,7 +211,7 @@ def test_checked_only_updates_have_no_article_side_effects(user, path):
         server.update_shopping_item(ctx=ctx, item_id=item.pk, changes={"checked": True})
     else:
         client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.key}")
         assert client.patch(reverse("shopping-item-detail", args=[item.pk]), {"checked": True}, format="json").status_code == 200
     item.refresh_from_db()
     assert item.checked and item.quantity == "400 g" and item.department_code == "dairy"

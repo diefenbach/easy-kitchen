@@ -11,7 +11,7 @@ def test_api_token_only_returns_own_lists(client, user, other_user):
     own = ShoppingList.objects.create(user=user, title="Eigene")
     ShoppingList.objects.create(user=other_user, title="Andere")
     token = Token.objects.create(user=user)
-    response = client.get(reverse("shopping-list-list"), HTTP_AUTHORIZATION=f"Token {token.key}")
+    response = client.get(reverse("shopping-list-list"), HTTP_AUTHORIZATION=f"Bearer {token.key}")
     assert response.status_code == 200
     assert [record["id"] for record in response.json()] == [own.id]
 
@@ -19,7 +19,7 @@ def test_api_token_only_returns_own_lists(client, user, other_user):
 @pytest.mark.django_db
 def test_api_import_creates_list_and_items(client, user):
     token = Token.objects.create(user=user)
-    response = client.post(reverse("shopping-list-import-json"), {"lists": [{"title": "Pasta", "date": "2026-10-30", "items": [{"name": "Nudeln", "quantity": "500 g"}]}]}, content_type="application/json", HTTP_AUTHORIZATION=f"Token {token.key}")
+    response = client.post(reverse("shopping-list-import-json"), {"lists": [{"title": "Pasta", "date": "2026-10-30", "items": [{"name": "Nudeln", "quantity": "500 g"}]}]}, content_type="application/json", HTTP_AUTHORIZATION=f"Bearer {token.key}")
     assert response.status_code == 201
     result = response.json()[0]
     assert result["title"] == "Pasta"
@@ -34,7 +34,7 @@ def test_api_can_reorder_lists_and_recipes(client, user, other_user):
     first = ShoppingList.objects.create(user=user, title="First")
     second = ShoppingList.objects.create(user=user, title="Second")
     ShoppingList.objects.create(user=other_user, title="Foreign")
-    headers = {"HTTP_AUTHORIZATION": f"Token {token.key}"}
+    headers = {"HTTP_AUTHORIZATION": f"Bearer {token.key}"}
 
     lists = client.post(
         reverse("shopping-list-reorder-lists"),
@@ -60,7 +60,7 @@ def test_api_can_reorder_lists_and_recipes(client, user, other_user):
 @pytest.mark.django_db
 def test_api_can_create_update_reorder_and_delete_a_list(client, user):
     token = Token.objects.create(user=user)
-    headers = {"HTTP_AUTHORIZATION": f"Token {token.key}"}
+    headers = {"HTTP_AUTHORIZATION": f"Bearer {token.key}"}
     create_response = client.post(
         reverse("shopping-list-list"),
         json.dumps({
@@ -100,7 +100,7 @@ def test_api_can_create_update_reorder_and_delete_a_list(client, user):
 @pytest.mark.django_db
 def test_api_put_replaces_list_items(client, user):
     token = Token.objects.create(user=user)
-    headers = {"HTTP_AUTHORIZATION": f"Token {token.key}"}
+    headers = {"HTTP_AUTHORIZATION": f"Bearer {token.key}"}
     created = client.post(
         reverse("shopping-list-list"),
         json.dumps({"title": "Wocheneinkauf", "date": "2026-10-30", "items": [{"name": "Tofu"}]}),

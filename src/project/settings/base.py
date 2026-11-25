@@ -112,8 +112,9 @@ def google_provider_from_environment():
 
 SOCIALACCOUNT_PROVIDERS = google_provider_from_environment()
 REST_FRAMEWORK = {
+    # The DRF token as the standard `Authorization: Bearer <token>`; DRF's own `Token <token>` is not accepted.
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.TokenAuthentication",
+        "easy_kitchen.authentication.BearerTokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
@@ -126,7 +127,7 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAuthenticated"],
     "SERVE_AUTHENTICATION": [
-        "rest_framework.authentication.TokenAuthentication",
+        "easy_kitchen.authentication.BearerTokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
     "SWAGGER_UI_DIST": "SIDECAR",

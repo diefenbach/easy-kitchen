@@ -8,7 +8,7 @@ Open **Export JSON** in the account menu, or go to `/export/`. Select the lists 
 
 ## List JSON
 
-Open **Import JSON** on the list overview, or `POST` the same document to `/api/v1/shopping-lists/import_json/` with `Authorization: Token <token>`.
+Open **Import JSON** on the list overview, or `POST` the same document to `/api/v1/shopping-lists/import_json/` with `Authorization: Bearer <token>`.
 
 The body is either an object with a `lists` array or the array itself. Every list in the document is created for the signed-in user.
 
@@ -41,7 +41,7 @@ The body is either an object with a `lists` array or the array itself. Every lis
 
 ## Recipe JSON
 
-Open **Import JSON** on the recipe overview, or `POST` the same document to `/api/v1/recipes/import_json/` with `Authorization: Token <token>`.
+Open **Import JSON** on the recipe overview, or `POST` the same document to `/api/v1/recipes/import_json/` with `Authorization: Bearer <token>`.
 
 The body is either an object with a `recipes` array or the array itself. Every recipe in the document is created for the signed-in user.
 

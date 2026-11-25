@@ -2,7 +2,7 @@
 
 A second process of the same image serves streamable HTTP at `/mcp` on port `8001`. It uses the shared database and `easy_kitchen/services.py`. It does not call the HTTP API.
 
-Tools have no user argument. Records belong to the owner of the DRF token in `Authorization: Token <token>`.
+Tools have no user argument. Records belong to the owner of the DRF token in `Authorization: Bearer <token>`.
 
 Every REST business action has an MCP equivalent, currently 37 tools in total. The route-to-tool mapping is checked automatically by tests, so adding a REST action without its MCP counterpart fails the parity check. Swagger/OpenAPI documentation and HTTP-specific methods are transport facilities rather than additional business tools.
 

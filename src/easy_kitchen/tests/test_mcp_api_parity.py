@@ -20,7 +20,7 @@ def call(request, user):
     token = Token.objects.create(user=user)
     ctx = authorization_context(token)
     client = APIClient()
-    client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.key}")
 
     def invoke(tool, route, *, pk=None, method="get", data=None, status=200):
         if request.param == "api":

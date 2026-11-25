@@ -64,7 +64,7 @@ def test_renamed_departments_keep_their_code_but_do_not_match_old_translations(u
 
 def test_api_lists_and_resolves_only_own_departments(client, user, other_user):
     token = Token.objects.create(user=user)
-    headers = {"HTTP_AUTHORIZATION": f"Token {token.key}"}
+    headers = {"HTTP_AUTHORIZATION": f"Bearer {token.key}"}
     private = other_user.departments.create(code="private", name="Private")
     url = reverse("department-list")
     assert client.get(url).status_code in (401, 403)
@@ -84,7 +84,7 @@ def test_api_lists_and_resolves_only_own_departments(client, user, other_user):
 
 def test_api_accepts_names_and_reports_candidates_without_partial_writes(client, user):
     token = Token.objects.create(user=user)
-    headers = {"HTTP_AUTHORIZATION": f"Token {token.key}"}
+    headers = {"HTTP_AUTHORIZATION": f"Bearer {token.key}"}
     url = reverse("shopping-list-list")
     response = client.post(url, {"title": "Shop", "date": date.today().isoformat(), "items": [{"name": "Apple", "department": "Obst und Gemüse"}]}, content_type="application/json", **headers)
     assert response.status_code == 201
@@ -132,7 +132,7 @@ def test_omitting_department_keeps_default_and_empty_string_clears_it(client, us
 
     source = create_item(shopping_list, name="Milk", department="dairy")
     token = Token.objects.create(user=user)
-    headers = {"HTTP_AUTHORIZATION": f"Token {token.key}"}
+    headers = {"HTTP_AUTHORIZATION": f"Bearer {token.key}"}
     for department, expected in [(None, "dairy"), ("", "")]:
         item = {"name": "Milk"}
         if department is not None:

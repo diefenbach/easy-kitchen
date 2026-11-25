@@ -22,7 +22,7 @@ def test_recipe_responses_only_expose_the_selected_picture_url(user, backend, pi
     token = Token.objects.create(user=user)
     ctx = authorization_context(token)
     client = APIClient()
-    client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.key}")
     expected = recipe.image_url
     if picture == "upload":
         expected = ("http://testserver" if backend == "api" else "") + recipe.image.url
@@ -43,7 +43,7 @@ def test_external_image_url_remains_writable_but_is_not_echoed(user, backend):
     token = Token.objects.create(user=user)
     if backend == "api":
         client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.key}")
         created = client.post(reverse("recipe-list"), {"title": "Soup", "image_url": "https://example.com/first.jpg"}, format="json")
         assert created.status_code == 201
         data = created.json()

@@ -20,7 +20,7 @@ def update(request, user):
     token = Token.objects.create(user=user)
     ctx = authorization_context(token)
     client = APIClient()
-    client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.key}")
     names = {
         "shopping_item": ("shopping-item-detail", "item_id"),
         "shopping_list": ("shopping-list-detail", "list_id"),
@@ -187,7 +187,7 @@ def test_articles_are_discoverable_only_by_the_owner(user, other_user):
     result = server.list_articles(authorization_context(token))
     assert [article["id"] for article in result] == [own.pk]
     client = APIClient()
-    client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.key}")
     result = client.get(reverse("article-list"))
     assert result.status_code == 200
     assert [article["id"] for article in result.json()] == [own.pk]

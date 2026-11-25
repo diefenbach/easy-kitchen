@@ -20,7 +20,7 @@ pytestmark = pytest.mark.django_db(transaction=True)
 def interface(request, user):
     token = Token.objects.create(user=user)
     client = APIClient()
-    client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.key}")
     ctx = authorization_context(token)
 
     def call(tool, route, data, *, pk=None, selector="recipe_id", changes=False):
@@ -119,7 +119,7 @@ def test_service_error_codes_match_for_foreign_recipe_updates(user, other_user):
         server.update_recipe(ctx, recipe_id=foreign.pk, changes={"fat": 10})
     assert json.loads(str(caught.value))["code"] == "not_found"
     client = APIClient()
-    client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.key}")
     response = client.patch(reverse("recipe-detail", args=[foreign.pk]), {"fat": 10}, format="json")
     assert response.status_code == 404 and response.json()["code"] == "not_found"
 
@@ -133,7 +133,7 @@ def test_overflow_error_codes_match(user, shopping_list):
         server.add_item_to_list(ctx=ctx, list_id=shopping_list.pk, **data)
     assert json.loads(str(caught.value))["code"] == "quantity_overflow"
     client = APIClient()
-    client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.key}")
     response = client.post(reverse("shopping-list-add-item", args=[shopping_list.pk]), data, format="json")
     assert response.status_code == 400 and response.json()["code"] == "quantity_overflow"
 
@@ -144,7 +144,7 @@ def test_rest_and_mcp_read_the_same_recipe_and_list_shapes(user, shopping_list):
     token = Token.objects.create(user=user)
     ctx = authorization_context(token)
     client = APIClient()
-    client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.key}")
     assert client.get(reverse("recipe-detail", args=[recipe.pk])).json() == server.list_recipes(ctx)[0]
     assert client.get(reverse("shopping-list-detail", args=[shopping_list.pk])).json() == server.list_shopping_lists(ctx)[0]
 

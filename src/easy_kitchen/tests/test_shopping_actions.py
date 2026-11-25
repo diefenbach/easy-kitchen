@@ -18,7 +18,7 @@ def action(request, user):
     token = Token.objects.create(user=user)
     ctx = authorization_context(token)
     client = APIClient()
-    client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.key}")
     routes = {
         "delete_item": ("shopping-item-detail", "delete", "item_id", "delete_shopping_item"),
         "delete_completed": ("shopping-list-delete-completed", "post", "list_id", "delete_completed_items"),
