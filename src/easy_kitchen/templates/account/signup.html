@@ -1,0 +1,20 @@
+{% extends "account/base_entrance.html" %}
+{% load i18n allauth %}
+{% block head_title %}{% translate "Create an account" %}{% endblock head_title %}
+{% block content %}
+<h1 class="h3 mb-4">{% translate "Create an account" %}</h1>
+<form method="post" action="{% url 'account_signup' %}">
+  {% csrf_token %}
+  {% element fields form=form %}{% endelement %}
+  {{ redirect_field }}
+  <button class="btn btn-primary w-100" type="submit">
+    <i class="bi bi-person-plus" aria-hidden="true"></i>
+    <span>{% translate "Create account" %}</span>
+  </button>
+</form>
+{% include "account/snippets/social_login.html" %}
+<p class="text-center mt-4 mb-0">
+  {% translate "Already have an account?" %}
+  <a href="{{ login_url }}">{% translate "Sign in" %}</a>
+</p>
+{% endblock content %}

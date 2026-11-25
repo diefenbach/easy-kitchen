@@ -1,0 +1,20 @@
+{% extends "account/base_entrance.html" %}
+{% load i18n allauth %}
+{% block head_title %}{% translate "Sign in" %}{% endblock head_title %}
+{% block content %}
+<h1 class="h3 mb-4">{% translate "Sign in" %}</h1>
+<form method="post" action="{% url 'account_login' %}">
+  {% csrf_token %}
+  {% element fields form=form %}{% endelement %}
+  {{ redirect_field }}
+  <button class="btn btn-primary w-100" type="submit" aria-label="{% translate 'Sign in' %}">
+    <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
+    <span>{% translate "Sign in" %}</span>
+  </button>
+</form>
+{% include "account/snippets/social_login.html" %}
+<p class="text-center mt-4 mb-0">
+  {% translate "New to EasyKitchen?" %}
+  <a href="{{ signup_url }}">{% translate "Create an account" %}</a>
+</p>
+{% endblock content %}

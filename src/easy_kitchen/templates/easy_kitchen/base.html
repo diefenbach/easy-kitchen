@@ -72,7 +72,7 @@
                 </a>
               </li>
               <li>
-                <form method="post" action="{% url 'logout' %}" data-logout>
+                <form method="post" action="{% url 'account_logout' %}" data-logout>
                   {% csrf_token %}
                   <button class="dropdown-item" type="submit" aria-label="{% translate 'Log out' %}">
                     <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
@@ -97,7 +97,7 @@
         </div>
       {% endfor %}
     {% endif %}
-    {% block content %}{% endblock %}
+    {% block main %}{% block content %}{% endblock %}{% endblock %}
   </main>
   <script src="{% static 'easy_kitchen/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
   <script type="module" src="{% static 'easy_kitchen/easykitchen.js' %}"></script>

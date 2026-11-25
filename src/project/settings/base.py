@@ -17,7 +17,12 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "drf_spectacular",
     "drf_spectacular_sidecar",
+    # Listed before allauth so its templates override allauth's.
     "easy_kitchen",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -27,6 +32,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
 ]
 ROOT_URLCONF = "project.urls"
 TEMPLATES = [{
@@ -60,9 +66,47 @@ STATIC_URL = "/static/"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = SRC_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-LOGIN_URL = "login"
+LOGIN_URL = "account_login"
 LOGIN_REDIRECT_URL = "easy_kitchen:home"
-LOGOUT_REDIRECT_URL = "login"
+LOGOUT_REDIRECT_URL = "account_login"
+AUTHENTICATION_BACKENDS = [
+    # Username login for the Django admin.
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_CONFIRM_EMAIL_ON_GET = False
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = False
+ACCOUNT_SESSION_REMEMBER = True
+ACCOUNT_EMAIL_SUBJECT_PREFIX = "[EasyKitchen] "
+# Google verifies addresses, so a Google login may sign in to the account with the same email.
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
+SOCIALACCOUNT_AUTO_SIGNUP = True
+DEFAULT_FROM_EMAIL = os.environ.get("DJANGO_DEFAULT_FROM_EMAIL", "EasyKitchen <noreply@localhost>")
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+
+def google_provider_from_environment():
+    """Configure Google sign-in when GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set."""
+    client_id = os.environ.get("GOOGLE_CLIENT_ID", "").strip()
+    secret = os.environ.get("GOOGLE_CLIENT_SECRET", "").strip()
+    if not client_id or not secret:
+        return {}
+    return {
+        "google": {
+            "APPS": [{"client_id": client_id, "secret": secret, "key": ""}],
+            "SCOPE": ["profile", "email"],
+            "AUTH_PARAMS": {"prompt": "select_account"},
+        }
+    }
+
+
+SOCIALACCOUNT_PROVIDERS = google_provider_from_environment()
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.TokenAuthentication",

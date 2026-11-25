@@ -282,7 +282,7 @@ def test_planner_requires_login(client, action):
     response = client.get(url) if action == "planner" else client.post(url)
 
     assert response.status_code == 302
-    assert response["Location"].startswith(reverse("login"))
+    assert response["Location"].startswith(reverse("account_login"))
 
 
 @pytest.mark.django_db

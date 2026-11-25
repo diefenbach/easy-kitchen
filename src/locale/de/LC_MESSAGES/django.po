@@ -1400,3 +1400,22 @@ msgstr "Die angegebene ID und der Titel passen nicht zusammen."
 
 msgid "The supplied ID and name do not match."
 msgstr "Die angegebene ID und der Name passen nicht zusammen."
+
+msgid "or"
+msgstr "oder"
+
+#, python-format
+msgid "Continue with %(provider)s"
+msgstr "Weiter mit %(provider)s"
+
+msgid "New to EasyKitchen?"
+msgstr "Neu bei EasyKitchen?"
+
+msgid "Create an account"
+msgstr "Konto erstellen"
+
+msgid "Create account"
+msgstr "Konto erstellen"
+
+msgid "Already have an account?"
+msgstr "Schon ein Konto?"

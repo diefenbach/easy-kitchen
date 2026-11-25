@@ -86,14 +86,15 @@ def test_article_management_uses_the_active_language(client, user):
 
 @pytest.mark.django_db
 def test_login_page_uses_the_active_language(client):
-    english = client.get(reverse("login")).content.decode()
+    english = client.get(reverse("account_login")).content.decode()
     assert "Sign in" in english
-    assert "Username" in english
+    assert "Email" in english
 
     with translation.override("de"):
-        german = client.get(reverse("login")).content.decode()
+        german = client.get(reverse("account_login")).content.decode()
     assert "Anmelden" in german
-    assert "Benutzername" in german
+    assert "E-Mail" in german
+    assert "Konto erstellen" in german
 
 
 @pytest.mark.django_db
