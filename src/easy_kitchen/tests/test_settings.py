@@ -72,3 +72,28 @@ def test_production_settings_require_an_smtp_host(monkeypatch):
 
     with pytest.raises(ImproperlyConfigured, match="EMAIL_HOST"):
         importlib.reload(importlib.import_module("project.settings.production"))
+
+
+def test_production_logs_request_errors_with_traceback_to_stderr(monkeypatch, capsys):
+    import logging
+    import logging.config
+
+    from django.conf import settings
+    from django.utils.log import configure_logging
+
+    _production_environment(monkeypatch)
+    production = importlib.reload(importlib.import_module("project.settings.production"))
+    try:
+        logging.config.dictConfig(production.LOGGING)
+        try:
+            raise RuntimeError("recipe exploded")
+        except RuntimeError:
+            logging.getLogger("django.request").error("Internal Server Error: /recipes/", exc_info=True)
+        logging.getLogger("django.request").info("not shown")
+    finally:
+        configure_logging(settings.LOGGING_CONFIG, settings.LOGGING)
+
+    stderr = capsys.readouterr().err
+    assert "Internal Server Error: /recipes/" in stderr
+    assert "Traceback" in stderr and "RuntimeError: recipe exploded" in stderr
+    assert "not shown" not in stderr
