@@ -51,7 +51,7 @@ The recipe overview also offers cart and calendar buttons in the top-right corne
 ### REST API
 
 - Base path: `/api/v1/shopping-lists/`.
-- Authentication is `Authorization: Token <token>`, not Bearer. Every query is limited to the token owner.
+- Authentication is `Authorization: Bearer <token>` (RFC 6750). The older `Token <token>` scheme is no longer accepted. Every query is limited to the token owner.
 - The view set creates, reads, updates, and deletes lists with nested items.
 - `POST /api/v1/shopping-lists/{id}/reorder/` accepts `{"item_ids": [3, 1, 2]}`.
 - `POST /api/v1/shopping-lists/import_json/` accepts `{"lists": [...]}` or a bare list. Each list needs `title`, `date` (`YYYY-MM-DD`), and `items` with `name` and optional `quantity`.
@@ -89,7 +89,7 @@ The recipe overview also offers cart and calendar buttons in the top-right corne
 
 ## JSON import
 
-Open **Import JSON** on the list overview, or `POST` the same document to `/api/v1/shopping-lists/import_json/` with `Authorization: Token <token>`.
+Open **Import JSON** on the list overview, or `POST` the same document to `/api/v1/shopping-lists/import_json/` with `Authorization: Bearer <token>`.
 
 The body is either an object with a `lists` array or the array itself. Every list in the document is created for the signed-in user.
 
@@ -122,7 +122,7 @@ The body is either an object with a `lists` array or the array itself. Every lis
 
 ## Recipe JSON
 
-Open **Import JSON** on the recipe overview, or `POST` the same document to `/api/v1/recipes/import_json/` with `Authorization: Token <token>`.
+Open **Import JSON** on the recipe overview, or `POST` the same document to `/api/v1/recipes/import_json/` with `Authorization: Bearer <token>`.
 
 The body is either an object with a `recipes` array or the array itself. Every recipe in the document is created for the signed-in user.
 
@@ -237,7 +237,7 @@ location /mcp {
 }
 ```
 
-Clients call `https://kitchen.iqpp.de/mcp` with `Authorization: Token <token>`. There is no user argument. `DJANGO_ALLOWED_HOSTS` is accepted as the MCP host allowlist. Override it with `MCP_ALLOWED_HOSTS` when the proxy host differs.
+Clients call `https://kitchen.iqpp.de/mcp` with `Authorization: Bearer <token>`. There is no user argument. `DJANGO_ALLOWED_HOSTS` is accepted as the MCP host allowlist. Override it with `MCP_ALLOWED_HOSTS` when the proxy host differs.
 
 ## API
 
@@ -250,8 +250,8 @@ uv run --env-file .env python src/manage.py drf_create_token <email>
 Example:
 
 ```sh
-curl -H "Authorization: Token <token>" http://localhost:8000/api/v1/shopping-lists/
-curl -X POST -H "Authorization: Token <token>" -H "Content-Type: application/json" \
+curl -H "Authorization: Bearer <token>" http://localhost:8000/api/v1/shopping-lists/
+curl -X POST -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
   -d '{"lists":[{"title":"Pasta","date":"2026-10-30","items":[{"name":"Pasta","quantity":"500 g"}]}]}' \
   http://localhost:8000/api/v1/shopping-lists/import_json/
 ```
@@ -265,7 +265,7 @@ DJANGO_SETTINGS_MODULE=project.settings.development PYTHONPATH=src \
   uv run --env-file .env python -m easy_kitchen.mcp_server
 ```
 
-It listens on `http://127.0.0.1:8001/mcp`. Create a token with `drf_create_token` and send it as `Authorization: Token <token>`.
+It listens on `http://127.0.0.1:8001/mcp`. Create a token with `drf_create_token` and send it as `Authorization: Bearer <token>`.
 
 ## Documentation
 

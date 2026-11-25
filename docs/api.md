@@ -1,6 +1,6 @@
 # REST API
 
-Base path: `/api/v1/`. Authentication is `Authorization: Token <token>`, not Bearer. Every list, recipe, and meal-plan query is limited to the token owner.
+Base path: `/api/v1/`. Authentication is `Authorization: Bearer <token>` (RFC 6750). The older `Token <token>` scheme is no longer accepted. Every list, recipe, and meal-plan query is limited to the token owner.
 
 Create a token through Django admin or:
 
@@ -94,8 +94,8 @@ Both deletion operations retain the shopping list and saved articles. Bulk delet
 `GET /api/v1/shopping-items/` and `GET /api/v1/articles/` provide owned IDs. Their detail routes support GET, PUT and PATCH. Item PATCH accepts `name`, `quantity`, `department` and `checked`; article PATCH accepts `name` and `department`. Omitted fields remain unchanged. Item quantity updates replace the amount; article-default updates leave existing shopping entries unchanged.
 
 ```sh
-curl -H "Authorization: Token <token>" http://localhost:8000/api/v1/shopping-lists/
-curl -X POST -H "Authorization: Token <token>" -H "Content-Type: application/json" \
+curl -H "Authorization: Bearer <token>" http://localhost:8000/api/v1/shopping-lists/
+curl -X POST -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
   -d '{"lists":[{"title":"Pasta","date":"2026-10-30","items":[{"name":"Pasta","quantity":"500 g"}]}]}' \
   http://localhost:8000/api/v1/shopping-lists/import_json/
 ```
