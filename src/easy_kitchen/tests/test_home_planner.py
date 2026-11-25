@@ -1,3 +1,5 @@
+"""The planned meals on the home page: this week and next, the user's only."""
+
 from datetime import date, timedelta
 from unittest.mock import patch
 

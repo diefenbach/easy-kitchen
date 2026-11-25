@@ -1,3 +1,5 @@
+"""Browser test of sign-up, email confirmation, and sign-in."""
+
 import re
 
 import pytest

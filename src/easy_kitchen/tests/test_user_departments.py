@@ -1,3 +1,5 @@
+"""Every user gets their own default departments, isolated from other users."""
+
 import pytest
 from django.contrib.auth import get_user_model
 

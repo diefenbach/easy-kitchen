@@ -1,3 +1,5 @@
+"""Browser test that the vendored JavaScript and CSS load from our own server only."""
+
 import json
 from pathlib import Path
 

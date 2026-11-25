@@ -1,3 +1,5 @@
+"""Updating recipes through MCP: partial changes, line replacement, and ownership."""
+
 import pytest
 from asgiref.sync import async_to_sync
 from mcp.server.mcpserver.exceptions import ToolError

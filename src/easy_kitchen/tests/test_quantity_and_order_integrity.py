@@ -1,3 +1,5 @@
+"""Merged quantities and reordering keep data intact or fail without changes."""
+
 from datetime import date
 
 import pytest

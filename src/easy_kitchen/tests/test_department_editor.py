@@ -1,3 +1,5 @@
+"""Department editor: login, saving together with stable references, and atomic saves."""
+
 from unittest.mock import patch
 
 import pytest

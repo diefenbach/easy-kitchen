@@ -1,3 +1,5 @@
+"""Shopping list editor: metadata and ordered items save together and atomically."""
+
 from unittest.mock import patch
 
 import pytest

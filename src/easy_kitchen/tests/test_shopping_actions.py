@@ -1,3 +1,5 @@
+"""Shopping actions: deleting items, deleting completed items, and adding with merges."""
+
 import pytest
 from asgiref.sync import async_to_sync
 from django.urls import reverse

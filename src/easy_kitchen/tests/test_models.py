@@ -1,3 +1,5 @@
+"""Item creation and ordering, merging quantities, and remembered articles."""
+
 import pytest
 from easy_kitchen.services import create_item, reorder_items, reorder_shopping_lists
 

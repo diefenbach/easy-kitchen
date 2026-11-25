@@ -1,3 +1,5 @@
+"""Concurrent writes on PostgreSQL keep quantities, uniqueness, and partial updates intact."""
+
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 from threading import Barrier

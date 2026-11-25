@@ -1,3 +1,5 @@
+"""Recipe responses expose only the chosen picture URL."""
+
 import pytest
 from asgiref.sync import async_to_sync
 from django.urls import reverse

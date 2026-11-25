@@ -1,3 +1,7 @@
+"""Browser tests that pending forms lock their drafts and restore them, including an image, after a
+failure.
+"""
+
 import io
 
 from PIL import Image

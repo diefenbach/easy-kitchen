@@ -1,3 +1,6 @@
+"""Collection queries: search, filters, summaries, and bounded pagination, all owned by the user.
+"""
+
 import json
 
 import pytest

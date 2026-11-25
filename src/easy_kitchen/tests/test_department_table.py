@@ -1,3 +1,5 @@
+"""Departments as a table referenced by articles and items."""
+
 import pytest
 from django.db import models
 

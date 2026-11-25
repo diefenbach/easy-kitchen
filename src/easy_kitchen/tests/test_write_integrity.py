@@ -1,3 +1,5 @@
+"""Partial replacements and failed writes roll back completely."""
+
 from datetime import date
 from unittest.mock import patch
 

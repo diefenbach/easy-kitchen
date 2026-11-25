@@ -1,3 +1,5 @@
+"""Browser test of recipe search and favourites."""
+
 import re
 
 import pytest

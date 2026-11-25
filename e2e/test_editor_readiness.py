@@ -1,3 +1,5 @@
+"""Browser test that collection controls wait until the editor module has loaded."""
+
 import pytest
 from playwright.sync_api import expect
 

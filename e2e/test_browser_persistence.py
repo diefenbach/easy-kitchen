@@ -1,3 +1,7 @@
+"""Browser tests that failed saves (hide completed, reorder) roll back and block overlapping
+requests.
+"""
+
 import pytest
 from playwright.sync_api import expect
 

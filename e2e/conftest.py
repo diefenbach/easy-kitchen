@@ -1,3 +1,6 @@
+"""Browser test fixtures: verified users and a signed-in Playwright page against the live server.
+"""
+
 import os
 
 import pytest

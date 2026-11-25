@@ -1,3 +1,5 @@
+"""Hashed static file names in production and their use in the templates."""
+
 import importlib
 import json
 import re

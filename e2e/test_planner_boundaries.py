@@ -1,3 +1,5 @@
+"""Browser test that calendar navigation stays within the supported weeks."""
+
 import pytest
 from playwright.sync_api import expect
 

@@ -1,3 +1,7 @@
+"""Browser tests of keyboard use: focus after removing rows, composing text, and keyboard
+reordering.
+"""
+
 import pytest
 from playwright.sync_api import expect
 

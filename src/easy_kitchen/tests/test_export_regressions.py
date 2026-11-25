@@ -1,3 +1,5 @@
+"""JSON export: malformed ids are form errors and the query count stays constant."""
+
 from datetime import date
 
 import pytest

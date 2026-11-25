@@ -1,3 +1,6 @@
+"""Browser tests of the JavaScript enhancements: sortables after HTMX swaps and suggestion search.
+"""
+
 import pytest
 from playwright.sync_api import expect
 

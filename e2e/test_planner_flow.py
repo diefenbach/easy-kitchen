@@ -1,3 +1,7 @@
+"""Browser tests of the weekly planner: recipe autocomplete, mobile layout, and building a shopping
+list.
+"""
+
 from datetime import date
 
 import pytest

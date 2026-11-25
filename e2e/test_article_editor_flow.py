@@ -1,3 +1,7 @@
+"""Browser tests of the article editor: saving and discarding a draft, keeping it after validation
+errors.
+"""
+
 import pytest
 from playwright.sync_api import expect
 

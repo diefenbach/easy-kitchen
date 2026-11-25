@@ -1,3 +1,5 @@
+"""Browser tests of article suggestions on a list and of item controls after the editor saves."""
+
 import pytest
 from playwright.sync_api import expect
 
@@ -89,7 +91,7 @@ def test_article_suggestions_support_keyboard_selection(authenticated_page, user
 
 def test_item_controls_stay_bound_after_editor_save(authenticated_page, user, live_server):
     page = authenticated_page
-    shopping_list = open_list(page, user, live_server)
+    open_list(page, user, live_server)
     page.get_by_role("link", name="Edit list", exact=True).click()
     page.locator("#list-editor-form").get_by_label("Item", exact=True).fill("Oat milk")
     page.get_by_role("button", name="Save", exact=True).first.click()

@@ -1,3 +1,5 @@
+"""Sign-up and sign-in by email with confirmation, password reset, and Google sign-in."""
+
 import re
 from unittest import mock
 from urllib.parse import parse_qs, urlparse
