@@ -1,0 +1,15 @@
+{% extends "easy_kitchen/base.html" %}
+{% comment %}Shows every allauth page as a centered card inside the EasyKitchen layout.{% endcomment %}
+{% block title %}{% block head_title %}{% endblock head_title %} · EasyKitchen{% endblock title %}
+{% block main %}
+<div class="row justify-content-center">
+  <div class="col-sm-10 col-md-7 col-lg-5">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        {% block content %}{% endblock content %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock main %}
+{% block scripts %}{% block extra_body %}{% endblock extra_body %}{% endblock scripts %}

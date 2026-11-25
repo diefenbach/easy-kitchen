@@ -1,0 +1,17 @@
+{% load i18n socialaccount %}
+{% get_providers as socialaccount_providers %}
+{% if socialaccount_providers %}
+  <div class="d-flex align-items-center gap-2 my-4 text-body-secondary small">
+    <hr class="flex-grow-1 m-0"><span>{% translate "or" %}</span><hr class="flex-grow-1 m-0">
+  </div>
+  {% for provider in socialaccount_providers %}
+    <form method="post" action="{% provider_login_url provider process='login' %}" class="d-grid mb-2">
+      {% csrf_token %}
+      {{ redirect_field }}
+      <button class="btn btn-outline-secondary" type="submit">
+        <i class="bi bi-{{ provider.id }}" aria-hidden="true"></i>
+        {% blocktranslate with provider=provider.name %}Continue with {{ provider }}{% endblocktranslate %}
+      </button>
+    </form>
+  {% endfor %}
+{% endif %}

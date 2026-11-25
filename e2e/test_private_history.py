@@ -24,7 +24,7 @@ def test_private_history_and_logout_cache_cleanup(authenticated_page, user, othe
     assert page.evaluate("localStorage.getItem('unrelated')") == 'keep'
     page.go_back()
     expect(page.get_by_role('button', name='Sign in', exact=True)).to_be_visible()
-    page.get_by_label('Username').fill(other_user.username)
+    page.get_by_label("Email").fill(other_user.email)
     page.get_by_label('Password').fill('test-password')
     page.get_by_role('button', name='Sign in', exact=True).click()
     expect(page.get_by_role('heading', name='Not Found', exact=True)).to_be_visible()

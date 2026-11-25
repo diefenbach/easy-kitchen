@@ -15,7 +15,7 @@ def test_vendor_assets_work_without_external_requests(page, live_server, user):
                if route.request.url.startswith(live_server.url + "/") else route.abort())
 
     page.goto(f"{live_server.url}/accounts/login/")
-    page.get_by_label("Username").fill(user.username)
+    page.get_by_label("Email").fill(user.email)
     page.get_by_label("Password").fill("test-password")
     page.get_by_role("button", name="Sign in").click()
     expect(page.get_by_role("heading", name="Shopping lists")).to_be_visible()

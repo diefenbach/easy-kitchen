@@ -84,7 +84,7 @@ def test_home_shows_the_three_newest_lists_and_recipes(client, user, other_user)
 
 @pytest.mark.django_db
 def test_login_lands_on_the_home_page(client, user):
-    response = client.post(reverse("login"), {"username": "kai", "password": "test-password"})
+    response = client.post(reverse("account_login"), {"login": "kai@example.com", "password": "test-password"})
 
     assert response.status_code == 302
     assert response.url == reverse("easy_kitchen:home")
@@ -276,7 +276,7 @@ def test_item_toggle_requires_and_accepts_csrf_token(client, user, shopping_list
 
 @pytest.mark.django_db
 def test_login_displays_invalid_credentials_error(client):
-    response = client.post(reverse("login"), {"username": "unknown", "password": "wrong"})
+    response = client.post(reverse("account_login"), {"login": "unknown@example.com", "password": "wrong"})
     assert response.status_code == 200
     assert "alert-danger" in response.content.decode()
 

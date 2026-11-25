@@ -581,7 +581,7 @@ def test_logged_in_user_sees_swagger_ui(page, live_server, user):
     clear_url_caches()
     try:
         page.goto(f"{live_server.url}/accounts/login/")
-        page.get_by_label("Username").fill(user.username)
+        page.get_by_label("Email").fill(user.email)
         page.get_by_label("Password").fill("test-password")
         page.get_by_role("button", name="Sign in").click()
         page.get_by_role("heading", name="Shopping lists").wait_for()
