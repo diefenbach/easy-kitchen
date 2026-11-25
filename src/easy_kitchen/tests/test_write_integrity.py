@@ -19,7 +19,7 @@ def test_partial_list_replacement_requires_complete_children(client, user, paylo
     response = client.patch(reverse("shopping-list-detail", args=[shopping_list.pk]),
                             payload, content_type="application/json")
     assert response.status_code == 400
-    assert "name" in response.json()["items"][0]
+    assert "name" in response.json()["items"]["0"]
     assert list(shopping_list.items.values_list("pk", "quantity")) == [(item.pk, "1 l")]
 
 

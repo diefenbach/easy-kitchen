@@ -60,6 +60,13 @@ def test_only_main_pushes_images_and_keeps_the_last_ten():
     assert "uses: ./.github/workflows/deploy.yml" in workflow
 
 
+def test_cleaning_up_old_images_never_blocks_the_deploy():
+    workflow = CI_CD.read_text()
+    step = workflow[workflow.index("- name: Delete old images"):workflow.index("uses: actions/delete-package-versions")]
+
+    assert "continue-on-error: true" in step
+
+
 def test_deploy_runs_the_restricted_server_script_with_a_tag():
     workflow = DEPLOY.read_text()
 
