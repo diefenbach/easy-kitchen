@@ -158,6 +158,9 @@ jobs:
           docker push "${IMAGE}:${TAG}"
       - name: Delete old images (keep the last 10)
         if: env.PUBLISH == 'true'
+        # Housekeeping only: a failure here must never block the deploy. Deleting needs the Admin role for this
+        # repository on the package (iqpp_prod/docs/access.md).
+        continue-on-error: true
         uses: actions/delete-package-versions@v5
         with:
           package-name: easy-kitchen
